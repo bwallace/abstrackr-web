@@ -4,9 +4,9 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1290543974.1589999
-_template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/login.mako'
-_template_uri='/accounts/login.mako'
+_modified_time = 1290544258.6110001
+_template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/register.mako'
+_template_uri='/accounts/register.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
 _source_encoding='utf-8'
 from webhelpers.html import escape
@@ -29,27 +29,14 @@ def render_body(context,**pageargs):
     try:
         __M_locals = __M_dict_builtin(pageargs=pageargs)
         url = context.get('url', UNDEFINED)
-        c = context.get('c', UNDEFINED)
         __M_writer = context.writer()
         # SOURCE LINE 1
         __M_writer(u'\r\n')
         # SOURCE LINE 2
-        __M_writer(u'\r\n\r\n')
-        # SOURCE LINE 4
-        if c.login_counter > 1:
-            # SOURCE LINE 5
-            __M_writer(u'    Incorrect Username or Password\r\n')
-            pass
-        # SOURCE LINE 7
-        __M_writer(u'\r\n<center>\r\n<form action="')
-        # SOURCE LINE 9
-        __M_writer(escape(url(controller='account', action='login_handler'
-,came_from=c.came_from, __logins=c.login_counter)))
-        # SOURCE LINE 10
-        __M_writer(u'" method="POST">\r\n<label for="login">username</label>\r\n<input type="text" id="login" name="login" /><br />\r\n<label for="password">password</label>\r\n<input type="password" id="password" name="password" /><br />\r\n<input type="submit" id="submit" value="Submit" />\r\n</form>\r\n\r\ndon\'t have an account yet? <a href="')
-        # SOURCE LINE 18
-        __M_writer(escape(url(controller='account', action='create_account')))
-        __M_writer(u'">register here</a>.\r\n</center>')
+        __M_writer(u'\r\n\r\n<center>\r\n<form action="')
+        # SOURCE LINE 5
+        __M_writer(escape(url(controller='account', action='create_account_handler')))
+        __M_writer(u'" method="POST">\r\n\r\n<label for="first name">first name</label>\r\n<input type="text" id="first name" name="first name" /><br />\r\n\r\n<label for = "last name">last name</label>\r\n<input type="text" id="last name" name="last name" /><br />\r\n\r\n<label for = "email">email</label>\r\n<input type="text" id="email" name="email" /><br />\r\n\r\n<label for="username">username</label>\r\n<input type="text" id="username" name="username" /><br />\r\n<label for="password">password</label>\r\n<input type="password" id="password" name="password" /><br />\r\n\r\n<input type="submit" id="submit" value="Submit" />\r\n\r\n</form>\r\n\r\n\r\n</center>')
         return ''
     finally:
         context.caller_stack._pop_frame()
@@ -60,7 +47,7 @@ def render_title(context):
     try:
         __M_writer = context.writer()
         # SOURCE LINE 2
-        __M_writer(u'home')
+        __M_writer(u'register')
         return ''
     finally:
         context.caller_stack._pop_frame()

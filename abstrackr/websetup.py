@@ -30,6 +30,7 @@ def setup_app(command, conf, vars):
     p.name = u'admin'
     meta.Session.add(p)
 
+    # give myslf a login. 
     u = User()
     u.username = u'byron'
     u.fullname = u'byron wallace'

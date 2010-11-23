@@ -20,13 +20,18 @@ class AccountController(BaseController):
         came_from = str(request.GET.get('came_from', '')) or \
                     url(controller='account', action='welcome')
         if identity:
-            #return "HI"
             redirect(url(came_from))
         else:
             c.came_from = came_from
             c.login_counter = request.environ['repoze.who.logins'] + 1
             return render('/accounts/login.mako')
 
+    def create_account(self):
+        return render('/accounts/register.mako')
+        
+    def create_account_handler(self):
+        return request.params.values()
+        
     @ActionProtector(not_anonymous())
     def welcome(self):
         """

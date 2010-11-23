@@ -6,8 +6,10 @@
         <title>abstrackr: ${self.title()}</title>
     </head>
     <body>
-        <img src = "../images/abstrackr.png">
-        <h1>${self.title()}</h1>
+        <p align="right">
+        <img src = "../../abstrackr.png">
+        </p align>
+       
 
 <!-- *** BEGIN page content *** -->
 ${self.body()}
