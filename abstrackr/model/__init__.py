@@ -27,6 +27,59 @@ class Review(Base):
     date_created = sa.Column(types.DateTime())
     name = sa.Column(types.Unicode(255))
     
+class Citation(Base):
+    __tablename__ = "Citations"
+    # note that this is independent of pubmed/refman/whatever id!
+    citation_id = sa.Column(types.Integer, primary_key=True)
+    pmid_id = sa.Column(types.Integer)
+    refman_id = sa.Column(types.Integer)
+    
+    title = sa.Column(types.Unicode(200))
+    # length is based on back-of-envelop calculation
+    abstract = sa.Column(types.Unicode(10000))
+    authors = sa.Column(types.Unicode(500))
+    journal = sa.Column(types.Unicode(500))
+    keywords = sa.Column(types.Unicode(1000))
+    
+    
+class LabeledFeature(Base):
+    ''' Stores labeled features, i.e., terms '''
+    __tablename__ = "LabelFeatures"
+    id = sa.Column(types.Integer, primary_key=True)
+    # review for which this term applies
+    review_id = sa.Column(types.Integer)
+    # person who entered the term
+    reviewer_id = sa.Column(types.Integer)  
+    # label
+    label = sa.Column(types.SmallInteger)
+    date_created = sa.Column(types.DateTime())
+    
+class Label(Base):
+    ''' Stores instances labels '''
+    __tablename__ = "Labels"
+    id = sa.Column(types.Integer, primary_key=True)
+    # review for which this document was screened
+    review_id = sa.Column(types.Integer)
+    study_id = sa.Column(types.Integer)
+    reviewer_id = sa.Column(types.Integer)
+    # -1, 0, 1
+    label = sa.Column(types.SmallInteger)
+    # in seconds
+    labeling_time = sa.Column(types.Integer)
+    first_labeled = sa.Column(types.DateTime())
+    label_last_updated = sa.Column(types.DateTime())
+    
+class ReviewerProject(Base):
+    '''
+    junction table; maps reviewers to the projects they
+    are on (and vice versa).
+    '''
+    __tablename__ = "ReviewersProjects"
+    id = sa.Column(types.Integer, primary_key=True)
+    review_id = sa.Column(types.Integer)
+    reviewer_id = sa.Column(types.Integer)
+    
+    
 ####################################
 ## these tables for authentication #
 ####################################

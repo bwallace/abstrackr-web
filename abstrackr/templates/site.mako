@@ -3,9 +3,10 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>MyBlog: ${self.title()}</title>
+        <title>abstrackr: ${self.title()}</title>
     </head>
     <body>
+        <img src = "../images/abstrackr.png">
         <h1>${self.title()}</h1>
 
 <!-- *** BEGIN page content *** -->
