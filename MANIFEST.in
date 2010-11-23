@@ -1,0 +1,3 @@
+include abstrackr/config/deployment.ini_tmpl
+recursive-include abstrackr/public *
+recursive-include abstrackr/templates *
