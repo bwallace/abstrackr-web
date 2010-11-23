@@ -5,6 +5,7 @@ from abstrackr.lib.base import BaseController, render
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
 from pylons.controllers.util import redirect
+import pdb
 
 log = logging.getLogger(__name__)
 
@@ -38,8 +39,10 @@ class AccountController(BaseController):
         Greet the user if she logged in successfully or redirect back
         to the login form otherwise(using ActionProtector decorator).
         """
-        identity = request.environ.get('repoze.who.identity')
-        return 'Welcome back %s' % identity['repoze.who.userid']
+        person = request.environ.get('repoze.who.identity')['user']
+        c.person = person
+        return render('/accounts/welcome.mako')
+        #return 'Welcome back %s' % identity['repoze.who.userid']
 
     @ActionProtector(not_anonymous())
     def test_user_access(self):
