@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1290548619.234
+_modified_time = 1290608663.381
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/reviews/new.mako'
 _template_uri='/reviews/new.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -33,10 +33,10 @@ def render_body(context,**pageargs):
         # SOURCE LINE 1
         __M_writer(u'\r\n')
         # SOURCE LINE 2
-        __M_writer(u'\r\n\r\n<center>\r\n\r\n\r\n <form action="')
-        # SOURCE LINE 7
+        __M_writer(u'\r\n\r\n<center>\r\n\r\n <form action="')
+        # SOURCE LINE 6
         __M_writer(escape(url(controller='review', action='upload_xml')))
-        __M_writer(u'" method="post" multipart=True, enctype="multipart/form-data">\r\n    <input type="file" name="myfile"/>\r\n    <input type="submit" id="submit" value="Submit" />\r\n </form>\r\n\r\n</center>')
+        __M_writer(u'" method="post" multipart=True, enctype="multipart/form-data">\r\n    <label for="project name">project name</label>\r\n    <input type="text" id="project name" name="project name" /><br />\r\n    \r\n    <input type="file" name="db"/><br/>\r\n    <input type="submit" id="submit" value="Submit" />\r\n </form>\r\n\r\n</center>')
         return ''
     finally:
         context.caller_stack._pop_frame()

@@ -5,6 +5,7 @@ from abstrackr.lib.base import BaseController, render
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
 from pylons.controllers.util import redirect
+import abstrackr.model as model
 import pdb
 
 log = logging.getLogger(__name__)
@@ -31,7 +32,14 @@ class AccountController(BaseController):
         return render('/accounts/register.mako')
         
     def create_account_handler(self):
-        return request.params.values()
+        new_user = model.User()
+        new_user.username = request.params['username']
+        new_user.fullname = " ".join([request.params['first name'], request.params['last name']])
+        new_user._set_password(request.params['password'])
+        new_user.email = request.params['email']
+        model.Session.add(new_user)
+        model.Session.commit()
+        redirect(url(controller="account", action="login"))
         
     @ActionProtector(not_anonymous())
     def welcome(self):

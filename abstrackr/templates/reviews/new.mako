@@ -3,9 +3,11 @@
 
 <center>
 
-
  <form action="${url(controller='review', action='upload_xml')}" method="post" multipart=True, enctype="multipart/form-data">
-    <input type="file" name="myfile"/>
+    <label for="project name">project name</label>
+    <input type="text" id="project name" name="project name" /><br />
+    
+    <input type="file" name="db"/><br/>
     <input type="submit" id="submit" value="Submit" />
  </form>
 
