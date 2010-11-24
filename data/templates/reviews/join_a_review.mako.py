@@ -4,9 +4,9 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1290614826.9590001
-_template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/register.mako'
-_template_uri='/accounts/register.mako'
+_modified_time = 1290628782.1819999
+_template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/reviews/join_a_review.mako'
+_template_uri='/reviews/join_a_review.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
 _source_encoding='utf-8'
 from webhelpers.html import escape
@@ -29,36 +29,23 @@ def render_body(context,**pageargs):
     try:
         __M_locals = __M_dict_builtin(pageargs=pageargs)
         url = context.get('url', UNDEFINED)
-        h = context.get('h', UNDEFINED)
+        c = context.get('c', UNDEFINED)
         __M_writer = context.writer()
         # SOURCE LINE 1
         __M_writer(u'\r\n')
         # SOURCE LINE 2
-        __M_writer(u'\r\n\r\n\r\n<center>\r\n\r\n\r\n ')
+        __M_writer(u'\r\n\r\n<center>\r\n\r\n<h2>existing reviews</h2>\r\nclick the link to join.<br/>\r\n')
         # SOURCE LINE 8
-        __M_writer(escape(h.form(url(controller='account', action='create_account_handler'))))
-        __M_writer(u'\r\n    <label>first name: ')
-        # SOURCE LINE 9
-        __M_writer(escape(h.text('first name')))
-        __M_writer(u'</label><br/>\r\n    <label>last name: ')
-        # SOURCE LINE 10
-        __M_writer(escape(h.text('last name')))
-        __M_writer(u'</label><br/>\r\n    <label>email: ')
+        for review in c.all_reviews:
+            # SOURCE LINE 9
+            __M_writer(u'    <a href = "')
+            __M_writer(escape(url(controller='review', action='join_review', id=review.review_id)))
+            __M_writer(u'">')
+            __M_writer(escape(review.name))
+            __M_writer(u'</a> <br/>\r\n')
+            pass
         # SOURCE LINE 11
-        __M_writer(escape(h.text('email')))
-        __M_writer(u'</label><br/>\r\n    <label>username: ')
-        # SOURCE LINE 12
-        __M_writer(escape(h.text('username')))
-        __M_writer(u'</label><br/>\r\n    <label>password: ')
-        # SOURCE LINE 13
-        __M_writer(escape(h.text('password', type='password')))
-        __M_writer(u'</label><br/>\r\n    ')
-        # SOURCE LINE 14
-        __M_writer(escape(h.submit('post', 'sign me up!')))
-        __M_writer(u'\r\n  ')
-        # SOURCE LINE 15
-        __M_writer(escape(h.end_form()))
-        __M_writer(u'\r\n  \r\n</center>')
+        __M_writer(u'\r\n</center>')
         return ''
     finally:
         context.caller_stack._pop_frame()
@@ -69,7 +56,7 @@ def render_title(context):
     try:
         __M_writer = context.writer()
         # SOURCE LINE 2
-        __M_writer(u'register')
+        __M_writer(u'new review')
         return ''
     finally:
         context.caller_stack._pop_frame()

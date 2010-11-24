@@ -32,6 +32,14 @@ class AccountController(BaseController):
         return render('/accounts/register.mako')
         
     def create_account_handler(self):
+        '''
+        TODO need to ascertain user doesn't already exist!
+        See: http://pylonshq.com/docs/en/1.0/controllers/
+        in particular,
+            user = model.User.get_by(name=request.params['name'])
+        If user exists here, abort
+        '''
+        # create the new user; post to db via sqlalchemy
         new_user = model.User()
         new_user.username = request.params['username']
         new_user.fullname = " ".join([request.params['first name'], request.params['last name']])
@@ -49,6 +57,17 @@ class AccountController(BaseController):
         """
         person = request.environ.get('repoze.who.identity')['user']
         c.person = person
+        
+        project_q = model.meta.Session.query(model.Review)       
+        c.leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()
+        
+        # pull the reviews that this person is participating in
+        junction_q = model.meta.Session.query(model.ReviewerProject)
+        participating_project_ids = \
+            [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
+        c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids]
+        #pdb.set_trace()
+        
         return render('/accounts/welcome.mako')
         #return 'Welcome back %s' % identity['repoze.who.userid']
 

@@ -24,6 +24,7 @@ class Review(Base):
 
     review_id = sa.Column(types.Integer, primary_key=True)
     project_lead_id = sa.Column(types.Integer)
+    project_description = sa.Column(types.Unicode(10000))
     date_created = sa.Column(types.DateTime())
     name = sa.Column(types.Unicode(255))
     

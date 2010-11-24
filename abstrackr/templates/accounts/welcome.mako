@@ -1,6 +1,17 @@
 <%inherit file="../site.mako" />
 <%def name="title()">home</%def>
 
-hi there, ${c.person.fullname}
+<h2>hi there, ${c.person.fullname}</h2>
+
+projects you're participating in: <br/>
+% for review in c.participating_projects:
+    ${review.name}<br/>
+% endfor
+
+
 <br/><br/>
-want to <a href = "${url(controller='review', action='create_new_review')}">start a new review?</a>
+projects you're leading: ${c.leading_projects}
+<br/><br/>
+want to <a href = "${url(controller='review', action='join_a_review')}">join an existing review?</a>
+<br/><br/>
+or maybe you want to <a href = "${url(controller='review', action='create_new_review')}">start a new review?</a>

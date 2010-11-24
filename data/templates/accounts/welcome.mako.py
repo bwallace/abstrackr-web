@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1290545850.0339999
+_modified_time = 1290628774.4790001
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/welcome.mako'
 _template_uri='/accounts/welcome.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -34,11 +34,26 @@ def render_body(context,**pageargs):
         # SOURCE LINE 1
         __M_writer(u'\r\n')
         # SOURCE LINE 2
-        __M_writer(u'\r\n\r\nhi there, ')
+        __M_writer(u'\r\n\r\n<h2>hi there, ')
         # SOURCE LINE 4
         __M_writer(escape(c.person.fullname))
+        __M_writer(u"</h2>\r\n\r\nprojects you're participating in: <br/>\r\n")
+        # SOURCE LINE 7
+        for review in c.participating_projects:
+            # SOURCE LINE 8
+            __M_writer(u'    ')
+            __M_writer(escape(review.name))
+            __M_writer(u'<br/>\r\n')
+            pass
+        # SOURCE LINE 10
+        __M_writer(u"\r\n\r\n<br/><br/>\r\nprojects you're leading: ")
+        # SOURCE LINE 13
+        __M_writer(escape(c.leading_projects))
         __M_writer(u'\r\n<br/><br/>\r\nwant to <a href = "')
-        # SOURCE LINE 6
+        # SOURCE LINE 15
+        __M_writer(escape(url(controller='review', action='join_a_review')))
+        __M_writer(u'">join an existing review?</a>\r\n<br/><br/>\r\nor maybe you want to <a href = "')
+        # SOURCE LINE 17
         __M_writer(escape(url(controller='review', action='create_new_review')))
         __M_writer(u'">start a new review?</a>\r\n')
         return ''

@@ -3,12 +3,11 @@
 
 <center>
 
- <form action="${url(controller='review', action='upload_xml')}" method="post" multipart=True, enctype="multipart/form-data">
-    <label for="project name">project name</label>
-    <input type="text" id="project name" name="project name" /><br />
-    
-    <input type="file" name="db"/><br/>
-    <input type="submit" id="submit" value="Submit" />
- </form>
+ ${h.form(url(controller='review', action='create_review_handler'), multipart=True)}
+    <label>project name: ${h.text('name')}</label><br/>
+    <label>project description: ${h.textarea('description', rows="10", cols="40")}</label><br/>
+    <label>upload file: ${h.file('db')} </label><br />
+    ${h.submit('post', 'create new review')}
+  ${h.end_form()}
 
 </center>
