@@ -57,7 +57,8 @@ try:
 except:
   print "nose isn't installed -- can't run unittests!"
 
-stop_list_path="stop_list.txt"
+
+stop_list_path = "./abstrackr/lib/stop_list.txt"
 print "stop word list path is %s" % stop_list_path
 
 def build_stop_list(stop_list_path):

@@ -32,15 +32,17 @@ class Citation(Base):
     __tablename__ = "Citations"
     # note that this is independent of pubmed/refman/whatever id!
     citation_id = sa.Column(types.Integer, primary_key=True)
+    # associates the citation with the review/project that owns it
+    review_id = sa.Column(types.Integer)
     pmid_id = sa.Column(types.Integer)
     refman_id = sa.Column(types.Integer)
     
-    title = sa.Column(types.Unicode(200))
+    title = sa.Column(types.Unicode(500))
     # length is based on back-of-envelop calculation
     abstract = sa.Column(types.Unicode(10000))
-    authors = sa.Column(types.Unicode(500))
-    journal = sa.Column(types.Unicode(500))
-    keywords = sa.Column(types.Unicode(1000))
+    authors = sa.Column(types.Unicode(1000))
+    journal = sa.Column(types.Unicode(1000))
+    keywords = sa.Column(types.Unicode(5000))
     
     
 class LabeledFeature(Base):
@@ -146,7 +148,7 @@ class User(Base):
         return self.password[40:] == hashed_pass.hexdigest()
 
 
-'''
+
 # This is the association table for the many-to-many relationship between
 # groups and permissions.
 class GroupPermission(Base):
@@ -162,5 +164,5 @@ class UserGroup(Base):
     id  = sa.Column(types.Integer, primary_key=True)
     user_id = sa.Column(types.Integer)
     group_id = sa.Column(types.Integer)
-'''   
+   
 
