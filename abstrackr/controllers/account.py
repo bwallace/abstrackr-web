@@ -66,11 +66,15 @@ class AccountController(BaseController):
         participating_project_ids = \
             [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
         c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids]
-        #pdb.set_trace()
         
         return render('/accounts/welcome.mako')
         #return 'Welcome back %s' % identity['repoze.who.userid']
 
+    @ActionProtector(not_anonymous())
+    def screen(self, id):
+        return id
+        
+        
     @ActionProtector(not_anonymous())
     def test_user_access(self):
         return 'You are inside user section'

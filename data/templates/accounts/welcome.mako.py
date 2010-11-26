@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1290628774.4790001
+_modified_time = 1290805474.105
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/welcome.mako'
 _template_uri='/accounts/welcome.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -43,10 +43,12 @@ def render_body(context,**pageargs):
             # SOURCE LINE 8
             __M_writer(u'    ')
             __M_writer(escape(review.name))
-            __M_writer(u'<br/>\r\n')
+            __M_writer(u'           <a href = "')
+            __M_writer(escape(url(controller='account', action='screen', id=review.review_id)))
+            __M_writer(u'">screen!</a> <br/>\r\n')
             pass
         # SOURCE LINE 10
-        __M_writer(u"\r\n\r\n<br/><br/>\r\nprojects you're leading: ")
+        __M_writer(u"\r\n\r\n<br/>\r\nprojects you're leading: ")
         # SOURCE LINE 13
         __M_writer(escape(c.leading_projects))
         __M_writer(u'\r\n<br/><br/>\r\nwant to <a href = "')

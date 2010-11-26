@@ -5,11 +5,11 @@
 
 projects you're participating in: <br/>
 % for review in c.participating_projects:
-    ${review.name}<br/>
+    ${review.name}           <a href = "${url(controller='account', action='screen', id=review.review_id)}">screen!</a> <br/>
 % endfor
 
 
-<br/><br/>
+<br/>
 projects you're leading: ${c.leading_projects}
 <br/><br/>
 want to <a href = "${url(controller='review', action='join_a_review')}">join an existing review?</a>
