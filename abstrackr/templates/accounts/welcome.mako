@@ -5,7 +5,7 @@
 
 projects you're participating in: <br/>
 % for review in c.participating_projects:
-    ${review.name}           <a href = "${url(controller='account', action='screen', id=review.review_id)}">screen!</a> <br/>
+    ${review.name}           <a href = "${url(controller='review', action='screen', id=review.review_id)}">screen!</a> <br/>
 % endfor
 
 

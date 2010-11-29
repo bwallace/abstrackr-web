@@ -89,3 +89,18 @@ class ReviewController(BaseController):
         model.Session.commit()
         redirect(url(controller="account", action="welcome"))  
     
+    @ActionProtector(not_anonymous())
+    def screen(self, id):
+        citation_q = model.meta.Session.query(model.Citation)
+        citations_for_review = citation_q.filter(model.Citation.review_id == id).all()
+        c.review_id = id
+        c.cur_citation = citations_for_review[0]
+        return render("/screen.mako")
+        
+    @ActionProtector(not_anonymous())
+    def screen_next(self, id):
+        citation_q = model.meta.Session.query(model.Citation)
+        citations_for_review = citation_q.filter(model.Citation.review_id == id).all()
+        c.cur_citation = citations_for_review[1]
+        
+        return render("/citation_fragment.mako")

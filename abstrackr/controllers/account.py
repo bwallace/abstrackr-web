@@ -69,11 +69,6 @@ class AccountController(BaseController):
         
         return render('/accounts/welcome.mako')
         #return 'Welcome back %s' % identity['repoze.who.userid']
-
-    @ActionProtector(not_anonymous())
-    def screen(self, id):
-        return id
-        
         
     @ActionProtector(not_anonymous())
     def test_user_access(self):
