@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291063138.3559999
+_modified_time = 1291066834.6530001
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/dashboard.mako'
 _template_uri='/accounts/dashboard.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -78,7 +78,7 @@ def render_body(context,**pageargs):
                 __M_writer(u'</td>          \r\n        <td><a href = "')
                 # SOURCE LINE 29
                 __M_writer(escape(url(controller='review', action='screen', id=review.review_id)))
-                __M_writer(u'">start screening</a> </td>\r\n    </tr>\r\n')
+                __M_writer(u'">start screening!</a> </td>\r\n    </tr>\r\n')
                 pass
             # SOURCE LINE 32
             __M_writer(u'    </table>\r\n')

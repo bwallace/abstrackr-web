@@ -26,7 +26,7 @@
     % for i,review in enumerate(c.participating_projects):
     <tr class="${'odd' if i%2 else 'even'}">
         <td><a href="${url(controller='review', action='show_review', id=review.review_id)}">${review.name}</td>          
-        <td><a href = "${url(controller='review', action='screen', id=review.review_id)}">start screening</a> </td>
+        <td><a href = "${url(controller='review', action='screen', id=review.review_id)}">start screening!</a> </td>
     </tr>
     % endfor
     </table>

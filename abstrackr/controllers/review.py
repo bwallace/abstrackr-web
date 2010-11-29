@@ -50,7 +50,7 @@ class ReviewController(BaseController):
         xml_to_sql.xml_to_sql(local_file_path, new_review)
         print "done."
         
-        redirect(url(controller="review", action="show_review", id=new_review.review_id))       
+        redirect(url(controller="review", action="join_review", id=new_review.review_id))       
         
     @ActionProtector(not_anonymous())
     def join_a_review(self):
@@ -58,7 +58,18 @@ class ReviewController(BaseController):
         c.all_reviews = review_q.all()
         return render("/reviews/join_a_review.mako")
         
-      
+    @ActionProtector(not_anonymous())
+    def join_review(self, id):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        # for now just adding right away; may want to 
+        # ask project lead for permission though.
+        reviewer_project = model.ReviewerProject()
+        reviewer_project.reviewer_id = current_user.id
+        reviewer_project.review_id = id
+        model.Session.add(reviewer_project)
+        model.Session.commit()
+        redirect(url(controller="account", action="welcome"))  
+        
     @ActionProtector(not_anonymous())
     def show_review(self, id):
         review_q = model.meta.Session.query(model.Review)
@@ -77,18 +88,6 @@ class ReviewController(BaseController):
         labels_for_review = label_q.filter(model.Label.review_id == id).all()
         c.num_labels = len(labels_for_review)
         return render("/reviews/show_review.mako")
-          
-    @ActionProtector(not_anonymous())
-    def join_review(self, id):
-        current_user = request.environ.get('repoze.who.identity')['user']
-        # for now just adding right away; may want to 
-        # ask project lead for permission though.
-        reviewer_project = model.ReviewerProject()
-        reviewer_project.reviewer_id = current_user.id
-        reviewer_project.review_id = id
-        model.Session.add(reviewer_project)
-        model.Session.commit()
-        redirect(url(controller="account", action="welcome"))  
     
     @ActionProtector(not_anonymous())
     def screen(self, id):
