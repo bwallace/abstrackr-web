@@ -1,7 +1,7 @@
 <%inherit file="site.mako" />
 <%def name="title()">screen</%def>
 
-<div id="citation" style='float: center'>
+<div id="citation" class="content" style='float: center'>
 <h2>${c.cur_citation.title}</h2>
 ${c.cur_citation.authors}<br/><br/>
 ${c.cur_citation.abstract}
@@ -11,8 +11,16 @@ ${c.cur_citation.abstract}
 
 <script type="text/javascript">
     $(document).ready(function() {
-        $("#labelCitation").click(function() {
-            $("#citation").load("${'/review/screen_next/%s' % c.review_id}");
+        $("#accept").click(function() {
+            $("#citation").load("${'/label/%s/%s/1' % (c.review_id, c.cur_citation.citation_id)}");
+        });
+               
+        $("#maybe").click(function() {
+            $("#citation").load("${'/label/%s/%s/0' % (c.review_id, c.cur_citation.citation_id)}");
+        });
+        
+        $("#reject").click(function() {
+            $("#citation").load("${'/label/%s/%s/-1' % (c.review_id, c.cur_citation.citation_id)}");
         });
     });
 </script>
@@ -22,16 +30,8 @@ ${c.cur_citation.abstract}
 <center>
 
 
-<a id="labelCitation">Change my text</a>
+<a href="#" id="accept"><img src = "../../accept.png"/></a> 
+<a href="#" id="maybe"><img src = "../../maybe.png"/></a> 
+<a href="#" id="reject"><img src = "../../reject.png"/></a> 
 
-
-<a href =   "#", onclick="new Ajax.Updater(
-            'citation',
-            '/review/screen_next/',
-            {
-                onComplete:function(){ new Effect.Highlight('citation', duration=4);},
-                asynchronous:true,
-                evalScripts:true
-            }
-        );"><img src = "../../accept.png"/></a> <img src = "../../reject.png"/>
 </center>

@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291053628.984
+_modified_time = 1291058128.3699999
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/screen.mako'
 _template_uri='/screen.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -33,7 +33,7 @@ def render_body(context,**pageargs):
         # SOURCE LINE 1
         __M_writer(u'\r\n')
         # SOURCE LINE 2
-        __M_writer(u'\r\n\r\n<div id="citation" style=\'float: center\'>\r\n<h2>')
+        __M_writer(u'\r\n\r\n<div id="citation" class="content" style=\'float: center\'>\r\n<h2>')
         # SOURCE LINE 5
         __M_writer(escape(c.cur_citation.title))
         __M_writer(u'</h2>\r\n')
@@ -42,10 +42,16 @@ def render_body(context,**pageargs):
         __M_writer(u'<br/><br/>\r\n')
         # SOURCE LINE 7
         __M_writer(escape(c.cur_citation.abstract))
-        __M_writer(u'\r\n\r\n\r\n</div>\r\n\r\n<script type="text/javascript">\r\n    $(document).ready(function() {\r\n        $("#labelCitation").click(function() {\r\n            $("#citation").load("')
+        __M_writer(u'\r\n\r\n\r\n</div>\r\n\r\n<script type="text/javascript">\r\n    $(document).ready(function() {\r\n        $("#accept").click(function() {\r\n            $("#citation").load("')
         # SOURCE LINE 15
-        __M_writer(escape('/review/screen_next/%s' % c.review_id))
-        __M_writer(u'");\r\n        });\r\n    });\r\n</script>\r\n\r\n\r\n<br/><br/>\r\n<center>\r\n\r\n\r\n<a id="labelCitation">Change my text</a>\r\n\r\n\r\n<a href =   "#", onclick="new Ajax.Updater(\r\n            \'citation\',\r\n            \'/review/screen_next/\',\r\n            {\r\n                onComplete:function(){ new Effect.Highlight(\'citation\', duration=4);},\r\n                asynchronous:true,\r\n                evalScripts:true\r\n            }\r\n        );"><img src = "../../accept.png"/></a> <img src = "../../reject.png"/>\r\n</center>')
+        __M_writer(escape('/label/%s/%s/1' % (c.review_id, c.cur_citation.citation_id)))
+        __M_writer(u'");\r\n        });\r\n               \r\n        $("#maybe").click(function() {\r\n            $("#citation").load("')
+        # SOURCE LINE 19
+        __M_writer(escape('/label/%s/%s/0' % (c.review_id, c.cur_citation.citation_id)))
+        __M_writer(u'");\r\n        });\r\n        \r\n        $("#reject").click(function() {\r\n            $("#citation").load("')
+        # SOURCE LINE 23
+        __M_writer(escape('/label/%s/%s/-1' % (c.review_id, c.cur_citation.citation_id)))
+        __M_writer(u'");\r\n        });\r\n    });\r\n</script>\r\n\r\n\r\n<br/><br/>\r\n<center>\r\n\r\n\r\n<a href="#" id="accept"><img src = "../../accept.png"/></a> \r\n<a href="#" id="maybe"><img src = "../../maybe.png"/></a> \r\n<a href="#" id="reject"><img src = "../../reject.png"/></a> \r\n\r\n</center>')
         return ''
     finally:
         context.caller_stack._pop_frame()

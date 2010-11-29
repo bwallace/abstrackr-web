@@ -2,6 +2,7 @@ import pdb
 import os
 import shutil
 import datetime
+import random
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -97,10 +98,33 @@ class ReviewController(BaseController):
         c.cur_citation = citations_for_review[0]
         return render("/screen.mako")
         
+        
+    @ActionProtector(not_anonymous())
+    def label_citation(self, review_id, study_id, label):
+        print "label is: %s" % label
+        # first push the label to the database
+        new_label = model.Label()
+        new_label.review_id = review_id
+        new_label.study_id = study_id
+        current_user = request.environ.get('repoze.who.identity')['user']
+        new_label.reviewer_id = current_user.id
+        model.Session.add(new_label)
+        model.Session.commit()
+        
+        return self.screen_next(review_id)
+        
     @ActionProtector(not_anonymous())
     def screen_next(self, id):
         citation_q = model.meta.Session.query(model.Citation)
         citations_for_review = citation_q.filter(model.Citation.review_id == id).all()
-        c.cur_citation = citations_for_review[1]
+        
+        # filter out examples already screened
+        label_q = model.meta.Session.query(model.Label)
+        already_labeled = label_q.filter(model.Citation.review_id == id).all()
+        
+        filtered = \
+           [citation for citation in citations_for_review if not citation in already_labeled]
+           
+        c.cur_citation = random.choice(filtered)
         
         return render("/citation_fragment.mako")

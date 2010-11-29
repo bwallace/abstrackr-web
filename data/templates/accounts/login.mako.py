@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1290543974.1589999
+_modified_time = 1291058751.878
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/login.mako'
 _template_uri='/accounts/login.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -41,13 +41,13 @@ def render_body(context,**pageargs):
             __M_writer(u'    Incorrect Username or Password\r\n')
             pass
         # SOURCE LINE 7
-        __M_writer(u'\r\n<center>\r\n<form action="')
-        # SOURCE LINE 9
+        __M_writer(u'\r\n<center>\r\n<div class="content">\r\n<form action="')
+        # SOURCE LINE 10
         __M_writer(escape(url(controller='account', action='login_handler'
 ,came_from=c.came_from, __logins=c.login_counter)))
-        # SOURCE LINE 10
-        __M_writer(u'" method="POST">\r\n<label for="login">username</label>\r\n<input type="text" id="login" name="login" /><br />\r\n<label for="password">password</label>\r\n<input type="password" id="password" name="password" /><br />\r\n<input type="submit" id="submit" value="Submit" />\r\n</form>\r\n\r\ndon\'t have an account yet? <a href="')
-        # SOURCE LINE 18
+        # SOURCE LINE 11
+        __M_writer(u'" method="POST">\r\n<label for="login">username</label>\r\n<input type="text" id="login" name="login" /><br />\r\n<label for="password">password</label>\r\n<input type="password" id="password" name="password" /><br />\r\n<input type="submit" id="submit" value="Submit" />\r\n</form>\r\n</div>\r\n\r\ndon\'t have an account yet? <a href="')
+        # SOURCE LINE 20
         __M_writer(escape(url(controller='account', action='create_account')))
         __M_writer(u'">register here</a>.\r\n</center>')
         return ''
