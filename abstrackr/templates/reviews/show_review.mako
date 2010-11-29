@@ -3,9 +3,12 @@
 <%def name="title()">${c.review.name}</%def>
 
 
+<div class="breadcrumbs">
+<a href="${url(controller='account', action='welcome')}">./dashboard</a>
+</div>
+
 
 <h1>${c.review.name}</h1>
-
 
 <div class="content">
 <h2>Project description</h2> 
