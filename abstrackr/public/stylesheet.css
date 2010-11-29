@@ -1,4 +1,4 @@
-body { background-color: #ddd; color: #333;margin-left: 10%; margin-right: 10%;  }
+body { background-color:	#ddd; color: #333;margin-left: 10%; margin-right: 10%;  }
 
 body, p, ol, ul, td {
   font-family: 'Lucida Sans Unicode', 'Lucida Grande', sans-serif;
@@ -90,10 +90,10 @@ div.field, div.actions {
 	visibility:hidden;
 }
 h1{
-font-size: 20px;
+font-size: 24px;
 font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
 padding-bottom: 10px;
-color: #3479BF;
+color: 	#2B65EC;
 }
 
 h2{
@@ -143,7 +143,7 @@ table
 	width: 100%;
 	border: 1px solid #ccc;
 	color: #333;
-	padding: 3px;
+	padding: 4px;
 }
 
 .listing_item:hover{
@@ -245,7 +245,7 @@ padding: 8px;
 
 
 table.list_table{
-width: 95%;
+width: 50%;
 background:#D3E4E5;
 border:1px solid gray;
 color:#fff;
@@ -255,7 +255,7 @@ margin-right: auto;
 }
 
 table.list_table td{
-padding: 6px;
+padding: 1px;
 text-align: center;
 color:#363636;
 }

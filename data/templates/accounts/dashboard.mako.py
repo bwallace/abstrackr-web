@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291059915.1889999
+_modified_time = 1291061583.5699999
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/dashboard.mako'
 _template_uri='/accounts/dashboard.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -49,8 +49,10 @@ def render_body(context,**pageargs):
                 # SOURCE LINE 16
                 __M_writer(u'    <tr class="')
                 __M_writer(escape('odd' if i%2 else 'even'))
-                __M_writer(u'">\r\n        <td>')
+                __M_writer(u'">\r\n        <td><a href="')
                 # SOURCE LINE 17
+                __M_writer(escape(url(controller='review', action='show_review', id=review.review_id)))
+                __M_writer(u'">')
                 __M_writer(escape(review.name))
                 __M_writer(u'</td>           \r\n    </tr>\r\n')
                 pass
@@ -64,10 +66,12 @@ def render_body(context,**pageargs):
             # SOURCE LINE 29
             __M_writer(u'<tr class="')
             __M_writer(escape('odd' if i%2 else 'even'))
-            __M_writer(u'">\r\n    <td>')
+            __M_writer(u'">\r\n    <td><a href="')
             # SOURCE LINE 30
+            __M_writer(escape(url(controller='review', action='show_review', id=review.review_id)))
+            __M_writer(u'">')
             __M_writer(escape(review.name))
-            __M_writer(u'</td>           \r\n    <td><a href = "')
+            __M_writer(u'</td>          \r\n    <td><a href = "')
             # SOURCE LINE 31
             __M_writer(escape(url(controller='review', action='screen', id=review.review_id)))
             __M_writer(u'">start screening</a> </td>\r\n</tr>\r\n')
