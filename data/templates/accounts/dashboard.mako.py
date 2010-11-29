@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291061583.5699999
+_modified_time = 1291062711.7249999
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/dashboard.mako'
 _template_uri='/accounts/dashboard.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -57,31 +57,42 @@ def render_body(context,**pageargs):
                 __M_writer(u'</td>           \r\n    </tr>\r\n')
                 pass
             # SOURCE LINE 20
-            __M_writer(u'    </table>\r\n')
+            __M_writer(u'    </table>\r\n    <br/><br/>\r\n')
             pass
-        # SOURCE LINE 22
-        __M_writer(u'\r\n<br/><br/>\r\n\r\nprojects you\'re participating in: <br/><br/>\r\n\r\n<table class="list_table">\r\n')
-        # SOURCE LINE 28
-        for i,review in enumerate(c.participating_projects):
+        # SOURCE LINE 23
+        __M_writer(u'\r\n\r\n\r\n')
+        # SOURCE LINE 26
+        if len(c.participating_projects) > 0:
+            # SOURCE LINE 27
+            __M_writer(u'    projects you\'re participating in: <br/><br/>\r\n    <table class="list_table">\r\n')
             # SOURCE LINE 29
-            __M_writer(u'<tr class="')
-            __M_writer(escape('odd' if i%2 else 'even'))
-            __M_writer(u'">\r\n    <td><a href="')
-            # SOURCE LINE 30
-            __M_writer(escape(url(controller='review', action='show_review', id=review.review_id)))
-            __M_writer(u'">')
-            __M_writer(escape(review.name))
-            __M_writer(u'</td>          \r\n    <td><a href = "')
-            # SOURCE LINE 31
-            __M_writer(escape(url(controller='review', action='screen', id=review.review_id)))
-            __M_writer(u'">start screening</a> </td>\r\n</tr>\r\n')
+            for i,review in enumerate(c.participating_projects):
+                # SOURCE LINE 30
+                __M_writer(u'    <tr class="')
+                __M_writer(escape('odd' if i%2 else 'even'))
+                __M_writer(u'">\r\n        <td><a href="')
+                # SOURCE LINE 31
+                __M_writer(escape(url(controller='review', action='show_review', id=review.review_id)))
+                __M_writer(u'">')
+                __M_writer(escape(review.name))
+                __M_writer(u'</td>          \r\n        <td><a href = "')
+                # SOURCE LINE 32
+                __M_writer(escape(url(controller='review', action='screen', id=review.review_id)))
+                __M_writer(u'">start screening</a> </td>\r\n    </tr>\r\n')
+                pass
+            # SOURCE LINE 35
+            __M_writer(u'    </table>\r\n')
+            # SOURCE LINE 36
+        else:
+            # SOURCE LINE 37
+            __M_writer(u"    you're not participating in any projects yet.\r\n")
             pass
-        # SOURCE LINE 34
-        __M_writer(u'</table>\r\n\r\n<br/><br/>\r\nwant to <a href = "')
-        # SOURCE LINE 37
+        # SOURCE LINE 39
+        __M_writer(u'<br/><br/>\r\nwant to <a href = "')
+        # SOURCE LINE 40
         __M_writer(escape(url(controller='review', action='join_a_review')))
         __M_writer(u'">join an existing review?</a>\r\n<br/><br/>\r\nor maybe you want to <a href = "')
-        # SOURCE LINE 39
+        # SOURCE LINE 42
         __M_writer(escape(url(controller='review', action='create_new_review')))
         __M_writer(u'">start a new review?</a>\r\n</div>')
         return ''
