@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1290628782.1819999
+_modified_time = 1291063172.4809999
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/reviews/join_a_review.mako'
 _template_uri='/reviews/join_a_review.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -34,18 +34,18 @@ def render_body(context,**pageargs):
         # SOURCE LINE 1
         __M_writer(u'\r\n')
         # SOURCE LINE 2
-        __M_writer(u'\r\n\r\n<center>\r\n\r\n<h2>existing reviews</h2>\r\nclick the link to join.<br/>\r\n')
-        # SOURCE LINE 8
+        __M_writer(u'\r\n\r\n\r\n\r\n<h1>existing reviews</h1>\r\n<center>\r\n<div class="content">\r\nclick the link to join.<br/>\r\n')
+        # SOURCE LINE 10
         for review in c.all_reviews:
-            # SOURCE LINE 9
+            # SOURCE LINE 11
             __M_writer(u'    <a href = "')
             __M_writer(escape(url(controller='review', action='join_review', id=review.review_id)))
             __M_writer(u'">')
             __M_writer(escape(review.name))
             __M_writer(u'</a> <br/>\r\n')
             pass
-        # SOURCE LINE 11
-        __M_writer(u'\r\n</center>')
+        # SOURCE LINE 13
+        __M_writer(u'</div>\r\n\r\n</center>')
         return ''
     finally:
         context.caller_stack._pop_frame()
