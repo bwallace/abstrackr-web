@@ -89,6 +89,7 @@ class ReviewController(BaseController):
         c.num_labels = len(labels_for_review)
         return render("/reviews/show_review.mako")
     
+        
     @ActionProtector(not_anonymous())
     def screen(self, id):
         citation_q = model.meta.Session.query(model.Citation)
@@ -96,7 +97,18 @@ class ReviewController(BaseController):
         c.review_id = id
         c.cur_citation = citations_for_review[0]
         return render("/screen.mako")
-        
+       
+    @ActionProtector(not_anonymous())
+    def label_term(self, review_id, label):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        new_labeled_feature = model.LabeledFeature()
+        new_labeled_feature.term = request.params['term']
+        new_labeled_feature.review_id = review_id
+        new_labeled_feature.reviewer_id = current_user.id
+        new_labeled_feature.label = label
+        new_labeled_feature.date_created = datetime.datetime.now()
+        model.Session.add(new_labeled_feature)
+        model.Session.commit()
         
     @ActionProtector(not_anonymous())
     def label_citation(self, review_id, study_id, label):

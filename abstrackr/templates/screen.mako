@@ -48,6 +48,47 @@ ${c.cur_citation.abstract}
                 });
             });
          });  
+         
+        $("#pos_lbl_term").click(function() {
+            // call out to the controller to label the term
+            var term_str = $("input#term").val()
+            $.post("${'/label_term/%s/1' % c.review_id}", {term: term_str});
+            $("#label_msg").html("ok. labeled <font color='green'>" + term_str + "</font> as being indicative of relevance.")
+            $("#label_msg").fadeIn(2000)
+            $("input#term").val("")
+            $("#label_msg").fadeOut(3000)
+         }); 
+         
+        $("#double_pos_lbl_term").click(function() {
+            // call out to the controller to label the term
+            var term_str = $("input#term").val()
+            $.post("${'/label_term/%s/2' % c.review_id}", {term: term_str});
+            $("#label_msg").html("ok. labeled <font color='green'>" + term_str + "</font> as being <bold>strongly</bold> indicative of relevance.")
+            $("#label_msg").fadeIn(2000)
+            $("input#term").val("")
+            $("#label_msg").fadeOut(3000)
+         }); 
+        
+
+        $("#neg_lbl_term").click(function() {
+            // call out to the controller to label the term
+            var term_str = $("input#term").val()
+            $.post("${'/label_term/%s/-1' % c.review_id}", {term: term_str});
+            $("#label_msg").html("ok. labeled <font color='red'>" + term_str + "</font> as being indicative of <i>ir</i>relevance.")
+            $("#label_msg").fadeIn(2000)
+            $("input#term").val("")
+            $("#label_msg").fadeOut(3000)
+         }); 
+         
+        $("#double_neg_lbl_term").click(function() {
+            // call out to the controller to label the term
+            var term_str = $("input#term").val()
+            $.post("${'/label_term/%s/-2' % c.review_id}", {term: term_str});
+            $("#label_msg").html("ok. labeled <font color='red'>" + term_str + "</font> as being <bold>strongly</bold> indicative of <i>ir</i>relevance.")
+            $("#label_msg").fadeIn(2000)
+            $("input#term").val("")
+            $("#label_msg").fadeOut(3000)
+         }); 
         
     });
 </script>
@@ -61,4 +102,29 @@ ${c.cur_citation.abstract}
 <a href="#" id="maybe"><img src = "../../maybe.png"/></a> 
 <a href="#" id="reject"><img src = "../../reject.png"/></a> 
 
+<br/><br/><br/>
+<table>
+<tr>
+<td>
+<div id="label_terms" class="summary_heading">
+<label>term: ${h.text('term')}</label> 
+</td>
+<td width="10"></td>
+<td>
+<a href="#" id="pos_lbl_term"><img src = "../../thumbs_up.png" border="2" alt="indicative of relevance"></a>
+</td>
+<td>
+<a href="#" id="double_pos_lbl_term"><img src = "../../two_thumbs_up.png" border="2" alt="strongly indicative of relevance"></a>
+</td>
+<td width="10"></td>
+<td>
+<a href="#" id="neg_lbl_term"><img src = "../../thumbs_down.png"/ border="2" alt="indicative of irrelevance" ></a>
+</td>
+<td>
+<a href="#" id="double_neg_lbl_term"><img src = "../../two_thumbs_down.png"/ border="2" alt="strongly indicative of irrelevance"></a>
+</td>
+</tr>
+</div>
+
+<div id="label_msg"></div>
 </center>

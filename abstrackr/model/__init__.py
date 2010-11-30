@@ -49,6 +49,7 @@ class LabeledFeature(Base):
     ''' Stores labeled features, i.e., terms '''
     __tablename__ = "LabelFeatures"
     id = sa.Column(types.Integer, primary_key=True)
+    term = sa.Column(types.Unicode(500))
     # review for which this term applies
     review_id = sa.Column(types.Integer)
     # person who entered the term
