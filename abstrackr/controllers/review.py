@@ -3,6 +3,7 @@ import os
 import shutil
 import datetime
 import random
+import re
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -13,10 +14,20 @@ from abstrackr.lib.base import BaseController, render
 import abstrackr.model as model
 from pylons import request, response, session, tmpl_context as c, url
 from abstrackr.lib import xml_to_sql
+from sqlalchemy import or_, and_
+from abstrackr.lib.helpers import literal
+
 # this is the path where uploaded databases will be written to
 permanent_store = "/uploads/"
 
 log = logging.getLogger(__name__)
+
+### for term highlighting
+NEG_C = "#7E2217"
+STRONG_NEG_C = "#FF0000"
+POS_C = "#4CC417"
+STRONG_POS_C = "#347235"
+COLOR_D = {1:POS_C, 2:STRONG_POS_C, -1:NEG_C, -2:STRONG_NEG_C}
 
 class ReviewController(BaseController):
 
@@ -88,15 +99,7 @@ class ReviewController(BaseController):
         labels_for_review = label_q.filter(model.Label.review_id == id).all()
         c.num_labels = len(labels_for_review)
         return render("/reviews/show_review.mako")
-    
-        
-    @ActionProtector(not_anonymous())
-    def screen(self, id):
-        citation_q = model.meta.Session.query(model.Citation)
-        citations_for_review = citation_q.filter(model.Citation.review_id == id).all()
-        c.review_id = id
-        c.cur_citation = citations_for_review[0]
-        return render("/screen.mako")
+
        
     @ActionProtector(not_anonymous())
     def label_term(self, review_id, label):
@@ -125,17 +128,68 @@ class ReviewController(BaseController):
         return self.screen_next(review_id)
         
     @ActionProtector(not_anonymous())
-    def screen_next(self, id):
+    def screen(self, id):
         citation_q = model.meta.Session.query(model.Citation)
         citations_for_review = citation_q.filter(model.Citation.review_id == id).all()
+        c.review_id = id
+        c.cur_citation = citations_for_review[0]
+        c.cur_citation = self._mark_up_citation(id, c.cur_citation)
+        return render("/screen.mako")
+        
+    @ActionProtector(not_anonymous())
+    def markup_citation(self, id, citation_id):
+        citation_q = model.meta.Session.query(model.Citation)
+        c.cur_citation = citation_q.filter(model.Citation.citation_id == citation_id).one()
+        c.review_id = id
+        c.cur_citation = self._mark_up_citation(id, c.cur_citation)
+        return render("/citation_fragment.mako")
+        
+    @ActionProtector(not_anonymous())
+    def screen_next(self, id):
+        citation_q = model.meta.Session.query(model.Citation)
+        print "\n\n\nquerying for all citations"
+        citations_for_review = citation_q.filter(model.Citation.review_id == id).all()
+        print "done\n\n\n"
         
         # filter out examples already screened
         label_q = model.meta.Session.query(model.Label)
-        already_labeled = label_q.filter(model.Citation.review_id == id).all()
-        
+        print "\n\nquerying for citations already labeled"
+        already_labeled_ids = [label.study_id for label in label_q.filter(model.Citation.review_id == id).all()] 
         filtered = \
-           [citation for citation in citations_for_review if not citation in already_labeled]
-           
-        c.cur_citation = random.choice(filtered)
+           [citation for citation in citations_for_review if not citation.citation_id in already_labeled_ids]
+        print "done\n\n\n"
         
+        c.review_id = id
+        c.cur_citation = random.choice(filtered)
+        # mark up the labeled terms 
+        #pdb.set_trace()
+        
+        print "\n\nrendering"
+        c.cur_citation = self._mark_up_citation(id, c.cur_citation)
+        #pdb.set_trace()
+        print "done\n\n\n"
+
         return render("/citation_fragment.mako")
+        
+    def _mark_up_citation(self, review_id, citation):
+        # pull the labeled terms for this review
+        labeled_term_q = model.meta.Session.query(model.LabeledFeature)
+        reviewer_id = request.environ.get('repoze.who.identity')['user'].id
+        labeled_terms = labeled_term_q.filter(and_(\
+                            model.LabeledFeature.review_id == review_id,\
+                            model.LabeledFeature.reviewer_id == reviewer_id)).all()
+        citation.marked_up_title = citation.title
+        citation.marked_up_abstract = citation.abstract
+        for term in labeled_terms:
+            title_matches = list(set(re.findall(term.term, citation.marked_up_title)))
+            for match in title_matches:
+                citation.marked_up_title = citation.marked_up_title.replace(match, "<font color='%s'>%s</font>" % (COLOR_D[term.label], match))
+            
+            abstract_matches = list(set(re.findall(term.term, citation.marked_up_abstract)))
+            for match in abstract_matches:
+                citation.marked_up_abstract = citation.marked_up_abstract.replace(match, "<font color='%s'>%s</font>" % (COLOR_D[term.label], match))
+                
+        citation.marked_up_title = literal(citation.marked_up_title)
+        citation.marked_up_abstract = literal(citation.marked_up_abstract)
+        return citation
+        
