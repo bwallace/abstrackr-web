@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291064428.2160001
+_modified_time = 1291225762.233
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/reviews/show_review.mako'
 _template_uri='/reviews/show_review.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -45,12 +45,24 @@ def render_body(context,**pageargs):
         __M_writer(u'</h1>\r\n\r\n<div class="content">\r\n<h2>Project description</h2> \r\n')
         # SOURCE LINE 15
         __M_writer(escape(c.review.project_description))
-        __M_writer(u'\r\n<br/><br/>\r\n<h2>Progress</h2>\r\nThere are ')
+        __M_writer(u'\r\n<br/><br/>\r\n<h2>Progress</h2>\r\n<center><img src = "')
         # SOURCE LINE 18
+        __M_writer(escape(c.pi_url))
+        __M_writer(u'"></img></center><br/>\r\nThere are ')
+        # SOURCE LINE 19
         __M_writer(escape(c.num_citations))
         __M_writer(u' in this review, so far ')
         __M_writer(escape(c.num_labels))
-        __M_writer(u' have been labeled.\r\n<br/><br/>\r\n\r\n<h2>Participants</h2>\r\nThis review is lead by Ethan. \r\n<br/><br/>\r\nThe following people are reviewing:<br/>\r\nStanley<br/>\r\nMei\r\n</div>\r\n')
+        __M_writer(u' have been labeled.\r\n<br/><br/>\r\n\r\n<h2>Participants</h2>\r\nNumber of citations screened by reviewers:\r\n<center><img src = "')
+        # SOURCE LINE 24
+        __M_writer(escape(c.workload_graph_url))
+        __M_writer(u'"></img></center><br/>\r\nThis review is lead by ')
+        # SOURCE LINE 25
+        __M_writer(escape(c.project_lead.fullname))
+        __M_writer(u'.\r\n<br/>\r\nThe following people are reviewers on the project:<br/>\r\n')
+        # SOURCE LINE 28
+        __M_writer(escape("<br/>".join([user.fullname for user in c.participating_reviewers])))
+        __M_writer(u'\r\n<br/>\r\n\r\n</div>\r\n')
         return ''
     finally:
         context.caller_stack._pop_frame()

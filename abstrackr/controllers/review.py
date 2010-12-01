@@ -4,6 +4,7 @@ import shutil
 import datetime
 import random
 import re
+from operator import itemgetter
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -16,6 +17,11 @@ from pylons import request, response, session, tmpl_context as c, url
 from abstrackr.lib import xml_to_sql
 from sqlalchemy import or_, and_
 from abstrackr.lib.helpers import literal
+
+
+import pygooglechart
+from pygooglechart import PieChart3D, StackedHorizontalBarChart, StackedVerticalBarChart
+from pygooglechart import Axis
 
 # this is the path where uploaded databases will be written to
 permanent_store = "/uploads/"
@@ -97,7 +103,59 @@ class ReviewController(BaseController):
         # also likely want to pull additional information here, e.g.,
         # the participating reviewers, etc.
         labels_for_review = label_q.filter(model.Label.review_id == id).all()
+        c.num_unique_labels = len(set([lbl.study_id for lbl in labels_for_review]))
         c.num_labels = len(labels_for_review)
+        
+        # generate a pretty plot via google charts
+        chart = PieChart3D(500, 200)
+        chart.add_data([c.num_citations-c.num_unique_labels, c.num_unique_labels])
+        chart.set_colours(['224499', '80C65A'])
+        chart.set_pie_labels(['unscreened', 'screened'])
+        c.pi_url = chart.get_url()
+        
+        reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
+        reviewer_ids = [rp.reviewer_id for rp in reviewer_proj_q.filter(model.Citation.review_id == id).all()]
+        user_q = model.meta.Session.query(model.User)
+        
+        reviewers = [user_q.filter(model.User.id == reviewer_id).one() for reviewer_id in reviewer_ids]
+        c.participating_reviewers = reviewers
+        c.project_lead = user_q.filter(model.User.id == c.review.project_lead_id).one()
+        n_lbl_d = {} # map users to the number of labels they've provided
+        for reviewer in reviewers:
+            # @TODO problematic if two reviewers have the same fullname, which
+            # isn't explicitly prohibited
+            n_lbl_d[reviewer.fullname] = len([l for l in labels_for_review if l.reviewer_id == reviewer.id])
+        
+        # now make a horizontal bar graph showing the amount of work done by reviewers
+        workloads = n_lbl_d.items() # first sort by the number of citations screened, descending
+        workloads.sort(key = itemgetter(1), reverse=True)
+        num_screened = [x[1] for x in workloads]
+        names = [x[0] for x in workloads]
+        
+        
+        ### 
+        # so, due to what is apparently a bug in the pygooglechart api, 
+        # we construct a google charts string explicitly for the horizontal bar graph here.
+        height = 30*len(names)+50
+        width = 500
+        google_url = "http://chart.apis.google.com/chart?cht=bhg&chs=%sx%s" % (width, height)
+        chart = StackedHorizontalBarChart(500, 30*len(names)+50, x_range=(0, c.num_labels))
+        data_str = "chd=t:%s" % ",".join([str(n) for n in num_screened])
+        google_url = "&".join([google_url, data_str])
+        max_num_screened = max(num_screened)
+        google_url = "&".join([google_url, "chds=0,%s" % max_num_screened])
+        # we have to reverse the names here; this seems to be a quirk with
+        # google maps. see: http://psychopyko.com/tutorial/how-to-use-google-charts/
+        names.reverse()
+        google_url = "&".join([google_url, "chxt=y,x&chxl=0:|%s|" % "|".join([name.replace(" ", "%20") for name in names])])
+        # now the x axis labels
+        x_ticks = [0, int(max_num_screened/3.0), int(max_num_screened/2.0), int(3 * (max_num_screened/4.0)), max_num_screened]
+        google_url = "".join([google_url, "1:|%s" % "|".join([str(x) for x in x_ticks])])
+        bar_width = 25
+        google_url = google_url + "&chbh=%s&chco=4D89F9" % bar_width
+        c.workload_graph_url = google_url
+        
+        pdb.set_trace()
         return render("/reviews/show_review.mako")
 
        
@@ -115,9 +173,7 @@ class ReviewController(BaseController):
         
     @ActionProtector(not_anonymous())
     def label_citation(self, review_id, study_id, label):
-        print "\n\n----------------------------------"
         print "labeling citation %s with label %s" % (study_id, label)
-       # pdb.set_trace()
         # first push the label to the database
         new_label = model.Label()
         new_label.label = label
@@ -169,7 +225,6 @@ class ReviewController(BaseController):
         
         print "\n\nrendering"
         c.cur_citation = self._mark_up_citation(id, c.cur_citation)
-        #pdb.set_trace()
         print "done\n\n\n"
 
         return render("/citation_fragment.mako")

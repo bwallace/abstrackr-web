@@ -15,13 +15,17 @@
 ${c.review.project_description}
 <br/><br/>
 <h2>Progress</h2>
+<center><img src = "${c.pi_url}"></img></center><br/>
 There are ${c.num_citations} in this review, so far ${c.num_labels} have been labeled.
 <br/><br/>
 
 <h2>Participants</h2>
-This review is lead by Ethan. 
-<br/><br/>
-The following people are reviewing:<br/>
-Stanley<br/>
-Mei
+Number of citations screened by reviewers:
+<center><img src = "${c.workload_graph_url}"></img></center><br/>
+This review is lead by ${c.project_lead.fullname}.
+<br/>
+The following people are reviewers on the project:<br/>
+${"<br/>".join([user.fullname for user in c.participating_reviewers])}
+<br/>
+
 </div>
