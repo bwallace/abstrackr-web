@@ -43,6 +43,7 @@ class AccountController(BaseController):
         new_user = model.User()
         new_user.username = request.params['username']
         new_user.fullname = " ".join([request.params['first name'], request.params['last name']])
+        new_user.experience = request.params['experience']
         new_user._set_password(request.params['password'])
         new_user.email = request.params['email']
         model.Session.add(new_user)
@@ -68,7 +69,6 @@ class AccountController(BaseController):
         c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids]
         
         return render('/accounts/dashboard.mako')
-        #return 'Welcome back %s' % identity['repoze.who.userid']
         
     @ActionProtector(not_anonymous())
     def test_user_access(self):

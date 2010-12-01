@@ -20,12 +20,16 @@ There are ${c.num_citations} in this review, so far ${c.num_labels} have been la
 <br/><br/>
 
 <h2>Participants</h2>
+This review is lead by ${c.project_lead.fullname}.<br/>
+<br/>
+The following people are reviewers on the project: 
+% for user in c.participating_reviewers[:-1]:
+    ${user.fullname},
+% endfor
+and ${c.participating_reviewers[-1].fullname}.
+<br/><br/>
 Number of citations screened by reviewers:
-<center><img src = "${c.workload_graph_url}"></img></center><br/>
-This review is lead by ${c.project_lead.fullname}.
-<br/>
-The following people are reviewers on the project:<br/>
-${"<br/>".join([user.fullname for user in c.participating_reviewers])}
-<br/>
-
+<center>
+<img src= "${c.workload_graph_url}">
+</center>
 </div>

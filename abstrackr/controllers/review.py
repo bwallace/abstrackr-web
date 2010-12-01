@@ -154,8 +154,7 @@ class ReviewController(BaseController):
         bar_width = 25
         google_url = google_url + "&chbh=%s&chco=4D89F9" % bar_width
         c.workload_graph_url = google_url
-        
-        pdb.set_trace()
+
         return render("/reviews/show_review.mako")
 
        
@@ -206,26 +205,18 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def screen_next(self, id):
         citation_q = model.meta.Session.query(model.Citation)
-        print "\n\n\nquerying for all citations"
         citations_for_review = citation_q.filter(model.Citation.review_id == id).all()
-        print "done\n\n\n"
         
         # filter out examples already screened
         label_q = model.meta.Session.query(model.Label)
-        print "\n\nquerying for citations already labeled"
         already_labeled_ids = [label.study_id for label in label_q.filter(model.Citation.review_id == id).all()] 
         filtered = \
            [citation for citation in citations_for_review if not citation.citation_id in already_labeled_ids]
-        print "done\n\n\n"
-        
+
         c.review_id = id
         c.cur_citation = random.choice(filtered)
         # mark up the labeled terms 
-        #pdb.set_trace()
-        
-        print "\n\nrendering"
         c.cur_citation = self._mark_up_citation(id, c.cur_citation)
-        print "done\n\n\n"
 
         return render("/citation_fragment.mako")
         

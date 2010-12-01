@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291062577.552
+_modified_time = 1291235289.2449999
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/register.mako'
 _template_uri='/accounts/register.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -43,20 +43,23 @@ def render_body(context,**pageargs):
         __M_writer(u'</label></td></tr>\r\n    <tr><td><label>last name:</td> <td>')
         # SOURCE LINE 11
         __M_writer(escape(h.text('last name')))
-        __M_writer(u'</label></td></tr>\r\n    <tr><td><label>email:</td> <td>')
+        __M_writer(u'</label></td></tr>\r\n    <tr><td><label>how many SRs have you participated in?:</td> <td>')
         # SOURCE LINE 12
+        __M_writer(escape(h.text('experience')))
+        __M_writer(u'</label></td></tr>\r\n    <tr><td><label>email:</td> <td>')
+        # SOURCE LINE 13
         __M_writer(escape(h.text('email')))
         __M_writer(u'</label></td></tr>\r\n    <tr><td><label>username:</td> <td>')
-        # SOURCE LINE 13
+        # SOURCE LINE 14
         __M_writer(escape(h.text('username')))
         __M_writer(u'</label></td></tr>\r\n    <tr><td><label>password:</td> <td>')
-        # SOURCE LINE 14
+        # SOURCE LINE 15
         __M_writer(escape(h.text('password', type='password')))
         __M_writer(u'</label></td></tr>\r\n    <tr><td></td><td>')
-        # SOURCE LINE 15
+        # SOURCE LINE 16
         __M_writer(escape(h.submit('post', 'sign me up!')))
         __M_writer(u'</td></tr>\r\n  ')
-        # SOURCE LINE 16
+        # SOURCE LINE 17
         __M_writer(escape(h.end_form()))
         __M_writer(u'\r\n  </table>\r\n  </center>\r\n</div>')
         return ''

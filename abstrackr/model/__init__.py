@@ -7,7 +7,7 @@ from abstrackr.model.meta import Session, Base
 # authentication
 from abstrackr.model.auth import User, Group, Permission
 from sqlalchemy import Table, ForeignKey, Column
-from sqlalchemy.types import Unicode, UnicodeText, Integer, Date, CHAR
+from sqlalchemy.types import Unicode, UnicodeText, Integer, Date, CHAR, Float
 from sqlalchemy import orm
 from abstrackr.model.meta import metadata
 import os
@@ -83,6 +83,17 @@ class ReviewerProject(Base):
     review_id = sa.Column(types.Integer)
     reviewer_id = sa.Column(types.Integer)
     
+class Assignment(Base):
+    '''
+    An assignment is 
+    '''
+    __tablename__ = "Assignments"
+    id = sa.Column(types.Integer, primary_key=True)
+    review_id = sa.Column(types.Integer)
+    reviewer_id = sa.Column(types.Integer)
+    num_to_do = sa.Column(types.Integer)
+    done_so_far = sa.Column(types.Integer)
+    p_rescreen = sa.Column(types.Float)
     
 ####################################
 ## these tables for authentication #
@@ -104,6 +115,8 @@ class User(Base):
     email = sa.Column(types.Unicode(80))
     password = sa.Column(types.Unicode(80))
     fullname = sa.Column(types.Unicode(255))
+    # num systematic reviews they've been involved with
+    experience = sa.Column(types.Integer) 
     
     def _set_password(self, password):
         """Hash password on the fly."""

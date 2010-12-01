@@ -34,6 +34,7 @@ def setup_app(command, conf, vars):
     u = User()
     u.username = u'byron'
     u.fullname = u'byron wallace'
+    u.experience = 2
     u._set_password('pignic')
     u.email = u'byron.wallace@gmail.com'
     meta.Session.add(u)
