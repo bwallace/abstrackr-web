@@ -115,9 +115,12 @@ class ReviewController(BaseController):
         
     @ActionProtector(not_anonymous())
     def label_citation(self, review_id, study_id, label):
-        print "label is: %s" % label
+        print "\n\n----------------------------------"
+        print "labeling citation %s with label %s" % (study_id, label)
+       # pdb.set_trace()
         # first push the label to the database
         new_label = model.Label()
+        new_label.label = label
         new_label.review_id = review_id
         new_label.study_id = study_id
         current_user = request.environ.get('repoze.who.identity')['user']

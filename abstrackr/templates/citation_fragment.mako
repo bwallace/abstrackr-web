@@ -4,7 +4,15 @@ ${c.cur_citation.authors}<br/><br/>
 ${c.cur_citation.marked_up_abstract}
 
 <script type="text/javascript">
-
+        // unbind all attached events
+        $("#accept").unbind();
+        $("#maybe").unbind();
+        $("#reject").unbind();
+        $("#pos_lbl_term").unbind();
+        $("#double_pos_lbl_term").unbind();
+        $("#neg_lbl_term").unbind();
+        $("#double_neg_lbl_term").unbind();
+        
         function markup_current(){
             // reload the current citation, with markup
             $("#wait").text("marking up the current citation..")
@@ -73,8 +81,6 @@ ${c.cur_citation.marked_up_abstract}
                 $("#label_msg").fadeOut(3000)
                 markup_current();
             }
-            
-            
          }); 
         
 
