@@ -13,11 +13,14 @@ ${c.cur_citation.marked_up_abstract}
         $("#neg_lbl_term").unbind();
         $("#double_neg_lbl_term").unbind();
         
+        // reset the timer
+        reset_timer();
+        
         function markup_current(){
             // reload the current citation, with markup
             $("#wait").text("marking up the current citation..")
             $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/markup/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", function() {
+                $("#citation").load("${'/markup/%s/%s/%s' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
                 });
@@ -28,7 +31,7 @@ ${c.cur_citation.marked_up_abstract}
         $("#accept").click(function() {
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/label/%s/%s/1' % (c.review_id, c.cur_citation.citation_id)}", function() {
+                $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
                 });
@@ -38,7 +41,7 @@ ${c.cur_citation.marked_up_abstract}
         $("#maybe").click(function() {
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/label/%s/%s/0' % (c.review_id, c.cur_citation.citation_id)}", function() {
+                $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/0", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
                 });
@@ -48,7 +51,7 @@ ${c.cur_citation.marked_up_abstract}
         $("#reject").click(function() {
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/label/%s/%s/-1' % (c.review_id, c.cur_citation.citation_id)}", function() {
+                $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/-1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
                 });

@@ -1,9 +1,25 @@
 <%inherit file="site.mako" />
 <%def name="title()">screen</%def>
 
+<script language="javascript">
+var seconds = 1;
+setTimeout(update_timer, 1000);
+
+function reset_timer(){
+  seconds = 1; // start at one
+  setTimeout(update_timer, 1000);
+}
+
+function update_timer(){
+  seconds +=1;
+  setTimeout(update_timer, 1000);
+}
+
+</script>
+
 <div class="breadcrumbs">
 ./<a href="${url(controller='account', action='welcome')}">dashboard</a>
-          /<a href="${url(controller='review', action='show_review', id=c.review_id)}">show_review</a>
+          /<a href="${url(controller='review', action='show_review', id=c.review_id)}">${c.review_name}</a>
 </div>
 
 <div id="citation" class="content" style='float: center'>
@@ -19,7 +35,7 @@ ${c.cur_citation.marked_up_abstract}
             // reload the current citation, with markup
             $("#wait").text("marking up the current citation..")
             $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/markup/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", function() {
+                $("#citation").load("${'/markup/%s/%s/%s' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
                 });
@@ -28,9 +44,12 @@ ${c.cur_citation.marked_up_abstract}
     
     
         $("#accept").click(function() {
+            
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/label/%s/%s/1' % (c.review_id, c.cur_citation.citation_id)}", function() {
+                //alert(seconds)
+                //alert("${'/label/%s/%s/' % (c.review_id, c.cur_citation.citation_id)}" + seconds + "/1")
+                $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
                 });
@@ -40,7 +59,7 @@ ${c.cur_citation.marked_up_abstract}
         $("#maybe").click(function() {
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/label/%s/%s/0' % (c.review_id, c.cur_citation.citation_id)}", function() {
+                $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/0", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
                 });
@@ -50,7 +69,7 @@ ${c.cur_citation.marked_up_abstract}
         $("#reject").click(function() {
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/label/%s/%s/-1' % (c.review_id, c.cur_citation.citation_id)}", function() {
+                $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/-1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
                 });

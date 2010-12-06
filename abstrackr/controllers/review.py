@@ -88,6 +88,29 @@ class ReviewController(BaseController):
         redirect(url(controller="account", action="welcome"))  
         
     @ActionProtector(not_anonymous())
+    def admin(self, id):
+        review_q = model.meta.Session.query(model.Review)
+        review = review_q.filter(model.Review.review_id == id).one()
+        c.review = review
+        c.participating_reviewers = self._get_participants_for_review(id)
+        
+        # make sure we're actually the project lead
+        current_user = request.environ.get('repoze.who.identity')['user']
+        if not review.project_lead_id == current_user.id:
+            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
+
+        # for the client side
+        reviewer_ids_to_names_d = {}
+        for reviewer in c.participating_reviewers:
+            reviewer_ids_to_names_d[reviewer.id] = reviewer.username
+        c.reviewer_ids_to_names_d = reviewer_ids_to_names_d
+        
+        assignments_q = model.meta.Session.query(model.Assignment)
+        assignments = assignments_q.filter(model.Assignment.review_id == id)
+        c.assignments = assignments
+        return render("/reviews/admin.mako")
+            
+    @ActionProtector(not_anonymous())
     def show_review(self, id):
         review_q = model.meta.Session.query(model.Review)
         c.review = review_q.filter(model.Review.review_id == id).one()
@@ -115,11 +138,13 @@ class ReviewController(BaseController):
         
         reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
         reviewer_ids = [rp.reviewer_id for rp in reviewer_proj_q.filter(model.Citation.review_id == id).all()]
+
+        c.participating_reviewers = reviewers = self._get_participants_for_review(id)
         user_q = model.meta.Session.query(model.User)
-        
-        reviewers = [user_q.filter(model.User.id == reviewer_id).one() for reviewer_id in reviewer_ids]
-        c.participating_reviewers = reviewers
         c.project_lead = user_q.filter(model.User.id == c.review.project_lead_id).one()
+        
+        current_user = request.environ.get('repoze.who.identity')['user']
+        c.is_admin = c.project_lead.id == current_user.id
         n_lbl_d = {} # map users to the number of labels they've provided
         for reviewer in reviewers:
             # @TODO problematic if two reviewers have the same fullname, which
@@ -171,54 +196,127 @@ class ReviewController(BaseController):
         model.Session.commit()
         
     @ActionProtector(not_anonymous())
-    def label_citation(self, review_id, study_id, label):
+    def label_citation(self, review_id, assignment_id, study_id, seconds, label):
         print "labeling citation %s with label %s" % (study_id, label)
         # first push the label to the database
         new_label = model.Label()
         new_label.label = label
         new_label.review_id = review_id
         new_label.study_id = study_id
+        new_label.labeling_time = int(seconds)
         current_user = request.environ.get('repoze.who.identity')['user']
         new_label.reviewer_id = current_user.id
         model.Session.add(new_label)
         model.Session.commit()
         
-        return self.screen_next(review_id)
+        # update the assignment
+        assignment_q = model.meta.Session.query(model.Assignment)
+        assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
+        assignment.done_so_far += 1
+        if assignment.done_so_far >= assignment.num_assigned:
+            assignment.done = True
+        model.Session.commit()
+        
+        return self.screen_next(review_id, assignment_id)
         
     @ActionProtector(not_anonymous())
-    def screen(self, id):
-        citation_q = model.meta.Session.query(model.Citation)
-        citations_for_review = citation_q.filter(model.Citation.review_id == id).all()
-        c.review_id = id
-        c.cur_citation = citations_for_review[0]
-        c.cur_citation = self._mark_up_citation(id, c.cur_citation)
-        return render("/screen.mako")
-        
-    @ActionProtector(not_anonymous())
-    def markup_citation(self, id, citation_id):
+    def markup_citation(self, id, assignment_id, citation_id):
         citation_q = model.meta.Session.query(model.Citation)
         c.cur_citation = citation_q.filter(model.Citation.citation_id == citation_id).one()
         c.review_id = id
+        c.assignment_id = assignment_id
         c.cur_citation = self._mark_up_citation(id, c.cur_citation)
         return render("/citation_fragment.mako")
         
     @ActionProtector(not_anonymous())
-    def screen_next(self, id):
+    def screen(self, review_id, assignment_id):
+        # but wait, are we finished?
+        assignment_q = model.meta.Session.query(model.Assignment)
+        assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
+        if assignment.done:
+            redirect(url(controller="account", action="welcome"))    
+        
         citation_q = model.meta.Session.query(model.Citation)
-        citations_for_review = citation_q.filter(model.Citation.review_id == id).all()
+        citations_for_review = citation_q.filter(model.Citation.review_id == review_id).all()
+        
+        label_q = model.meta.Session.query(model.Label)
+        already_labeled_ids = [label.study_id for label in label_q.filter(model.Citation.review_id == review_id).all()] 
+        filtered = \
+           [citation for citation in citations_for_review if not citation.citation_id in already_labeled_ids]
+           
+        c.review_id = review_id
+        c.review_name = self._get_review_from_id(review_id).name
+        c.assignment_id = assignment_id
+        c.cur_citation = random.choice(filtered)
+        c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
+        return render("/screen.mako")
+     
+        
+    @ActionProtector(not_anonymous())
+    def screen_next(self, review_id, assignment_id):
+        # but wait, are we finished?
+        assignment_q = model.meta.Session.query(model.Assignment)
+        assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
+        if assignment.done:
+            redirect(url(controller="account", action="welcome"))
+            
+        citation_q = model.meta.Session.query(model.Citation)
+        citations_for_review = citation_q.filter(model.Citation.review_id == review_id).all()
         
         # filter out examples already screened
         label_q = model.meta.Session.query(model.Label)
-        already_labeled_ids = [label.study_id for label in label_q.filter(model.Citation.review_id == id).all()] 
+        already_labeled_ids = [label.study_id for label in label_q.filter(model.Citation.review_id == review_id).all()] 
         filtered = \
            [citation for citation in citations_for_review if not citation.citation_id in already_labeled_ids]
 
-        c.review_id = id
+        c.review_id = review_id
+        c.review_name = self._get_review_from_id(review_id).name
+        c.assignment_id = assignment_id
+        
         c.cur_citation = random.choice(filtered)
         # mark up the labeled terms 
-        c.cur_citation = self._mark_up_citation(id, c.cur_citation)
-
+        c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
         return render("/citation_fragment.mako")
+        
+    @ActionProtector(not_anonymous())
+    def create_assignment(self, id):
+        assign_to = request.params.getall("assign_to")
+        m,d,y = [int(x) for x in request.params['due_date'].split("/")]
+        due_date = datetime.date(y,m,d)
+        p_rescreen = float(request.params['p_rescreen'])
+        n = int(request.params['n'])
+        assign_to_ids = [self._get_id_from_username(username) for username in assign_to]
+        for reviewer_id in assign_to_ids:     
+            new_assignment = model.Assignment()
+            new_assignment.review_id = id
+            new_assignment.reviewer_id = reviewer_id
+            new_assignment.date_due = due_date
+            new_assignment.done = False
+            new_assignment.done_so_far = 0
+            new_assignment.num_assigned = n
+            new_assignment.p_rescreen = p_rescreen
+            new_assignment.date_assigned = datetime.datetime.now()
+            model.Session.add(new_assignment)
+            model.Session.commit()
+        
+        redirect(url(controller="review", action="join_review", id=id))     
+                    
+            
+    def _get_participants_for_review(self, review_id):
+        reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
+        reviewer_ids = \
+            [rp.reviewer_id for rp in reviewer_proj_q.filter(model.ReviewerProject.review_id == review_id).all()]
+        user_q = model.meta.Session.query(model.User)
+        reviewers = [user_q.filter(model.User.id == reviewer_id).one() for reviewer_id in reviewer_ids]
+        return reviewers
+    
+    def _get_id_from_username(self, username):
+        user_q = model.meta.Session.query(model.User)
+        return user_q.filter(model.User.username == username).one().id
+        
+    def _get_review_from_id(self, review_id):
+        review_q = model.meta.Session.query(model.Review)
+        return review_q.filter(model.Review.review_id == review_id).one()
         
     def _mark_up_citation(self, review_id, citation):
         # pull the labeled terms for this review
@@ -231,13 +329,17 @@ class ReviewController(BaseController):
         citation.marked_up_abstract = citation.abstract
         for term in labeled_terms:
             title_matches = list(set(re.findall(term.term, citation.marked_up_title)))
+
             for match in title_matches:
                 citation.marked_up_title = citation.marked_up_title.replace(match, "<font color='%s'>%s</font>" % (COLOR_D[term.label], match))
             
-            abstract_matches = list(set(re.findall(term.term, citation.marked_up_abstract)))
-            for match in abstract_matches:
-                citation.marked_up_abstract = citation.marked_up_abstract.replace(match, "<font color='%s'>%s</font>" % (COLOR_D[term.label], match))
-                
+            if citation.marked_up_abstract is not None:
+                abstract_matches = list(set(re.findall(term.term, citation.marked_up_abstract)))
+                for match in abstract_matches:
+                    citation.marked_up_abstract = \
+                       citation.marked_up_abstract.replace(match, "<font color='%s'>%s</font>" % (COLOR_D[term.label], match))
+            else:
+                citation.marked_up_abstract = ""
         citation.marked_up_title = literal(citation.marked_up_title)
         citation.marked_up_abstract = literal(citation.marked_up_abstract)
         return citation

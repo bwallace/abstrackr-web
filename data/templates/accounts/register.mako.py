@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291235289.2449999
+_modified_time = 1291315627.1949999
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/register.mako'
 _template_uri='/accounts/register.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -45,7 +45,7 @@ def render_body(context,**pageargs):
         __M_writer(escape(h.text('last name')))
         __M_writer(u'</label></td></tr>\r\n    <tr><td><label>how many SRs have you participated in?:</td> <td>')
         # SOURCE LINE 12
-        __M_writer(escape(h.text('experience')))
+        __M_writer(escape(h.text('experience', size=2)))
         __M_writer(u'</label></td></tr>\r\n    <tr><td><label>email:</td> <td>')
         # SOURCE LINE 13
         __M_writer(escape(h.text('email')))

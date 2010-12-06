@@ -28,6 +28,7 @@ class Review(Base):
     date_created = sa.Column(types.DateTime())
     name = sa.Column(types.Unicode(255))
     
+    
 class Citation(Base):
     __tablename__ = "Citations"
     # note that this is independent of pubmed/refman/whatever id!
@@ -91,9 +92,12 @@ class Assignment(Base):
     id = sa.Column(types.Integer, primary_key=True)
     review_id = sa.Column(types.Integer)
     reviewer_id = sa.Column(types.Integer)
-    num_to_do = sa.Column(types.Integer)
+    num_assigned = sa.Column(types.Integer)
     done_so_far = sa.Column(types.Integer)
     p_rescreen = sa.Column(types.Float)
+    date_assigned = sa.Column(types.DateTime())
+    date_due = sa.Column(types.DateTime())
+    done = sa.Column(types.Boolean)
     
 ####################################
 ## these tables for authentication #

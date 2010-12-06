@@ -243,9 +243,17 @@ padding: 8px;
 	color: red;
 }
 
+a.tab {
+  background-color: #f0f0f0;
+  border: 1px solid #000000;
+  border-bottom-width: 0px;
+  padding: 2px 1em 2px 1em;
+  text-decoration: none;
+}
+
 
 table.list_table{
-width: 50%;
+width: 80%;
 background:#D3E4E5;
 border:1px solid gray;
 color:#fff;
@@ -359,6 +367,7 @@ ul#menu {
 margin-left: -40px;
 padding-top: 8px;
 }
+
 
 ul#menu li {
   display: inline; /* Shows each item side-by-side */
@@ -495,4 +504,22 @@ border: 0px;
 {
 background: #D7F2F5;
 color: #003333;
+}
+
+table.pretty {
+  margin: 1em 1em 1em 2em;
+  background: whitesmoke;
+  border-collapse: collapse;
+}
+table.pretty th, table.pretty td {
+  border: 1px silver solid;
+  padding: 0.2em;
+}
+table.pretty th {
+  background: gainsboro;
+  text-align: center;
+}
+table.pretty caption {
+  margin-left: inherit;
+  margin-right: inherit;
 }

@@ -20,7 +20,7 @@ class AccountController(BaseController):
         """
         identity = request.environ.get('repoze.who.identity')
         came_from = str(request.GET.get('came_from', '')) or \
-                    url(controller='account', action='welcome')
+                     url(controller='account', action='welcome')
         if identity:
             redirect(url(came_from))
         else:
@@ -67,6 +67,19 @@ class AccountController(BaseController):
         participating_project_ids = \
             [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
         c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids]
+        
+        # pull all assignments for this person
+        assignment_q = model.meta.Session.query(model.Assignment)
+        all_assignments = assignment_q.filter(model.Assignment.reviewer_id == person.id).all()
+        
+        # make life easier on client side
+        review_ids_to_names_d = {}
+        for review in c.participating_projects:
+            review_ids_to_names_d[review.review_id] = review.name
+        c.review_ids_to_names_d = review_ids_to_names_d
+        
+        c.outstanding_assignments = [a for a in all_assignments if not a.done]
+        c.finished_assignments = [a for a in all_assignments if a.done]
         
         return render('/accounts/dashboard.mako')
         
