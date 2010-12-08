@@ -1,7 +1,9 @@
 
 <h2>${c.cur_citation.marked_up_title}</h2>
 ${c.cur_citation.authors}<br/><br/>
-${c.cur_citation.marked_up_abstract}
+${c.cur_citation.marked_up_abstract}<br/><br/>
+<b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
+<b>refman ID:</b> ${c.cur_citation.refman_id}<br/><br/>
 
 <script type="text/javascript">
         // unbind all attached events

@@ -197,6 +197,9 @@ class ReviewController(BaseController):
         
     @ActionProtector(not_anonymous())
     def label_citation(self, review_id, assignment_id, study_id, seconds, label):
+        # TODO need to differentiate between first and subsequent labels
+        # should check db here to see if this study has already been labeled
+        # by this reviewer and handle accordingly
         print "labeling citation %s with label %s" % (study_id, label)
         # first push the label to the database
         new_label = model.Label()
@@ -206,6 +209,7 @@ class ReviewController(BaseController):
         new_label.labeling_time = int(seconds)
         current_user = request.environ.get('repoze.who.identity')['user']
         new_label.reviewer_id = current_user.id
+        new_label.first_labeled = datetime.datetime.now()
         model.Session.add(new_label)
         model.Session.commit()
         
@@ -305,7 +309,7 @@ class ReviewController(BaseController):
     def _get_participants_for_review(self, review_id):
         reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
         reviewer_ids = \
-            [rp.reviewer_id for rp in reviewer_proj_q.filter(model.ReviewerProject.review_id == review_id).all()]
+            list(set([rp.reviewer_id for rp in reviewer_proj_q.filter(model.ReviewerProject.review_id == review_id).all()]))
         user_q = model.meta.Session.query(model.User)
         reviewers = [user_q.filter(model.User.id == reviewer_id).one() for reviewer_id in reviewer_ids]
         return reviewers
