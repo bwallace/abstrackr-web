@@ -26,4 +26,6 @@ def make_map(config):
     map.connect('/label/{review_id}/{assignment_id}/{study_id}/{seconds}/{label}', controller='review', action='label_citation')
     map.connect('/markup/{id}/{assignment_id}/{citation_id}', controller='review', action='markup_citation')
     map.connect('/label_term/{review_id}/{label}', controller='review', action='label_term')
+    #show_labeled_citation
+    map.connect('/show_label/{review_id}/{citation_id}', controller='review', action='show_labeled_citation')
     return map

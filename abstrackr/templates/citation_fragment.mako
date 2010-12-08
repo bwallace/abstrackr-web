@@ -114,5 +114,6 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                 markup_current();
             }
          }); 
+        
 
 </script>

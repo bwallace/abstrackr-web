@@ -4,6 +4,7 @@ import shutil
 import datetime
 import random
 import re
+import time
 from operator import itemgetter
 
 from pylons import request, response, session, tmpl_context as c, url
@@ -13,7 +14,6 @@ from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
 from abstrackr.lib.base import BaseController, render
 import abstrackr.model as model
-from pylons import request, response, session, tmpl_context as c, url
 from abstrackr.lib import xml_to_sql
 from sqlalchemy import or_, and_
 from abstrackr.lib.helpers import literal
@@ -197,29 +197,44 @@ class ReviewController(BaseController):
         
     @ActionProtector(not_anonymous())
     def label_citation(self, review_id, assignment_id, study_id, seconds, label):
-        # TODO need to differentiate between first and subsequent labels
-        # should check db here to see if this study has already been labeled
-        # by this reviewer and handle accordingly
-        print "labeling citation %s with label %s" % (study_id, label)
-        # first push the label to the database
-        new_label = model.Label()
-        new_label.label = label
-        new_label.review_id = review_id
-        new_label.study_id = study_id
-        new_label.labeling_time = int(seconds)
         current_user = request.environ.get('repoze.who.identity')['user']
-        new_label.reviewer_id = current_user.id
-        new_label.first_labeled = datetime.datetime.now()
-        model.Session.add(new_label)
-        model.Session.commit()
+        # check if we've already labeled this; if so, handle
+        # appropriately
+        label_q = model.meta.Session.query(model.Label)
+        existing_label = label_q.filter(and_(
+                        model.Label.review_id == review_id, 
+                        model.Label.study_id == study_id, 
+                        model.Label.reviewer_id == current_user.id)).all()
         
-        # update the assignment
-        assignment_q = model.meta.Session.query(model.Assignment)
-        assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
-        assignment.done_so_far += 1
-        if assignment.done_so_far >= assignment.num_assigned:
-            assignment.done = True
-        model.Session.commit()
+        if len(existing_label) > 0:
+            # then this person has already labeled this example
+            print "(RE-)labeling citation %s with label %s" % (study_id, label)
+            existing_label = existing_label[0]
+            existing_label.label = label
+            existing_label.label_last_updated = datetime.datetime.now()
+            existing_label.labeling_time += int(seconds)
+            model.Session.add(existing_label)
+            model.Session.commit()
+        else:
+            print "labeling citation %s with label %s" % (study_id, label)
+            # first push the label to the database
+            new_label = model.Label()
+            new_label.label = label
+            new_label.review_id = review_id
+            new_label.study_id = study_id
+            new_label.assignment_id = assignment_id
+            new_label.labeling_time = int(seconds)
+            new_label.reviewer_id = current_user.id
+            new_label.first_labeled = new_label.label_last_updated = datetime.datetime.now()
+            model.Session.add(new_label)
+            model.Session.commit()
+            # pull the associated assignment object
+            assignment_q = model.meta.Session.query(model.Assignment)
+            assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
+            assignment.done_so_far += 1
+            if assignment.done_so_far >= assignment.num_assigned:
+                assignment.done = True
+            model.Session.commit()
         
         return self.screen_next(review_id, assignment_id)
         
@@ -244,7 +259,7 @@ class ReviewController(BaseController):
         citations_for_review = citation_q.filter(model.Citation.review_id == review_id).all()
         
         label_q = model.meta.Session.query(model.Label)
-        already_labeled_ids = [label.study_id for label in label_q.filter(model.Citation.review_id == review_id).all()] 
+        already_labeled_ids = [label.study_id for label in label_q.filter(model.Label.review_id == review_id).all()] 
         filtered = \
            [citation for citation in citations_for_review if not citation.citation_id in already_labeled_ids]
            
@@ -253,30 +268,55 @@ class ReviewController(BaseController):
         c.assignment_id = assignment_id
         c.cur_citation = random.choice(filtered)
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
+        c.cur_lbl = None
         return render("/screen.mako")
      
+       
+    @ActionProtector(not_anonymous())
+    def review_labels(self, review_id):
+        pass
+         
+    @ActionProtector(not_anonymous())
+    def show_labeled_citation(self, review_id, citation_id):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        c.review_id = review_id
+        c.review_name = self._get_review_from_id(review_id).name
+ 
+        citation_q = model.meta.Session.query(model.Citation)
+        c.cur_citation = citation_q.filter(model.Citation.citation_id == citation_id).one()
+        # mark up the labeled terms 
+        c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
+        
+        label_q = model.meta.Session.query(model.Label)
+        c.cur_lbl = label_q.filter(and_(
+                                     model.Label.study_id == citation_id,
+                                     model.Label.reviewer_id == current_user.id)).one()
+        c.assignment_id = c.cur_lbl.assignment_id
+        return render("/screen.mako")
         
     @ActionProtector(not_anonymous())
     def screen_next(self, review_id, assignment_id):
-        # but wait, are we finished?
+        # but wait -- are we finished?
+        
         assignment_q = model.meta.Session.query(model.Assignment)
         assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
         if assignment.done:
             redirect(url(controller="account", action="welcome"))
-            
+
         citation_q = model.meta.Session.query(model.Citation)
         citations_for_review = citation_q.filter(model.Citation.review_id == review_id).all()
-        
+
         # filter out examples already screened
         label_q = model.meta.Session.query(model.Label)
-        already_labeled_ids = [label.study_id for label in label_q.filter(model.Citation.review_id == review_id).all()] 
+        already_labeled_ids = [label.study_id for label in label_q.filter(model.Label.review_id == review_id).all()] 
+
         filtered = \
            [citation for citation in citations_for_review if not citation.citation_id in already_labeled_ids]
 
         c.review_id = review_id
         c.review_name = self._get_review_from_id(review_id).name
         c.assignment_id = assignment_id
-        
+ 
         c.cur_citation = random.choice(filtered)
         # mark up the labeled terms 
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)

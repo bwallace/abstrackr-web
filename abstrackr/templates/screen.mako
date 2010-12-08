@@ -22,6 +22,10 @@ function update_timer(){
           /<a href="${url(controller='review', action='show_review', id=c.review_id)}">${c.review_name}</a>
 </div>
 
+% if c.cur_lbl is not None:
+  ALREADY LABELED ${c.cur_lbl.label}
+% endif
+
 <div id="citation" class="content" style='float: center'>
 <h2>${c.cur_citation.marked_up_title}</h2>
 ${c.cur_citation.authors}<br/><br/>
@@ -103,8 +107,6 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                 $("#label_msg").fadeOut(3000)
                 markup_current();
             }
-            
-            
          }); 
         
 

@@ -67,6 +67,7 @@ class Label(Base):
     review_id = sa.Column(types.Integer)
     study_id = sa.Column(types.Integer)
     reviewer_id = sa.Column(types.Integer)
+    assignment_id = sa.Column(types.Integer)
     # -1, 0, 1
     label = sa.Column(types.SmallInteger)
     # in seconds
