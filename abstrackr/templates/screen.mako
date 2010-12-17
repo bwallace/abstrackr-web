@@ -15,6 +15,11 @@ function update_timer(){
   setTimeout(update_timer, 1000);
 }
 
+function awesome(){
+  alert("eggs");
+  alert(eval("'${c.cur_citation.title}'"));
+}
+  
 </script>
 
 <div class="breadcrumbs">
@@ -26,16 +31,18 @@ function update_timer(){
   ALREADY LABELED ${c.cur_lbl.label}
 % endif
 
+
 <div id="citation" class="content" style='float: center'>
 <h2>${c.cur_citation.marked_up_title}</h2>
 ${c.cur_citation.authors}<br/><br/>
 ${c.cur_citation.marked_up_abstract}<br/><br/>
 <b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
 <b>refman ID:</b> ${c.cur_citation.refman_id}<br/><br/>
-<script type="text/javascript">
 
-    $(document).ready(function() { 
-           
+
+<script type="text/javascript">    
+    function setup_js(){
+    
         function markup_current(){
             // reload the current citation, with markup
             $("#wait").text("marking up the current citation..")
@@ -49,14 +56,12 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
     
     
         $("#accept").click(function() {
-            
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
-                //alert(seconds)
-                //alert("${'/label/%s/%s/' % (c.review_id, c.cur_citation.citation_id)}" + seconds + "/1")
                 $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
+                     setup_js();
                 });
             });
          });   
@@ -67,16 +72,19 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                 $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/0", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
+                     setup_js();
                 });
             });
          });   
         
+         
         $("#reject").click(function() {
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
                 $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/-1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
+                     setup_js();
                 });
             });
          });  
@@ -135,8 +143,12 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                 markup_current();
             }
          }); 
-        
+    }    
+
+    $(document).ready(function() { 
+        setup_js();
     });
+    
 </script>
 </div>
 

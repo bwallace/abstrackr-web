@@ -18,7 +18,6 @@ from abstrackr.lib import xml_to_sql
 from sqlalchemy import or_, and_
 from abstrackr.lib.helpers import literal
 
-
 import pygooglechart
 from pygooglechart import PieChart3D, StackedHorizontalBarChart, StackedVerticalBarChart
 from pygooglechart import Axis
@@ -200,6 +199,7 @@ class ReviewController(BaseController):
         current_user = request.environ.get('repoze.who.identity')['user']
         # check if we've already labeled this; if so, handle
         # appropriately
+        pdb.set_trace()
         label_q = model.meta.Session.query(model.Label)
         existing_label = label_q.filter(and_(
                         model.Label.review_id == review_id, 
@@ -274,8 +274,21 @@ class ReviewController(BaseController):
        
     @ActionProtector(not_anonymous())
     def review_labels(self, review_id):
-        pass
-         
+        current_user = request.environ.get('repoze.who.identity')['user']
+        
+        label_q = model.meta.Session.query(model.Label)
+        already_labeled_by_me = [label for label in label_q.filter(\
+                                   and_(model.Label.review_id == review_id,\
+                                        model.Label.reviewer_id == current_user.id)).all()] 
+        
+        c.given_labels = already_labeled_by_me
+        
+        # now get the citation objects associated with the given labels
+        c.citations_d = {}
+        for label in c.given_labels:
+            c.citations_d[label.study_id] = self._get_citation_from_id(label.study_id)
+        return render("/reviews/review_labels.mako")
+            
     @ActionProtector(not_anonymous())
     def show_labeled_citation(self, review_id, citation_id):
         current_user = request.environ.get('repoze.who.identity')['user']
@@ -297,7 +310,6 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def screen_next(self, review_id, assignment_id):
         # but wait -- are we finished?
-        
         assignment_q = model.meta.Session.query(model.Assignment)
         assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
         if assignment.done:
@@ -361,6 +373,10 @@ class ReviewController(BaseController):
     def _get_review_from_id(self, review_id):
         review_q = model.meta.Session.query(model.Review)
         return review_q.filter(model.Review.review_id == review_id).one()
+        
+    def _get_citation_from_id(self, citation_id):
+        citation_q = model.meta.Session.query(model.Citation)
+        return citation_q.filter(model.Citation.citation_id == citation_id).one()
         
     def _mark_up_citation(self, review_id, citation):
         # pull the labeled terms for this review
