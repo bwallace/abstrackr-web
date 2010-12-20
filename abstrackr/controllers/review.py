@@ -15,7 +15,7 @@ from repoze.what.plugins.pylonshq import ActionProtector
 from abstrackr.lib.base import BaseController, render
 import abstrackr.model as model
 from abstrackr.lib import xml_to_sql
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, desc
 from abstrackr.lib.helpers import literal
 
 import pygooglechart
@@ -199,7 +199,6 @@ class ReviewController(BaseController):
         current_user = request.environ.get('repoze.who.identity')['user']
         # check if we've already labeled this; if so, handle
         # appropriately
-        pdb.set_trace()
         label_q = model.meta.Session.query(model.Label)
         existing_label = label_q.filter(and_(
                         model.Label.review_id == review_id, 
@@ -215,6 +214,17 @@ class ReviewController(BaseController):
             existing_label.labeling_time += int(seconds)
             model.Session.add(existing_label)
             model.Session.commit()
+            
+            # if we are re-labelng, return the same abstract, reflecting the new
+            # label.
+            c.cur_lbl = existing_label
+            c.assignment_id = c.cur_lbl.assignment_id
+            citation_q = model.meta.Session.query(model.Citation)
+            c.cur_citation = citation_q.filter(model.Citation.citation_id == study_id).one()
+            c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
+            c.review_id = review_id
+            return render("/citation_fragment.mako")
+            
         else:
             print "labeling citation %s with label %s" % (study_id, label)
             # first push the label to the database
@@ -235,8 +245,7 @@ class ReviewController(BaseController):
             if assignment.done_so_far >= assignment.num_assigned:
                 assignment.done = True
             model.Session.commit()
-        
-        return self.screen_next(review_id, assignment_id)
+            return self.screen_next(review_id, assignment_id)
         
     @ActionProtector(not_anonymous())
     def markup_citation(self, id, assignment_id, citation_id):
@@ -279,7 +288,8 @@ class ReviewController(BaseController):
         label_q = model.meta.Session.query(model.Label)
         already_labeled_by_me = [label for label in label_q.filter(\
                                    and_(model.Label.review_id == review_id,\
-                                        model.Label.reviewer_id == current_user.id)).all()] 
+                                        model.Label.reviewer_id == current_user.id)).\
+                                            order_by(desc(model.Label.label_last_updated)).all()] 
         
         c.given_labels = already_labeled_by_me
         

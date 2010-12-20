@@ -15,11 +15,7 @@ function update_timer(){
   setTimeout(update_timer, 1000);
 }
 
-function awesome(){
-  alert("eggs");
-  alert(eval("'${c.cur_citation.title}'"));
-}
-  
+
 </script>
 
 <div class="breadcrumbs">
@@ -27,9 +23,8 @@ function awesome(){
           /<a href="${url(controller='review', action='show_review', id=c.review_id)}">${c.review_name}</a>
 </div>
 
-% if c.cur_lbl is not None:
-  ALREADY LABELED ${c.cur_lbl.label}
-% endif
+
+<p align="right"><a class="tab" href="${url(controller='review', action='review_labels', review_id=c.review_id)}">review labels</a></p>
 
 
 <div id="citation" class="content" style='float: center'>
@@ -38,6 +33,18 @@ ${c.cur_citation.authors}<br/><br/>
 ${c.cur_citation.marked_up_abstract}<br/><br/>
 <b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
 <b>refman ID:</b> ${c.cur_citation.refman_id}<br/><br/>
+
+% if c.cur_lbl is not None:
+<center>
+    % if c.cur_lbl.label == 1:
+        you labeled this citation as <b><font color='green'>"relevant"</font></b> on ${c.cur_lbl.label_last_updated}
+    % elif c.cur_lbl.label == 0:
+        you labeled this citation as <b><font color='light green'>"maybe" (?)</font></b> on ${c.cur_lbl.label_last_updated}
+    % else:
+        you labeled this citation as <b><font color='red'>"irrelevant"</font></b> on ${c.cur_lbl.label_last_updated} 
+    % endif
+ </center>
+% endif
 
 
 <script type="text/javascript">    

@@ -5,6 +5,18 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 <b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
 <b>refman ID:</b> ${c.cur_citation.refman_id}<br/><br/>
 
+% if c.cur_lbl is not None:
+<center>
+    % if c.cur_lbl.label == 1:
+        you labeled this citation as <b><font color='green'>"relevant"</font></b> on ${c.cur_lbl.label_last_updated}
+    % elif c.cur_lbl.label == 0:
+        you labeled this citation as <b><font color='light green'>"maybe" (?)</font></b> on ${c.cur_lbl.label_last_updated}
+    % else:
+        you labeled this citation as <b><font color='red'>"irrelevant"</font></b> on ${c.cur_lbl.label_last_updated} 
+    % endif
+ </center>
+% endif
+
 <script type="text/javascript">  
     function setup_js(){
 

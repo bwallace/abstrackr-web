@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1292628583.0469999
+_modified_time = 1292855266.402
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/reviews/review_labels.mako'
 _template_uri='/reviews/review_labels.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -40,7 +40,7 @@ def render_body(context,**pageargs):
         # SOURCE LINE 6
         if len(c.given_labels) > 0:
             # SOURCE LINE 7
-            __M_writer(u'    work you should be doing: <br/><br/>\r\n    <center>\r\n    <table width=80% class="list_table" align="center>>\r\n            <tr align="center">\r\n            \r\n            <th span=20>doc id</th>\r\n            <th span=20>refman id</th>\r\n            <th width="20%">{c.title}</th>\r\n            <th span=20>label</th>\r\n            <th>first labeled</th>\r\n            <th>last updated</th>\r\n            \r\n            </tr>\r\n')
+            __M_writer(u'    labels you\'ve provided: <br/><br/>\r\n    <center>\r\n    <table width=100% class="list_table" align="center>>\r\n            <tr align="center">\r\n            \r\n            <th span=20>doc id</th>\r\n            <th span=20>refman id</th>\r\n            <th width="30%">title</th>\r\n            <th>label</th>\r\n            <th>first labeled</th>\r\n            <th>last updated</th>\r\n            \r\n            </tr>\r\n')
             # SOURCE LINE 20
             for i, label in enumerate(c.given_labels):
                 # SOURCE LINE 21
@@ -52,7 +52,7 @@ def render_body(context,**pageargs):
                 __M_writer(escape(c.citations_d[label.study_id].refman_id))
                 __M_writer(u'</td>\r\n                <td>\r\n                <a href="')
                 # SOURCE LINE 25
-                __M_writer(escape(url(controller='review', action='show_label', review_id=label.review_id, citation_id=label.study_id)))
+                __M_writer(escape(url(controller='review', action='show_labeled_citation', review_id=label.review_id, citation_id=label.study_id)))
                 __M_writer(u'">\r\n                ')
                 # SOURCE LINE 26
                 __M_writer(escape(c.citations_d[label.study_id].title))
