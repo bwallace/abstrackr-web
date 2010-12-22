@@ -7,19 +7,22 @@ import string
 import sqlite3
 import elementtree
 from elementtree.ElementTree import ElementTree
+import Bio
+from Bio import Entrez
 
-#homegrown 
+# homegrown 
 import pubmedpy
 import abstrackr.model as model # for access to sqlalchemy
 
 pubmedpy.set_email("byron.wallace@gmail.com")
 
-def pubmed_ids_to_db(pmids, db_path):
+    
+def pubmed_ids_to_d(pmids):
     print "fetching articles..."
     articles = pubmedpy.batch_fetch(pmids)
     print "ok."
 
-    pmids_to_abs = {}
+    pmids_d = {}
     none_to_str = lambda x: x if x is not None else ""
     for article in articles:
         title_text = article.get("TI")
@@ -28,10 +31,27 @@ def pubmed_ids_to_db(pmids, db_path):
         journal = none_to_str(article.get("JT"))
         keywords = none_to_str(article.get("MH"))
         pmid = int(article["PMID"]) 
-        pmids_to_abs[pmid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
+        pmids_d[pmid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
                                              "keywords":keywords, "pmid":pmid, "authors":authors}
-    d_to_sql(pmids_to_abs, db_path, "chris")    
+    return pmids_d
                                             
+def pmid_list_to_sql(pmids_path, review):
+    pmids = _parse_pmids(pmids_path)
+    d = pubmed_ids_to_d(pmids)
+    
+    print "ok. now inserting into sql..."
+    dict_to_sql(d, review)
+    print "ok."
+
+def _parse_pmids(pmids_path):
+    pmids = []
+    for pmid in [x.replace("\n", "") for x in open(pmids_path, 'r').readlines()]:
+        if pmid != "":
+            try:
+                pmids.append(int(pmid))
+            except:
+                print "couldn't parse this line; %s" % pmid
+    return pmids
     
 def xml_to_sql(xml_path, review):
     print "building a dictionary from %s..." % xml_path

@@ -86,13 +86,14 @@ def fetch_and_encode(article_ids, out_dir, binary_features=False,
     
 
 def fetch_articles(article_ids):
-    print "Fetching abstracts..."
+    print "fetching abstracts..."
+    print article_ids
     handle = Entrez.efetch(db="pubmed",id=article_ids,rettype="medline",retmode="text")
     records = Medline.parse(handle)
     print "Done." 
     return records   
     
-def batch_fetch(article_ids, batch_size=100):
+def batch_fetch(article_ids, batch_size=20):
   all_records = []
   total = len(article_ids)
   fetched_so_far = 0
@@ -100,6 +101,8 @@ def batch_fetch(article_ids, batch_size=100):
       records = fetch_articles(article_ids[fetched_so_far:fetched_so_far+batch_size])
       fetched_so_far += batch_size
       all_records.extend([r for r in records])
+
+  
   return all_records
   
 

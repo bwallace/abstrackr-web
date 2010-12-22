@@ -62,8 +62,12 @@ class ReviewController(BaseController):
         model.Session.commit()
         
         # now parse the uploaded file
-        print "parsing uploaded xml..."
-        xml_to_sql.xml_to_sql(local_file_path, new_review)
+        if xml_file.filename.endswith(".xml"):
+            print "parsing uploaded xml..."
+            xml_to_sql.xml_to_sql(local_file_path, new_review)
+        else:
+            print "assuming this is a list of pubmed ids"
+            xml_to_sql.pmid_list_to_sql(local_file_path, new_review)
         print "done."
         
         redirect(url(controller="review", action="join_review", id=new_review.review_id))       
@@ -181,7 +185,25 @@ class ReviewController(BaseController):
 
         return render("/reviews/show_review.mako")
 
-       
+    @ActionProtector(not_anonymous())
+    def relabel_term(self, term_id, new_label):
+        term_q = model.meta.Session.query(model.LabeledFeature)
+        labeled_term =  term_q.filter(model.LabeledFeature.id == term_id).one()
+        labeled_term.label = new_label
+        model.Session.add(labeled_term)
+        model.Session.commit()
+        redirect(url(controller="review", action="review_terms", id=labeled_term.review_id)) 
+        
+    @ActionProtector(not_anonymous())
+    def delete_term(self, id):
+        term_id = id
+        term_q = model.meta.Session.query(model.LabeledFeature)
+        labeled_term = term_q.filter(model.LabeledFeature.id == term_id).one()
+        model.Session.delete(labeled_term)
+        model.Session.commit()
+        redirect(url(controller="review", action="review_terms", id=labeled_term.review_id)) 
+        
+        
     @ActionProtector(not_anonymous())
     def label_term(self, review_id, label):
         current_user = request.environ.get('repoze.who.identity')['user']
@@ -194,6 +216,7 @@ class ReviewController(BaseController):
         model.Session.add(new_labeled_feature)
         model.Session.commit()
         
+    
     @ActionProtector(not_anonymous())
     def label_citation(self, review_id, assignment_id, study_id, seconds, label):
         current_user = request.environ.get('repoze.who.identity')['user']
@@ -254,6 +277,16 @@ class ReviewController(BaseController):
         c.review_id = id
         c.assignment_id = assignment_id
         c.cur_citation = self._mark_up_citation(id, c.cur_citation)
+        
+        current_user = request.environ.get('repoze.who.identity')['user']
+        label_q = model.meta.Session.query(model.Label)
+        c.cur_lbl = label_q.filter(and_(
+                                     model.Label.study_id == citation_id,
+                                     model.Label.reviewer_id == current_user.id)).all()
+        if len(c.cur_lbl) > 0:
+            c.cur_lbl = c.cur_lbl[0]
+        else:
+            c.cur_lbl = None
         return render("/citation_fragment.mako")
         
     @ActionProtector(not_anonymous())
@@ -282,7 +315,29 @@ class ReviewController(BaseController):
      
        
     @ActionProtector(not_anonymous())
-    def review_labels(self, review_id):
+    def review_terms(self, id, assignment_id=None):
+        review_id = id
+        current_user = request.environ.get('repoze.who.identity')['user']
+        
+        term_q = model.meta.Session.query(model.LabeledFeature)
+        labeled_terms =  term_q.filter(and_(\
+                                model.LabeledFeature.review_id == review_id,\
+                                model.LabeledFeature.reviewer_id == current_user.id
+                         )).all()
+        c.terms = labeled_terms
+        c.review_id = review_id
+        c.review_name = self._get_review_from_id(review_id).name
+    
+        # if an assignment id is given, it allows us to provide a 'get back to work'
+        # link.
+        c.assignment = assignment_id
+        if assignment_id is not None:
+            c.assignment = self._get_assignment_from_id(assignment_id)
+            
+        return render("/reviews/edit_terms.mako")
+                         
+    @ActionProtector(not_anonymous())
+    def review_labels(self, review_id, assignment_id=None):
         current_user = request.environ.get('repoze.who.identity')['user']
         
         label_q = model.meta.Session.query(model.Label)
@@ -297,6 +352,13 @@ class ReviewController(BaseController):
         c.citations_d = {}
         for label in c.given_labels:
             c.citations_d[label.study_id] = self._get_citation_from_id(label.study_id)
+        
+        # if an assignment id is given, it allows us to provide a 'get back to work'
+        # link.
+        c.assignment = assignment_id
+        if assignment_id is not None:
+            c.assignment = self._get_assignment_from_id(assignment_id)
+     
         return render("/reviews/review_labels.mako")
             
     @ActionProtector(not_anonymous())
@@ -342,6 +404,7 @@ class ReviewController(BaseController):
         c.cur_citation = random.choice(filtered)
         # mark up the labeled terms 
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
+        c.cur_lbl = None
         return render("/citation_fragment.mako")
         
     @ActionProtector(not_anonymous())
@@ -387,6 +450,10 @@ class ReviewController(BaseController):
     def _get_citation_from_id(self, citation_id):
         citation_q = model.meta.Session.query(model.Citation)
         return citation_q.filter(model.Citation.citation_id == citation_id).one()
+        
+    def _get_assignment_from_id(self, assignment_id):
+        assignment_q = model.meta.Session.query(model.Assignment)
+        return assignment_q.filter(model.Assignment.id == assignment_id).one()
         
     def _mark_up_citation(self, review_id, citation):
         # pull the labeled terms for this review

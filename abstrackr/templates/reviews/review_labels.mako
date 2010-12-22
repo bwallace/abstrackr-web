@@ -1,6 +1,14 @@
 <%inherit file="../site.mako" />
 <%def name="title()">review labels</%def>
 
+%if c.assignment is not None:
+    <p align="right">
+    
+    <a class="tab" href="${url(controller='review', action='screen', review_id=c.assignment.review_id, assignment_id=c.assignment.id)}">get back to work!</a>
+    </p>
+%endif
+
+
 <div class="content">
 
 %if len(c.given_labels) > 0:

@@ -10,16 +10,21 @@
 
 <h1>${c.review.name}</h1>
 
+<p align="right">
 % if c.is_admin:
-    <p align="right"><a class="tab" href="${url(controller='review', action='admin', id=c.review.review_id)}">admin</a></p>
+    <a class="tab" href="${url(controller='review', action='admin', id=c.review.review_id)}">admin</a>
 % endif
+<a class="tab" href="${url(controller='review', action='review_labels', review_id=c.review.review_id)}">review labels</a>
+<a class="tab" href="${url(controller='review', action='review_terms', id=c.review.review_id)}">review terms</a>
+</p>
+
 <div class="content">
 <h2>Project description</h2> 
 ${c.review.project_description}
 <br/><br/>
 <h2>Progress</h2>
 <center><img src = "${c.pi_url}"></img></center><br/>
-There are ${c.num_citations} in this review, so far ${c.num_labels} have been labeled.
+There are ${c.num_citations} citations in this review, so far ${c.num_labels} have been labeled.
 <br/><br/>
 
 <h2>Participants</h2>

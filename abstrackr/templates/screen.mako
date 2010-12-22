@@ -24,7 +24,13 @@ function update_timer(){
 </div>
 
 
-<p align="right"><a class="tab" href="${url(controller='review', action='review_labels', review_id=c.review_id)}">review labels</a></p>
+<p align="right">
+<a class="tab" 
+  href="${url(controller='review', action='review_labels', review_id=c.review_id, assignment_id=c.assignment_id)}">review labels</a>
+<a class="tab" 
+  href="${url(controller='review', action='review_terms', id=c.review_id, assignment_id=c.assignment_id)}">review terms</a>
+
+</p>
 
 
 <div id="citation" class="content" style='float: center'>
