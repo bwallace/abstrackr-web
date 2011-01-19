@@ -208,10 +208,12 @@ padding: 8px;
 
 .odd, .odd.td{
 	background: #eee;
+	vertical-align: middle;
 }
 
 .even, .even.td{
     background:#dedede;
+    vertical-align: middle;
 }
 
 .odd td.calculated{
@@ -265,6 +267,7 @@ margin-right: auto;
 table.list_table td{
 padding: 1px;
 text-align: center;
+vertical-align:middle;
 color:#363636;
 }
 

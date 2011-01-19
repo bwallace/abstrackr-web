@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1293046531.405
+_modified_time = 1294945306.9219999
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/screen.mako'
 _template_uri='/screen.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -35,7 +35,7 @@ def render_body(context,**pageargs):
         # SOURCE LINE 1
         __M_writer(u'\r\n')
         # SOURCE LINE 2
-        __M_writer(u'\r\n\r\n<script language="javascript">\r\nvar seconds = 1;\r\nsetTimeout(update_timer, 1000);\r\n\r\nfunction reset_timer(){\r\n  seconds = 1; // start at one\r\n  setTimeout(update_timer, 1000);\r\n}\r\n\r\nfunction update_timer(){\r\n  seconds +=1;\r\n  setTimeout(update_timer, 1000);\r\n}\r\n\r\n\r\n</script>\r\n\r\n<div class="breadcrumbs">\r\n./<a href="')
+        __M_writer(u'\r\n\r\n<script language="javascript">\r\n    var seconds = 1;\r\n    setTimeout(update_timer, 1000);\r\n    \r\n    function reset_timer(){\r\n      seconds = 1; // start at one\r\n      setTimeout(update_timer, 1000);\r\n    }\r\n    \r\n    function update_timer(){\r\n      seconds +=1;\r\n      setTimeout(update_timer, 1000);\r\n    }\r\n\r\n\r\n</script>\r\n\r\n<div class="breadcrumbs">\r\n./<a href="')
         # SOURCE LINE 22
         __M_writer(escape(url(controller='account', action='welcome')))
         __M_writer(u'">dashboard</a>\r\n          /<a href="')

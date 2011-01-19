@@ -6,6 +6,7 @@ import random
 import re
 import time
 from operator import itemgetter
+import csv
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -83,12 +84,100 @@ class ReviewController(BaseController):
         current_user = request.environ.get('repoze.who.identity')['user']
         # for now just adding right away; may want to 
         # ask project lead for permission though.
-        reviewer_project = model.ReviewerProject()
-        reviewer_project.reviewer_id = current_user.id
-        reviewer_project.review_id = id
-        model.Session.add(reviewer_project)
-        model.Session.commit()
+        
+        # first, make sure this person isn't alerady in this review.
+        reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
+        reviewer_reviews = reviewer_review_q.filter(and_(\
+                 model.ReviewerProject.review_id == id, 
+                 model.ReviewerProject.reviewer_id==current_user.id)).all()
+        if len(reviewer_reviews) == 0:
+            reviewer_project = model.ReviewerProject()
+            reviewer_project.reviewer_id = current_user.id
+            reviewer_project.review_id = id
+            model.Session.add(reviewer_project)
+            model.Session.commit()
         redirect(url(controller="account", action="welcome"))  
+        
+    @ActionProtector(not_anonymous())
+    def leave_review(self, id):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        # for now just adding right away; may want to 
+        # ask project lead for permission though.
+        reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
+        reviewer_reviews = reviewer_review_q.filter(and_(\
+                 model.ReviewerProject.review_id == id, 
+                 model.ReviewerProject.reviewer_id==current_user.id)).all()
+                 
+        for reviewer_review in reviewer_reviews:  
+            # note that there should only be one entry;
+            # this is just in case.   
+            model.Session.delete(reviewer_review)
+    
+        # next, we need to delete all assignments for this person and review
+        assignments_q = model.meta.Session.query(model.Assignment)
+        assignments = assignments_q.filter(and_(\
+                    model.Assignment.review_id == id,
+                    model.Assignment.reviewer_id == current_user.id
+        )).all()
+        
+        for assignment in assignments:
+            model.Session.delete(assignment)
+            
+        model.Session.commit()
+        redirect(url(controller="account", action="welcome"))
+        
+        
+    @ActionProtector(not_anonymous())
+    def export_labels(self, id):
+        review_q = model.meta.Session.query(model.Review)
+        review = review_q.filter(model.Review.review_id == id).one()
+        labels = [",".join(["(internal) id", "pubmed id", "refman id", "labeler", "label"])]
+        for citation, label in model.meta.Session.query(\
+            model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
+            filter(model.Label.review_id==id).all():   
+                user_name = self._get_username_from_id(label.reviewer_id)
+                labels.append(",".join(\
+                   [str(x) for x in [citation.citation_id, citation.pmid_id, citation.refman_id, user_name, label.label]]))
+        
+        response.headers['Content-type'] = 'text/csv'
+        response.headers['Content-disposition'] = 'attachment; filename=labels_%s.csv' % id
+        return "\n".join(labels)
+        
+
+    @ActionProtector(not_anonymous())
+    def delete_review(self, id):
+        review_q = model.meta.Session.query(model.Review)
+        review = review_q.filter(model.Review.review_id == id).one()
+
+        # make sure we're actually the project lead
+        current_user = request.environ.get('repoze.who.identity')['user']
+        if not review.project_lead_id == current_user.id:
+            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname    
+    
+        # first delete all associated citations
+        citation_q = model.meta.Session.query(model.Citation)
+        citations_for_review = citation_q.filter(model.Citation.review_id == review.review_id).all()        
+        for citation in citations_for_review:
+            model.Session.delete(citation)
+        
+        # then delete the associations in the table mapping reviewers to 
+        # reviews
+        reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
+        entries_for_review = reviewer_review_q.filter(model.ReviewerProject.review_id == review.review_id).all()
+        for reviewer_review in entries_for_review:
+            model.Session.delete(reviewer_review)
+        
+        # next delete all assignments associated with this review
+        assignments_q = model.meta.Session.query(model.Assignment)
+        assignments = assignments_q.filter(model.Assignment.review_id == review.review_id)
+        for assignment in assignments:
+            model.Session.delete(assignment)
+                    
+        # finally, delete the review
+        model.Session.delete(review)
+
+        model.Session.commit()
+        redirect(url(controller="account", action="welcome"))
         
     @ActionProtector(not_anonymous())
     def admin(self, id):
@@ -439,6 +528,10 @@ class ReviewController(BaseController):
         reviewers = [user_q.filter(model.User.id == reviewer_id).one() for reviewer_id in reviewer_ids]
         return reviewers
     
+    def _get_username_from_id(self, id):
+        user_q = model.meta.Session.query(model.User)
+        return user_q.filter(model.User.id == id).one().username    
+        
     def _get_id_from_username(self, username):
         user_q = model.meta.Session.query(model.User)
         return user_q.filter(model.User.username == username).one().id

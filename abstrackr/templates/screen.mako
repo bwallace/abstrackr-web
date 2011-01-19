@@ -2,18 +2,18 @@
 <%def name="title()">screen</%def>
 
 <script language="javascript">
-var seconds = 1;
-setTimeout(update_timer, 1000);
-
-function reset_timer(){
-  seconds = 1; // start at one
-  setTimeout(update_timer, 1000);
-}
-
-function update_timer(){
-  seconds +=1;
-  setTimeout(update_timer, 1000);
-}
+    var seconds = 1;
+    setTimeout(update_timer, 1000);
+    
+    function reset_timer(){
+      seconds = 1; // start at one
+      setTimeout(update_timer, 1000);
+    }
+    
+    function update_timer(){
+      seconds +=1;
+      setTimeout(update_timer, 1000);
+    }
 
 
 </script>

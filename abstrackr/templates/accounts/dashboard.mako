@@ -9,11 +9,25 @@
 
 %if len(c.leading_projects) > 0:
     projects you're leading: <br/><br/>
+    <center>
+    <div>
+    <img style="vertical-align:middle" src = "../../admin.png"><span style="">= go to the administration page</span>
+    <img style="vertical-align:middle"  src = "../../export_sm.png"><span style="">= export labels</span>
+    <img style="vertical-align:middle" src = "../../delete.png"><span style="">= delete review</span>
+    <div>
+    
+    <br/>
     <table class="list_table">
     % for i,review in enumerate(c.leading_projects):
     <tr class="${'odd' if i%2 else 'even'}">
         <td><a href="${url(controller='review', action='show_review', id=review.review_id)}">${review.name}</td>           
-        <td><a href="${url(controller='review', action='admin', id=review.review_id)}">administrate!</td> 
+        <td><a href="${url(controller='review', action='admin', id=review.review_id)}">
+                     <img src = "../../admin.png"></a></td> 
+        <td><a href="${url(controller='review', action='export_labels', id=review.review_id)}">
+                  <img src = "../../export_sm.png"></a></td>
+        <td><a href="${url(controller='review', action='delete_review', id=review.review_id)}" 
+                       onclick="javascript:return confirm('are you sure you want to delete this review?\nall labels will be lost.')">
+                  <img src = "../../delete.png"></a></td> 
     </tr>
     % endfor
     </table>
@@ -25,7 +39,10 @@
     <table class="list_table">
     % for i,review in enumerate(c.participating_projects):
     <tr class="${'odd' if i%2 else 'even'}">
-        <td><a href="${url(controller='review', action='show_review', id=review.review_id)}">${review.name}</td>          
+        <td><a href="${url(controller='review', action='show_review', id=review.review_id)}">${review.name}</td>    
+        <td><a href="${url(controller='review', action='leave_review', id=review.review_id)}" 
+                       onclick="javascript:return confirm('are you sure you want to leave this review?')">
+        leave review</a></td>      
     </tr>
     % endfor
     </table>
