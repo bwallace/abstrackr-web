@@ -95,7 +95,7 @@ class ReviewController(BaseController):
             reviewer_project.reviewer_id = current_user.id
             reviewer_project.review_id = id
             model.Session.add(reviewer_project)
-            model.Session.commit()
+        model.Session.commit()
         redirect(url(controller="account", action="welcome"))  
         
     @ActionProtector(not_anonymous())
@@ -499,8 +499,12 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def create_assignment(self, id):
         assign_to = request.params.getall("assign_to")
-        m,d,y = [int(x) for x in request.params['due_date'].split("/")]
-        due_date = datetime.date(y,m,d)
+        due_date = None
+        try:
+            m,d,y = [int(x) for x in request.params['due_date'].split("/")]
+            due_date = datetime.date(y,m,d)
+        except:
+            pass
         p_rescreen = float(request.params['p_rescreen'])
         n = int(request.params['n'])
         assign_to_ids = [self._get_id_from_username(username) for username in assign_to]

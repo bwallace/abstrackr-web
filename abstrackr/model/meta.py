@@ -6,7 +6,7 @@ from sqlalchemy import MetaData
 __all__ = ['Base', 'Session']
 
 # SQLAlchemy session manager. Updated by model.init_model()
-Session = scoped_session(sessionmaker(autoflush=True, transactional=True))
+Session = scoped_session(sessionmaker(autoflush=True))
 
 # The declarative Base
 Base = declarative_base()

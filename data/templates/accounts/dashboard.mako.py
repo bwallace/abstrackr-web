@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1295031259.451
+_modified_time = 1295974064.573
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/dashboard.mako'
 _template_uri='/accounts/dashboard.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -124,55 +124,65 @@ def render_body(context,**pageargs):
                 __M_writer(escape(assignment.date_assigned.day))
                 __M_writer(u'/')
                 __M_writer(escape(assignment.date_assigned.year))
-                __M_writer(u'</td>\r\n                <td>')
+                __M_writer(u'</td>\r\n')
                 # SOURCE LINE 69
-                __M_writer(escape(assignment.date_due.month))
-                __M_writer(u'/')
-                __M_writer(escape(assignment.date_due.day))
-                __M_writer(u'/')
-                __M_writer(escape(assignment.date_due.year))
-                __M_writer(u'</td>\r\n                <td width=30>\r\n                <a href="')
-                # SOURCE LINE 71
+                if assignment.date_due is not None:
+                    # SOURCE LINE 70
+                    __M_writer(u'                    <td>')
+                    __M_writer(escape(assignment.date_due.month))
+                    __M_writer(u'/')
+                    __M_writer(escape(assignment.date_due.day))
+                    __M_writer(u'/')
+                    __M_writer(escape(assignment.date_due.year))
+                    __M_writer(u'</td>\r\n')
+                    # SOURCE LINE 71
+                else:
+                    # SOURCE LINE 72
+                    __M_writer(u'                    <td>None</td>\r\n')
+                    pass
+                # SOURCE LINE 74
+                __M_writer(u'                <td width=30>\r\n                <a href="')
+                # SOURCE LINE 75
                 __M_writer(escape(url(controller='review', action='screen', review_id=assignment.review_id, assignment_id=assignment.id)))
                 __M_writer(u'">\r\n                get to work!</a></td>\r\n                </tr>\r\n')
                 pass
-            # SOURCE LINE 75
+            # SOURCE LINE 79
             __M_writer(u'    </table>\r\n    </center>\r\n')
-            # SOURCE LINE 77
+            # SOURCE LINE 81
         else:
-            # SOURCE LINE 78
+            # SOURCE LINE 82
             __M_writer(u"    hurray, you've no outstanding assignments!    \r\n")
             pass
-        # SOURCE LINE 80
+        # SOURCE LINE 84
         __M_writer(u'\r\n<br/><br/>\r\n\r\n')
-        # SOURCE LINE 83
+        # SOURCE LINE 87
         if len(c.finished_assignments) > 0:
-            # SOURCE LINE 84
+            # SOURCE LINE 88
             __M_writer(u'    assignments you\'ve completed: <br/>\r\n    <center>\r\n    <table width=80% class="list_table" align="center>>\r\n            <tr align="center">\r\n            <th width="25%">review</th><th span=20>number to screen</th><th>screened so far</th><th width="20%">assigned</th><th width="20%">due</th>\r\n            </tr>\r\n')
-            # SOURCE LINE 90
+            # SOURCE LINE 94
             for i,assignment in enumerate(c.finished_assignments):
-                # SOURCE LINE 91
+                # SOURCE LINE 95
                 __M_writer(u'                <tr>\r\n                <td><a href="')
-                # SOURCE LINE 92
+                # SOURCE LINE 96
                 __M_writer(escape(url(controller='review', action='show_review', id=assignment.review_id)))
                 __M_writer(u'">\r\n                        ')
-                # SOURCE LINE 93
+                # SOURCE LINE 97
                 __M_writer(escape(c.review_ids_to_names_d[assignment.review_id]))
                 __M_writer(u'</td>          \r\n                <td>')
-                # SOURCE LINE 94
+                # SOURCE LINE 98
                 __M_writer(escape(assignment.num_assigned))
                 __M_writer(u'</td>\r\n                <td>')
-                # SOURCE LINE 95
+                # SOURCE LINE 99
                 __M_writer(escape(assignment.done_so_far))
                 __M_writer(u'</td>\r\n                <td>')
-                # SOURCE LINE 96
+                # SOURCE LINE 100
                 __M_writer(escape(assignment.date_assigned.month))
                 __M_writer(u'/')
                 __M_writer(escape(assignment.date_assigned.day))
                 __M_writer(u'/')
                 __M_writer(escape(assignment.date_assigned.year))
                 __M_writer(u'</td>\r\n                <td>')
-                # SOURCE LINE 97
+                # SOURCE LINE 101
                 __M_writer(escape(assignment.date_due.month))
                 __M_writer(u'/')
                 __M_writer(escape(assignment.date_due.day))
@@ -180,15 +190,15 @@ def render_body(context,**pageargs):
                 __M_writer(escape(assignment.date_due.year))
                 __M_writer(u'</td>\r\n                </tr>\r\n')
                 pass
-            # SOURCE LINE 100
+            # SOURCE LINE 104
             __M_writer(u'    </table>\r\n    </center>\r\n')
             pass
-        # SOURCE LINE 103
+        # SOURCE LINE 107
         __M_writer(u'\r\nwant to <a href = "')
-        # SOURCE LINE 104
+        # SOURCE LINE 108
         __M_writer(escape(url(controller='review', action='join_a_review')))
         __M_writer(u'">join an existing review?</a>\r\n<br/><br/>\r\nor maybe you want to <a href = "')
-        # SOURCE LINE 106
+        # SOURCE LINE 110
         __M_writer(escape(url(controller='review', action='create_new_review')))
         __M_writer(u'">start a new review?</a>\r\n</div>')
         return ''
