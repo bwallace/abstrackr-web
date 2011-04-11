@@ -1,6 +1,10 @@
 <%inherit file="../site.mako" />
 <%def name="title()">new review</%def>
 
+<div class="breadcrumbs">
+  ./<a href="${url(controller='account', action='welcome')}">dashboard</a>
+</div>
+
 <div class="content">
 <center>
 <table class="form_table">

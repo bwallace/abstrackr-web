@@ -26,7 +26,11 @@
                 <td>${assignment.num_assigned}</td>
                 <td>${assignment.done_so_far}</td>
                 <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
-                <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
+                % if assignment.date_due is not None:
+                    <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
+                % else:
+                    <td>None</td>
+                % endif
                 </tr>
             % endfor
     </table>

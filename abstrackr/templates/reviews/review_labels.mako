@@ -1,6 +1,11 @@
 <%inherit file="../site.mako" />
 <%def name="title()">review labels</%def>
 
+<div class="breadcrumbs">
+./<a href="${url(controller='account', action='welcome')}">dashboard</a>
+          /<a href="${url(controller='review', action='show_review', id=c.review_id)}">${c.review_name}</a>
+</div>
+
 %if c.assignment is not None:
     <p align="right">
     

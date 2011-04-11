@@ -3,6 +3,11 @@
 
 <h1>hi there, ${c.person.fullname}.</h1>
 
+<p align="right"> 
+<a class="tab" href = "${url(controller='review', action='join_a_review')}">join an existing review</a>
+<a class="tab" href="${url(controller='review', action='create_new_review')}">start a new review</a>
+</p>
+
 <div class="content">
 
 <br/>
@@ -66,11 +71,7 @@
                 <td>${assignment.num_assigned}</td>
                 <td>${assignment.done_so_far}</td>
                 <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
-                % if assignment.date_due is not None:
-                    <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
-                % else:
-                    <td>None</td>
-                % endif
+                <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
                 <td width=30>
                 <a href="${url(controller='review', action='screen', review_id=assignment.review_id, assignment_id=assignment.id)}">
                 get to work!</a></td>
@@ -105,7 +106,5 @@
     </center>
 % endif
 
-want to <a href = "${url(controller='review', action='join_a_review')}">join an existing review?</a>
-<br/><br/>
-or maybe you want to <a href = "${url(controller='review', action='create_new_review')}">start a new review?</a>
+
 </div>
