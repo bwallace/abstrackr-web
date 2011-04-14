@@ -25,6 +25,28 @@ class Review(Base):
     review_id = sa.Column(types.Integer, primary_key=True)
     project_lead_id = sa.Column(types.Integer)
     project_description = sa.Column(types.Unicode(10000))
+    
+    # this is for joining the review
+    code = sa.Column(types.Unicode(10))
+    
+    # `single', `double', or `advanced'
+    screening_mode = sa.Column(types.Unicode(50))
+    
+    # the number of labels to be procured for each abstract
+    num_labels_thus_far = sa.Column(types.Integer)
+    # basically, the AI criteria (or random)
+    sort_by = sa.Column(types.Unicode(255))
+    
+    # If >0, this represents a fixed set of
+    # citations that will (potentially) be
+    # screened by everyone on the project
+    initial_round_size = sa.Column(types.Integer)
+    # under the same condition, this will point to
+    # the entry in the FixedAssignment table that
+    # maps to the initial assignment associated with
+    # this review.
+    initial_assignment_id = sa.Column(types.Integer)
+    
     date_created = sa.Column(types.DateTime())
     name = sa.Column(types.Unicode(255))
     
@@ -39,11 +61,36 @@ class Citation(Base):
     refman_id = sa.Column(types.Integer)
     
     title = sa.Column(types.Unicode(500))
-    # length is based on back-of-envelop calculation
+    # length is based on back-of-envelope calculation
     abstract = sa.Column(types.Unicode(10000))
-    authors = sa.Column(types.Unicode(1000))
+    authors = sa.Column(types.Unicode(5000))
     journal = sa.Column(types.Unicode(1000))
     keywords = sa.Column(types.Unicode(5000))
+    
+class Priority(Base):
+    '''
+    This table stores the ordered priority for citation screening, i.e.,
+    facilitates active learning. It also attempts to solve the potential
+    problem of reviewers labeling the same citation simultaneously by 
+    containing a `is_out` field and date.
+    '''
+    __tablename__ = "Priority"
+    id = sa.Column(types.Integer, primary_key=True) 
+    # review to which this ordering applies
+    review_id = sa.Column(types.Integer)
+    citation_id = sa.Column(types.Integer)
+    priority = sa.Column(types.Integer)
+    
+    # we keep the number of times that each citation has been
+    # labeled, and remove it from the queue when a sufficient
+    # number of labels have been collected
+    num_times_labeled = sa.Column(types.Integer)
+    
+    # here we do some bookkeeping to lock citations
+    # while they are being labeled to prevent tandem
+    # labelings
+    is_out = sa.Column(types.Boolean)
+    time_requested = sa.Column(types.DateTime())
     
     
 class LabeledFeature(Base):
@@ -87,18 +134,38 @@ class ReviewerProject(Base):
     
 class Assignment(Base):
     '''
-    An assignment is 
+    an Assignment is a unit of work. assignments have types; 
+    some are `perpetual`, i.e., they basically say `allow the
+    person to whom this is assigned to keep on labeling, until
+    there are no more citations that have not been labeled the
+    desired number of times`, and there are `finite`, in which
+    reviewers are to label a fixed number of citations.
     '''
     __tablename__ = "Assignments"
     id = sa.Column(types.Integer, primary_key=True)
     review_id = sa.Column(types.Integer)
     reviewer_id = sa.Column(types.Integer)
+    # this is 'perpetual', 'initial' or 'finite'; the former indicates a 'perpetual'
+    # screening task -- i.e., they will continue screening
+    # while abstracts remain in the Priority queue for this
+    # review. The latter two are special cases; in which only n
+    # citations will be screened. in the 'initial' case, 
+    assignment_type = sa.Column(types.Unicode(50))
+    # both of the following are N/A for 'perpetual'
     num_assigned = sa.Column(types.Integer)
+
     done_so_far = sa.Column(types.Integer)
-    p_rescreen = sa.Column(types.Float)
     date_assigned = sa.Column(types.DateTime())
     date_due = sa.Column(types.DateTime())
     done = sa.Column(types.Boolean)
+    
+class InitialAssignment(Base):
+    __tablename__ = "InitialAssignments"
+    # the id is meaningless, but we want a primary key to make SQL 
+    # happy, so...
+    id = sa.Column(types.Integer, primary_key=True) 
+    review_id = sa.Column(types.Integer)
+    citation_id = sa.Column(types.Integer)
     
 ####################################
 ## these tables for authentication #

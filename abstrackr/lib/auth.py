@@ -15,7 +15,7 @@ def add_auth(app, config):
     return setup_sql_auth(app, User, Group, Permission, meta.Session,
                 login_url='/account/login',
                 post_login_url='/account/login',
-                post_logout_url='/',
+                post_logout_url='/account/welcome',
                 login_handler='/account/login_handler',
                 logout_handler='/account/logout',
                 cookie_secret=config.get('cookie_secret'),

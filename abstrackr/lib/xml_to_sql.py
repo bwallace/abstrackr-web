@@ -16,7 +16,6 @@ import abstrackr.model as model # for access to sqlalchemy
 
 pubmedpy.set_email("byron.wallace@gmail.com")
 
-    
 def pubmed_ids_to_d(pmids):
     print "fetching articles..."
     articles = pubmedpy.batch_fetch(pmids)
@@ -78,6 +77,7 @@ def insert_citation(review_id, ref_id, citation_d):
     model.Session.add(citation)
     model.Session.commit()
  
+#def insert_priority_entry(re)
 
 
 def xml_to_dict(fpath):
@@ -89,41 +89,48 @@ def xml_to_dict(fpath):
     ref_ids_to_abs = {}
     num_no_abs = 0
     tree = ElementTree(file=fpath)
-
+    
+    num_failed = 0
     for record in tree.findall('.//record'):
         pubmed_id = None
-        refmanid = eval(record.findtext('.//rec-number'))
-
-        # attempt to grab the pubmed id
-        pubmed_id = ""
+        refmanid = None
         try:
-            pubmed = record.findtext('.//notes/style')
-            pubmed = pubmed.split("-")
-            for i in range(len(pubmed)):
-                if "UI" in pubmed[i]:
-                    pubmed_str = pubmed[i+1].strip()
-                    pubmed_id = eval("".join([x for x in pubmed_str if x in string.digits]))
-        except Exception, ex:
-            print "problem getting pmid ..."
-            print ex
+            refmanid = eval(record.findtext('.//rec-number'))
+        except:
+            print "failed to parse a refman document."
+            
 
-        ab_text = record.findtext('.//abstract/style')
-        if ab_text is None:
-            num_no_abs += 1
-
-        title_text = record.findtext('.//titles/title/style')
-
-        # Also grab keywords
-        keywords = [keyword.text.strip().lower() for keyword in record.findall(".//keywords/keyword/style")]
-
-        # and authors
-        authors = [author.text for author in record.findall(".//contributors/authors/author/style")]
-
-        # journal
-        journal = record.findtext(".//periodical/abbr-1/style")
-
-        ref_ids_to_abs[refmanid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
-                    "keywords":keywords, "pmid":pubmed_id, "authors":authors}
+        if refmanid is not None:
+            # attempt to grab the pubmed id
+            pubmed_id = ""
+            try:
+                pubmed = record.findtext('.//notes/style')
+                pubmed = pubmed.split("-")
+                for i in range(len(pubmed)):
+                    if "UI" in pubmed[i]:
+                        pubmed_str = pubmed[i+1].strip()
+                        pubmed_id = eval("".join([x for x in pubmed_str if x in string.digits]))
+            except Exception, ex:
+                print "problem getting pmid ..."
+                print ex
+    
+            ab_text = record.findtext('.//abstract/style')
+            if ab_text is None:
+                num_no_abs += 1
+    
+            title_text = record.findtext('.//titles/title/style')
+    
+            # Also grab keywords
+            keywords = [keyword.text.strip().lower() for keyword in record.findall(".//keywords/keyword/style")]
+    
+            # and authors
+            authors = [author.text for author in record.findall(".//contributors/authors/author/style")]
+    
+            # journal
+            journal = record.findtext(".//periodical/abbr-1/style")
+    
+            ref_ids_to_abs[refmanid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
+                        "keywords":keywords, "pmid":pubmed_id, "authors":authors}
 
     print "Finished. Returning %s title/abstract/keyword sets, %s of which have no abstracts." \
                     % (len(ref_ids_to_abs.keys()), num_no_abs)

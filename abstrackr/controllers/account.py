@@ -5,6 +5,7 @@ from abstrackr.lib.base import BaseController, render
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
 from pylons.controllers.util import redirect
+import turbomail
 import abstrackr.model as model
 import pdb
 
@@ -28,6 +29,15 @@ class AccountController(BaseController):
             c.login_counter = request.environ['repoze.who.logins'] + 1
             return render('/accounts/login.mako')
 
+    def email_test(self):
+        from turbomail import Message
+        msg = Message('byron.wallace@gmail.com', 'byron.wallace@gmail.com', 'Subject')
+        msg.plain = "Foo Bar"
+        try:
+            msg.send()   # Message will be sent through the configured manager/transport.
+        except Exception, err:
+            print err
+        
     def create_account(self):
         return render('/accounts/register.mako')
         

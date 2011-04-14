@@ -7,6 +7,8 @@ import re
 import time
 from operator import itemgetter
 import csv
+import random
+import string
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -48,7 +50,6 @@ class ReviewController(BaseController):
         local_file_path = "." + os.path.join(permanent_store, 
                           xml_file.filename.lstrip(os.sep))
         local_file = open(local_file_path, 'w')
-        
         shutil.copyfileobj(xml_file.file, local_file)
         xml_file.file.close()
         local_file.close()
@@ -56,9 +57,25 @@ class ReviewController(BaseController):
         current_user = request.environ.get('repoze.who.identity')['user']
         new_review = model.Review()
         new_review.name = request.params['name']
+        
+        # we generate a random code for joining this review
+        make_code = lambda N: ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(N))
+        review_q = model.meta.Session.query(model.Review)
+        existing_codes = [review.code for review in review_q.all()]
+        code_length=10
+        cur_code = make_code(code_length)
+        while cur_code in existing_codes:
+            cur_code = make_code(code_length)
+        new_review.code = cur_code
+        
         new_review.project_lead_id = current_user.id
         new_review.project_description = request.params['description']
         new_review.date_created = datetime.datetime.now()
+        new_review.sort_by = request.params['order']
+        screening_mode_str = request.params['screen_mode']
+        new_review.screening_mode = \
+                 {"Single-screen":"single", "Double-screen":"double", "Advanced":"advanced"}[screening_mode_str]
+        new_review.initial_round_size = int(request.params['init_size'])
         model.Session.add(new_review)
         model.Session.commit()
         
@@ -71,7 +88,15 @@ class ReviewController(BaseController):
             xml_to_sql.pmid_list_to_sql(local_file_path, new_review)
         print "done."
         
-        redirect(url(controller="review", action="join_review", id=new_review.review_id))       
+        if new_review.initial_round_size > 0:
+            init_ids = self._create_initial_assignment_for_review(new_review.review_id, review.initial_round_size)
+            # need to remove the initial ids from the priority queue.
+            
+        # join the person administrating the review to the review.
+        self._join_review(new_review.review_id)
+        
+        c.review = new_review
+        return render("/reviews/review_created.mako")
         
     @ActionProtector(not_anonymous())
     def join_a_review(self):
@@ -80,24 +105,17 @@ class ReviewController(BaseController):
         return render("/reviews/join_a_review.mako")
         
     @ActionProtector(not_anonymous())
-    def join_review(self, id):
-        current_user = request.environ.get('repoze.who.identity')['user']
-        # for now just adding right away; may want to 
-        # ask project lead for permission though.
+    def join(self, review_code):
+        review_q = model.meta.Session.query(model.Review)
+        review_to_join = review_q.filter(model.Review.code==review_code).one()
+        redirect(url(controller="review", action="join_review", id=review_to_join.review_id))
         
-        # first, make sure this person isn't alerady in this review.
-        reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
-        reviewer_reviews = reviewer_review_q.filter(and_(\
-                 model.ReviewerProject.review_id == id, 
-                 model.ReviewerProject.reviewer_id==current_user.id)).all()
-        if len(reviewer_reviews) == 0:
-            reviewer_project = model.ReviewerProject()
-            reviewer_project.reviewer_id = current_user.id
-            reviewer_project.review_id = id
-            model.Session.add(reviewer_project)
-        model.Session.commit()
+    @ActionProtector(not_anonymous())
+    def join_review(self, id):
+        self._join_review(id)
         redirect(url(controller="account", action="welcome"))  
         
+    
     @ActionProtector(not_anonymous())
     def leave_review(self, id):
         current_user = request.environ.get('repoze.who.identity')['user']
@@ -205,6 +223,7 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def show_review(self, id):
         review_q = model.meta.Session.query(model.Review)
+
         c.review = review_q.filter(model.Review.review_id == id).one()
         # grab all of the citations associated with this review
         citation_q = model.meta.Session.query(model.Citation)
@@ -436,6 +455,8 @@ class ReviewController(BaseController):
                                             order_by(desc(model.Label.label_last_updated)).all()] 
         
         c.given_labels = already_labeled_by_me
+        c.review_id = review_id 
+        c.review_name = self._get_review_from_id(review_id).name
         
         # now get the citation objects associated with the given labels
         c.citations_d = {}
@@ -476,8 +497,7 @@ class ReviewController(BaseController):
         if assignment.done:
             redirect(url(controller="account", action="welcome"))
 
-        citation_q = model.meta.Session.query(model.Citation)
-        citations_for_review = citation_q.filter(model.Citation.review_id == review_id).all()
+        citations_for_review = self._get_citations_for_review(review_id)
 
         # filter out examples already screened
         label_q = model.meta.Session.query(model.Label)
@@ -522,7 +542,35 @@ class ReviewController(BaseController):
             model.Session.commit()
         
         redirect(url(controller="review", action="join_review", id=id))     
-                    
+              
+        
+    def _join_review(self, review_id):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        
+        # first, make sure this person isn't already in this review.
+        reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
+        reviewer_reviews = reviewer_review_q.filter(and_(\
+                 model.ReviewerProject.review_id == review_id, 
+                 model.ReviewerProject.reviewer_id==current_user.id)).all()
+        
+        if len(reviewer_reviews) == 0:
+            # we only add them if they aren't already a part of the review.
+            reviewer_project = model.ReviewerProject()
+            reviewer_project.reviewer_id = current_user.id
+            reviewer_project.review_id = review_id
+            model.Session.add(reviewer_project)
+        
+            # now we check what type
+            review = self._get_review_from_id(review_id)
+            if review.screening_mode in (u"single", u"double"):
+                # then we automatically add a `perpetual' assignment
+                self._make_perpetual_assignment(current_user.id, review_id)
+            if review.initial_round_size > 0:
+                self._make_initial_assignment(current_user.id, review_id)
+
+            model.Session.commit()
+            return True
+        return False     
             
     def _get_participants_for_review(self, review_id):
         reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
@@ -544,6 +592,11 @@ class ReviewController(BaseController):
         review_q = model.meta.Session.query(model.Review)
         return review_q.filter(model.Review.review_id == review_id).one()
         
+    def _get_citations_for_review(self, review_id):
+        citation_q = model.meta.Session.query(model.Citation)
+        citations_for_review = citation_q.filter(model.Citation.review_id == review_id).all()
+        return citations_for_review
+        
     def _get_citation_from_id(self, citation_id):
         citation_q = model.meta.Session.query(model.Citation)
         return citation_q.filter(model.Citation.citation_id == citation_id).one()
@@ -552,6 +605,48 @@ class ReviewController(BaseController):
         assignment_q = model.meta.Session.query(model.Assignment)
         return assignment_q.filter(model.Assignment.id == assignment_id).one()
         
+    def _make_perpetual_assignment(self, reviewer_id, review_id):
+        new_assignment = model.Assignment()
+        new_assignment.review_id = review_id
+        new_assignment.reviewer_id = reviewer_id
+        new_assignment.date_due = None # TODO
+        new_assignment.done = False
+        new_assignment.done_so_far = 0
+        new_assignment.num_assigned = -1 # this is meaningless for `perpetual' assignments
+        new_assignment.date_assigned = datetime.datetime.now()
+        new_assignment.assignment_type = u"perpetual"
+        model.Session.add(new_assignment)
+        model.Session.commit()
+    
+    def _make_initial_assignment(self, reviewer_id, review_id):
+        new_assignment = model.Assignment()
+        new_assignment.review_id = review_id
+        new_assignment.reviewer_id = reviewer_id
+        new_assignment.date_due = None # TODO
+        new_assignment.done = False
+        new_assignment.done_so_far = 0
+        new_assignment.num_assigned = self._get_review_from_id(review_id).initial_round_size
+        new_assignment.date_assigned = datetime.datetime.now()
+        new_assignment.assignment_type = u"initial"
+        model.Session.add(new_assignment)
+        model.Session.commit()
+        
+    def _create_initial_assignment_for_review(self, review_id, n):
+        # picks a random set of the citations from the
+        # specified review and adds them into the
+        # FixedAssignment table -- participants
+        # in this review should subsequently be tasked
+        # with Assignments that reference this 
+        
+        # first grab some ids at random
+        init_ids = random.sample([citation.citation_id for citation in self._get_citations_for_review(review_id)], n)
+        for citation_id in init_ids:
+            init_a = model.InitialAssignment()
+            init_a.review_id = review_id
+            init_a.citation_id = citation_id
+            model.Session.add(init_a)
+            model.Session.commit()
+            
     def _mark_up_citation(self, review_id, citation):
         # pull the labeled terms for this review
         labeled_term_q = model.meta.Session.query(model.LabeledFeature)
@@ -577,4 +672,8 @@ class ReviewController(BaseController):
         citation.marked_up_title = literal(citation.marked_up_title)
         citation.marked_up_abstract = literal(citation.marked_up_abstract)
         return citation
+   
         
+
+
+

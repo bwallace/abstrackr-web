@@ -2,6 +2,9 @@
 
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
+import atexit
+from turbomail import interface
+from turbomail.adapters import tm_pylons
 
 class Globals(object):
     """Globals acts as a container for objects available throughout the
@@ -16,3 +19,8 @@ class Globals(object):
 
         """
         self.cache = CacheManager(**parse_cache_config_options(config))
+        #from turbomail.adapters import tm_pylons 
+        #tm_pylons.start_extension() 
+    
+        atexit.register(tm_pylons.shutdown_extension)
+        interface.start(tm_pylons.FakeConfigObj(config))
