@@ -13,7 +13,7 @@
 <br/>
 
 %if len(c.leading_projects) > 0:
-    projects you're leading: <br/><br/>
+    <h2>projects you're leading</h2> <br/><br/>
     <center>
     <div>
     <img style="vertical-align:middle" src = "../../admin.png"><span style="">= go to the administration page</span>
@@ -36,11 +36,12 @@
     </tr>
     % endfor
     </table>
-    <br/><br/>
+    <br/><br/><br/>
+    </center>
 % endif 
 
 %if len(c.participating_projects) > 0:
-    projects you're participating in: <br/><br/>
+    <h2>projects you're participating in</h2> <br/><br/>
     <table class="list_table">
     % for i,review in enumerate(c.participating_projects):
     <tr class="${'odd' if i%2 else 'even'}">
@@ -56,9 +57,9 @@
 % endif
 
 
-<br/><br/>
+<br/><br/><br/>
 %if len(c.outstanding_assignments) > 0:
-    work you should be doing: <br/><br/>
+    <h2>work you should be doing </h2><br/><br/>
     <center>
     <table width=80% class="list_table" align="center>>
             <tr align="center">
@@ -68,10 +69,19 @@
                 <tr>
                 <td><a href="${url(controller='review', action='show_review', id=assignment.review_id)}">
                         ${c.review_ids_to_names_d[assignment.review_id]}</td>          
-                <td>${assignment.num_assigned}</td>
+                %if not assignment.assignment_type == "perpetual":
+                    <td>${assignment.num_assigned}</td>
+                %else:
+                    <td>--</td>
+                %endif
+                
                 <td>${assignment.done_so_far}</td>
                 <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
-                <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
+                %if not assignment.assignment_type == "perpetual" and assignment.date_due is not None:
+                    <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
+                %else:
+                    <td>--</td>
+                %endif
                 <td width=30>
                 <a href="${url(controller='review', action='screen', review_id=assignment.review_id, assignment_id=assignment.id)}">
                 get to work!</a></td>
@@ -80,13 +90,13 @@
     </table>
     </center>
 %else:
-    hurray, you've no outstanding assignments!    
+    <h2>hurray, you've no outstanding assignments!</h2>
 %endif
 
 <br/><br/>
 
 % if len(c.finished_assignments) > 0:
-    assignments you've completed: <br/>
+    <h2>assignments you've completed</h2> <br/>
     <center>
     <table width=80% class="list_table" align="center>>
             <tr align="center">
@@ -99,7 +109,12 @@
                 <td>${assignment.num_assigned}</td>
                 <td>${assignment.done_so_far}</td>
                 <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
-                <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
+                %if not assignment.assignment_type == "perpetual" and assignment.date_due is not None:
+                    <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
+                %else:
+                    <td>--</td>
+                %endif
+                
                 </tr>
             % endfor
     </table>

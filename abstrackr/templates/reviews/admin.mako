@@ -14,6 +14,7 @@
 <h1>${c.review.name}: administrivia</h1>
 
 <div class="content">
+Want to invite additional reviewers? <br/>Just have them follow this link (while logged in to abstrackr): <a href="http://localhost:5000/join/${c.review.code}">http://localhost:5000/review/join/${c.review.code}</a>
 <h2>Assignments</h2> 
     <center>
     <table width=80% class="list_table" align="center>>
