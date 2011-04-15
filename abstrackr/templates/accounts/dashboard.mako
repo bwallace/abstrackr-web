@@ -10,7 +10,7 @@
 
 <div class="content">
 
-<br/>
+<br/> 
 
 %if len(c.leading_projects) > 0:
     <h2>projects you're leading</h2> <br/><br/>
@@ -53,7 +53,7 @@
     % endfor
     </table>
 % else:
-    you're not participating in any projects yet.
+    <h2>you're not participating in any projects yet.</h2>
 % endif
 
 

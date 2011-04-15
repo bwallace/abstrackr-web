@@ -16,7 +16,7 @@
     <tr><td><label>order abstracts by:</td> <td>${h.select("order", None, ["Random", "Most likely to be relevant", "Most ambiguous"])} </label></td></tr>
     <tr><td><label>initial round size:</td><td> ${h.text('init_size', '0')}</label></td></tr>
     <tr><td></td><td></td><td>${h.submit('post', 'Create new review')}</td></tr>
-  ${h.end_form()}
+  ${h.end_form()} 
 </table>
 
 </center>
