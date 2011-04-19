@@ -69,22 +69,26 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
     
     
         $("#accept").click(function() {
+            $('#buttons').hide();
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
                 $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
+                     $('#buttons').show();
                      setup_js();
                 });
             });
          });   
                
         $("#maybe").click(function() {
+            $('#buttons').hide();
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
                 $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/0", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
+                     $('#buttons').show();
                      setup_js();
                 });
             });
@@ -92,11 +96,13 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
         
          
         $("#reject").click(function() {
+            $('#buttons').hide();
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
                 $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/-1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
+                     $('#buttons').show();
                      setup_js();
                 });
             });
@@ -172,10 +178,11 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 <br/><br/>
 <center>
 
-
+<div id = "buttons">
 <a href="#" id="accept"><img src = "../../accept.png"/></a> 
 <a href="#" id="maybe"><img src = "../../maybe.png"/></a> 
 <a href="#" id="reject"><img src = "../../reject.png"/></a> 
+</div>
 
 <br/><br/><br/>
 <table>

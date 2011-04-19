@@ -45,33 +45,39 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
     
     
         $("#accept").click(function() {
+            $('#buttons').hide();
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
                 $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
+                     $('#buttons').show();
                      setup_js();
                 });
             });
          });   
                
         $("#maybe").click(function() {
+            $('#buttons').hide();
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
                 $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/0", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
+                     $('#buttons').show();
                      setup_js();
                 });
             });
          });   
         
         $("#reject").click(function() {
+            $('#buttons').hide();
             $("#wait").text("hold on to your horses..")
             $("#citation").fadeOut('slow', function() {
                 $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/-1", function() {
                      $("#citation").fadeIn('slow');
                      $("#wait").text("");
+                     $('#buttons').show();
                      setup_js();
                 });
             });
