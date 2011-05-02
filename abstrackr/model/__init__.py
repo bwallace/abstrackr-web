@@ -90,6 +90,7 @@ class Priority(Base):
     # while they are being labeled to prevent tandem
     # labelings
     is_out = sa.Column(types.Boolean)
+    locked_by = sa.Column(types.Integer)
     time_requested = sa.Column(types.DateTime())
     
     

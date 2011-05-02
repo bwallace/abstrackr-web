@@ -60,8 +60,11 @@ def xml_to_sql(xml_path, review):
     print "ok."
 
 def dict_to_sql(xml_d, review): 
+    cit_num = 0
     for ref_id, citation_d in xml_d.items():
-        insert_citation(review.review_id, ref_id, citation_d)
+        cit_id = insert_citation(review.review_id, ref_id, citation_d)
+        insert_priority_entry(review.review_id, cit_id, cit_num)
+        cit_num += 1
         
 def insert_citation(review_id, ref_id, citation_d):
     citation = model.Citation()
@@ -76,10 +79,19 @@ def insert_citation(review_id, ref_id, citation_d):
     citation.journal = citation_d['journal']
     model.Session.add(citation)
     model.Session.commit()
+    return citation.citation_id
  
-#def insert_priority_entry(re)
-
-
+def insert_priority_entry(review_id, citation_id, init_priority_num):
+    priority = model.Priority()
+    priority.review_id = review_id
+    priority.citation_id = citation_id
+    priority.priority = init_priority_num
+    priority.num_times_labeled = 0
+    priority.is_out = False
+    model.Session.add(priority)
+    model.Session.commit()
+    
+    
 def xml_to_dict(fpath):
     '''
     Converts study data from (ref man generated) XML to a dictionary matching study IDs (keys) to

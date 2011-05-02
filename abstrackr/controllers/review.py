@@ -89,7 +89,7 @@ class ReviewController(BaseController):
         print "done."
         
         if new_review.initial_round_size > 0:
-            init_ids = self._create_initial_assignment_for_review(new_review.review_id, review.initial_round_size)
+            init_ids = self._create_initial_assignment_for_review(new_review.review_id, new_review.initial_round_size)
             # need to remove the initial ids from the priority queue.
             
         # join the person administrating the review to the review.
@@ -106,14 +106,26 @@ class ReviewController(BaseController):
         
     @ActionProtector(not_anonymous())
     def join(self, review_code):
+        user_id = request.environ.get('repoze.who.identity')['user']
         review_q = model.meta.Session.query(model.Review)
         review_to_join = review_q.filter(model.Review.code==review_code).one()
         redirect(url(controller="review", action="join_review", id=review_to_join.review_id))
         
     @ActionProtector(not_anonymous())
     def join_review(self, id):
-        self._join_review(id)
-        redirect(url(controller="account", action="welcome"))  
+        current_user = request.environ.get('repoze.who.identity')['user']
+        ###
+        # this is super-hacky, but there was a bug that was causing
+        # the current_user object to be None for reasons I cannot
+        # ascertain. refreshing the page inexplicably works; hence we
+        # do it here. need to test this further.
+        ####
+        if current_user is None:
+            redirect(url(controller="review", action="join_review", id=id))
+        else:
+            success = self._join_review(id)
+            print "\n\n\nOK, review joined.\n%s" % success
+            redirect(url(controller="account", action="welcome"))  
         
     
     @ActionProtector(not_anonymous())
@@ -172,6 +184,9 @@ class ReviewController(BaseController):
         if not review.project_lead_id == current_user.id:
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname    
     
+        ###
+        # should probably re-factor in methods...
+        ###
         # first delete all associated citations
         citation_q = model.meta.Session.query(model.Citation)
         citations_for_review = citation_q.filter(model.Citation.review_id == review.review_id).all()        
@@ -187,10 +202,31 @@ class ReviewController(BaseController):
         
         # next delete all assignments associated with this review
         assignments_q = model.meta.Session.query(model.Assignment)
-        assignments = assignments_q.filter(model.Assignment.review_id == review.review_id)
+        assignments = assignments_q.filter(model.Assignment.review_id == review.review_id).all()
         for assignment in assignments:
             model.Session.delete(assignment)
-                    
+        
+        label_q = model.meta.Session.query(model.Label)
+        labels = label_q.filter(model.Label.review_id == review.review_id).all()
+        for l in labels:
+            model.Session.delete(l)
+        
+        label_feature_q = model.meta.Session.query(model.LabeledFeature)
+        labeled_features = label_feature_q.filter(model.LabeledFeature.review_id == review.review_id).all()
+        for l in labeled_features:
+            model.Session.delete(l)
+        
+        priority_q = model.meta.Session.query(model.Priority)
+        priorities = priority_q.filter(model.Priority.review_id == review.review_id).all()
+        for p in priorities:
+            model.Session.delete(p)
+            
+        init_q = model.meta.Session.query(model.InitialAssignment)
+        inits = init_q.filter(model.InitialAssignment.review_id == review.review_id).all()
+        for init in inits:
+            model.Session.delete(init)
+        
+            
         # finally, delete the review
         model.Session.delete(review)
 
@@ -335,7 +371,7 @@ class ReviewController(BaseController):
                         model.Label.review_id == review_id, 
                         model.Label.study_id == study_id, 
                         model.Label.reviewer_id == current_user.id)).all()
-        
+          
         if len(existing_label) > 0:
             # then this person has already labeled this example
             print "(RE-)labeling citation %s with label %s" % (study_id, label)
@@ -355,7 +391,6 @@ class ReviewController(BaseController):
             c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
             c.review_id = review_id
             return render("/citation_fragment.mako")
-            
         else:
             print "labeling citation %s with label %s" % (study_id, label)
             # first push the label to the database
@@ -373,9 +408,26 @@ class ReviewController(BaseController):
             assignment_q = model.meta.Session.query(model.Assignment)
             assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
             assignment.done_so_far += 1
-            if assignment.done_so_far >= assignment.num_assigned:
+            if assignment.assignment_type != "perpetual" and assignment.done_so_far >= assignment.num_assigned:
                 assignment.done = True
             model.Session.commit()
+            
+            # update the number of times this citation has been labeled; 
+            # if we have collected a sufficient number of labels, pop it from
+            # the queue
+            priority_obj = self._get_priority_for_citation_review(study_id, review_id)
+            priority_obj.num_times_labeled += 1
+            priority_obj.is_out = False
+            model.Session.commit()
+            
+            # are we through with this citation/review?
+            review = self._get_review_from_id(review_id)
+    
+            if review.screening_mode == "single" or \
+                    review.screening_mode == "double" and priority_obj.num_times_labeled >= 2:
+                model.Session.delete(priority_obj)
+                model.Session.commit()
+            
             return self.screen_next(review_id, assignment_id)
         
     @ActionProtector(not_anonymous())
@@ -396,32 +448,83 @@ class ReviewController(BaseController):
         else:
             c.cur_lbl = None
         return render("/citation_fragment.mako")
-        
+      
     @ActionProtector(not_anonymous())
     def screen(self, review_id, assignment_id):
-        # but wait, are we finished?
-        assignment_q = model.meta.Session.query(model.Assignment)
-        assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
+        assignment = self._get_assignment_from_id(assignment_id)
+        if assignment is None:
+            pdb.set_trace()
+            redirect(url(controller="review", action="screen", \
+                        review_id=review_id, assignment_id = assignment_id))    
+            
+            
+        review = self._get_review_from_id(review_id)
         if assignment.done:
             redirect(url(controller="account", action="welcome"))    
-        
-        citation_q = model.meta.Session.query(model.Citation)
-        citations_for_review = citation_q.filter(model.Citation.review_id == review_id).all()
-        
-        label_q = model.meta.Session.query(model.Label)
-        already_labeled_ids = [label.study_id for label in label_q.filter(model.Label.review_id == review_id).all()] 
-        filtered = \
-           [citation for citation in citations_for_review if not citation.citation_id in already_labeled_ids]
            
         c.review_id = review_id
-        c.review_name = self._get_review_from_id(review_id).name
+        c.review_name = review.name
         c.assignment_id = assignment_id
-        c.cur_citation = random.choice(filtered)
+
+        c.cur_citation = self._get_next_citation(assignment, review)
+        if c.cur_citation is None:
+            return render("/assignment_complete.mako")
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
         c.cur_lbl = None
         return render("/screen.mako")
-     
-       
+          
+
+    @ActionProtector(not_anonymous())
+    def screen_next(self, review_id, assignment_id):
+        assignment = self._get_assignment_from_id(assignment_id)
+        review = self._get_review_from_id(review_id)
+
+        c.review_id = review_id
+        c.review_name = self._get_review_from_id(review_id).name
+        c.assignment_id = assignment_id
+        
+        c.cur_citation = self._get_next_citation(assignment, review)
+        
+        # but wait -- are we finished?
+        if assignment.done or c.cur_citation is None:
+            return render("/assignment_complete.mako")
+            
+        # mark up the labeled terms 
+        c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
+        c.cur_lbl = None
+        return render("/citation_fragment.mako")
+        
+        
+    def _get_next_citation(self, assignment, review):
+        next_id = None
+        # if the current assignment is an initial round,
+        # we pull from the InitialAssignment table
+        if assignment.assignment_type == "initial":
+            # in the case of initial assignments, we never remove the citations,
+            # thus we need to ascertain that we haven't already screened it
+            eligible_pool = self._get_init_ids_for_review(review.review_id)
+            # a bit worried about runtime here (O(|eligible_pool| x |already_labeled|))
+            # hopefully eligible_pool shrinks as sufficient labels are acquired (and it 
+            # shoudl always be pretty small for initial assignments).
+            already_labeled = self._get_already_labeled_ids(review.review_id)
+            eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
+            next_id = None
+            if len(eligible_pool) > 0:
+                next_id = eligible_pool[0]
+        else:
+            priority = self._get_next_priority(review.review_id)
+            if priority is None:
+                next_id = None
+            else:
+                next_id = priority.citation_id
+                ## 'check out' / lock the citation
+                priority.is_out = True
+                priority.locked_by = request.environ.get('repoze.who.identity')['user'].id
+                priority.time_requested = datetime.datetime.now()
+                model.Session.commit()
+
+        return None if next_id is None else self._get_citation_from_id(next_id)
+        
     @ActionProtector(not_anonymous())
     def review_terms(self, id, assignment_id=None):
         review_id = id
@@ -490,33 +593,6 @@ class ReviewController(BaseController):
         return render("/screen.mako")
         
     @ActionProtector(not_anonymous())
-    def screen_next(self, review_id, assignment_id):
-        # but wait -- are we finished?
-        assignment_q = model.meta.Session.query(model.Assignment)
-        assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
-        if assignment.done:
-            redirect(url(controller="account", action="welcome"))
-
-        citations_for_review = self._get_citations_for_review(review_id)
-
-        # filter out examples already screened
-        label_q = model.meta.Session.query(model.Label)
-        already_labeled_ids = [label.study_id for label in label_q.filter(model.Label.review_id == review_id).all()] 
-
-        filtered = \
-           [citation for citation in citations_for_review if not citation.citation_id in already_labeled_ids]
-
-        c.review_id = review_id
-        c.review_name = self._get_review_from_id(review_id).name
-        c.assignment_id = assignment_id
- 
-        c.cur_citation = random.choice(filtered)
-        # mark up the labeled terms 
-        c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
-        c.cur_lbl = None
-        return render("/citation_fragment.mako")
-        
-    @ActionProtector(not_anonymous())
     def create_assignment(self, id):
         assign_to = request.params.getall("assign_to")
         due_date = None
@@ -544,6 +620,14 @@ class ReviewController(BaseController):
         redirect(url(controller="review", action="join_review", id=id))     
               
         
+    def _get_priority_for_citation_review(self, citation_id, review_id):
+        priority_q = model.meta.Session.query(model.Priority)
+        p_for_cit_review =  priority_q.filter(and_(\
+                                model.Priority.review_id == review_id,\
+                                model.Priority.citation_id == citation_id,\
+                         )).one()
+        return p_for_cit_review
+        
     def _join_review(self, review_id):
         current_user = request.environ.get('repoze.who.identity')['user']
         
@@ -551,7 +635,7 @@ class ReviewController(BaseController):
         reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
         reviewer_reviews = reviewer_review_q.filter(and_(\
                  model.ReviewerProject.review_id == review_id, 
-                 model.ReviewerProject.reviewer_id==current_user.id)).all()
+                 model.ReviewerProject.reviewer_id == current_user.id)).all()
         
         if len(reviewer_reviews) == 0:
             # we only add them if they aren't already a part of the review.
@@ -565,6 +649,7 @@ class ReviewController(BaseController):
             if review.screening_mode in (u"single", u"double"):
                 # then we automatically add a `perpetual' assignment
                 self._make_perpetual_assignment(current_user.id, review_id)
+                
             if review.initial_round_size > 0:
                 self._make_initial_assignment(current_user.id, review_id)
 
@@ -572,6 +657,51 @@ class ReviewController(BaseController):
             return True
         return False     
             
+    def _get_next_priority(self, review_id):
+        '''
+        returns citation ids to be screened for the specified
+        review, ordered by their priority (int he priority table).
+        this is effectively how AL is implemented in our case --
+        we assume the table has been sorted/ordered by some
+        other process.
+        
+        Note: this will not return ids for instances that are 
+        currently being labeled.
+        '''
+        priority_q = model.meta.Session.query(model.Priority)
+        me = request.environ.get('repoze.who.identity')['user'].id
+        ranked_priorities = [priority for priority in priority_q.filter(\
+                                model.Priority.review_id == review_id).\
+                                    order_by(model.Priority.priority).all() if\
+                                    not (priority.is_out and priority.locked_by != me)]
+                                    
+        best_that_i_havent_labeled = None
+        already_labeled = self._get_already_labeled_ids(review_id)
+        for priority_obj in ranked_priorities:
+             if priority_obj.citation_id not in already_labeled:
+                 return priority_obj
+        # this person has already labeled everything -- nothing more to do!
+        return None
+        
+    def _get_init_ids_for_review(self, review_id):
+        init_q = model.meta.Session.query(model.InitialAssignment)
+        init_ids = [ia.citation_id for ia in \
+                     init_q.filter(model.InitialAssignment.review_id == review_id).\
+                        order_by(model.InitialAssignment.citation_id).all()]    
+        return init_ids
+    
+    def _get_already_labeled_ids(self, review_id):
+        ''' 
+        returns a list of citation ids corresponding to those citations that
+        the current reviewer has labeled for the specified review.
+        '''
+        reviewer_id = request.environ.get('repoze.who.identity')['user'].id
+        label_q = model.meta.Session.query(model.Label)
+        already_labeled_ids = [label.study_id for label in label_q.filter(and_(\
+                                                    model.Label.review_id == review_id,\
+                                                    model.Label.reviewer_id == reviewer_id)).all()]
+        return already_labeled_ids 
+        
     def _get_participants_for_review(self, review_id):
         reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
         reviewer_ids = \
@@ -603,7 +733,10 @@ class ReviewController(BaseController):
         
     def _get_assignment_from_id(self, assignment_id):
         assignment_q = model.meta.Session.query(model.Assignment)
-        return assignment_q.filter(model.Assignment.id == assignment_id).one()
+        try:
+            return assignment_q.filter(model.Assignment.id == assignment_id).one()
+        except:
+            return None
         
     def _make_perpetual_assignment(self, reviewer_id, review_id):
         new_assignment = model.Assignment()
