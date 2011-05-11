@@ -10,6 +10,7 @@ import abstrackr.model as model
 import pdb
 import smtplib
 import string
+import random
 
 log = logging.getLogger(__name__)
 
@@ -48,13 +49,13 @@ class AccountController(BaseController):
         user_email = request.params['email']
         user_for_email = self._get_user_from_email(user_email)
         if user_for_email:
-            token = self.gen_token_to_reset_pwd()
+            token = self.gen_token_to_reset_pwd(user_for_email)
             message = """
                         Hi, %s. Someone (hopefully you!) asked to reset your abstrackr password. 
                         To do so, follow this link: %s. If you didn't request to reset your 
                         password, just ignore this email.
-                      """ % (user.fullname, token)
-                      
+                      """ % (user_for_email.fullname, token)
+            
             self.send_email_to_user(user_for_email, "resetting your abstrackr password", "resetting stuff!")
             c.pwd_msg = "OK -- check your email (and your spam folder!)"
             return render('/accounts/recover.mako')
@@ -73,14 +74,14 @@ class AccountController(BaseController):
         existing_tokens = [entry.token for entry in reset_pwd_q.all()]
         token_length=10
         cur_token = make_token(token_length)
-        while cur_token in existing_token:
+        while cur_token in existing_tokens:
             cur_token = make_code(code_length)
         
         reset = model.ResetPassword()
         reset.token = cur_token
         reset.email = user.email
         model.Session.add(reset)
-        model.session.commit()
+        model.Session.commit()
         return cur_token
             
     def send_email_to_user(self, user, subject, message):
