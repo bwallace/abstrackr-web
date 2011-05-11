@@ -8,6 +8,8 @@ from pylons.controllers.util import redirect
 import turbomail
 import abstrackr.model as model
 import pdb
+import smtplib
+import string
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +40,35 @@ class AccountController(BaseController):
         except Exception, err:
             print err
         
+    def recover_password(self):
+        return render('/accounts/recover.mako')
+        
+    def reset_password(self):
+        user_email = request.params['email']
+        user_for_email = self._get_user_from_email(user_email)
+        if user_for_email:
+            self.send_email_to_user(user_for_email, "hi", "resetting stuff!")
+        else:
+            return """
+                Well, this is awkward. 
+                We don't have a user in our database with email: %s. 
+                Go back and try again?""" % user_email
+        
+    def send_email_to_user(self, user, subject, message):
+        server = smtplib.SMTP("localhost")
+        to = user.email
+        sender = "noreply@abstrackr.tuftscaes.org"
+        body = string.join((
+            "From: %s" % sender,
+            "To: %s" % to,
+            "Subject: %s" % subject,
+            "",
+            message
+            ), "\r\n")
+        
+        server.sendmail(sender, [to], body)
+        
+        
     def create_account(self):
         return render('/accounts/register.mako')
         
@@ -60,6 +91,23 @@ class AccountController(BaseController):
         model.Session.commit()
         redirect(url(controller="account", action="login"))
         
+    def _get_user_from_email(self, email):
+        '''
+        If a user with the provided email exists in the database, their
+        object is returned; otherwise this method returns False. 
+        '''
+        user_q = model.meta.Session.query(model.User)
+        try:
+            return user_q.filter(model.User.email == email).one()
+        except:
+            # (naively, I guess) assuming that this implies that we've
+            # no user with the provided email.
+            return False
+        
+        
+    '''
+    The following methods are protected, i.e., the user must be logged in.
+    '''
     @ActionProtector(not_anonymous())
     def welcome(self):
         """
