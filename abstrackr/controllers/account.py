@@ -52,11 +52,12 @@ class AccountController(BaseController):
             token = self.gen_token_to_reset_pwd(user_for_email)
             message = """
                         Hi, %s. Someone (hopefully you!) asked to reset your abstrackr password. 
-                        To do so, follow this link: %s. If you didn't request to reset your 
-                        password, just ignore this email.
+                        To do so, follow this link:\n
+                        \t http://sunfire34.eecs.tufts.edu/account/reset_my_password/%s.\n 
+                        If you didn't request to reset your password, just ignore this email.
                       """ % (user_for_email.fullname, token)
             
-            self.send_email_to_user(user_for_email, "resetting your abstrackr password", "resetting stuff!")
+            self.send_email_to_user(user_for_email, "resetting your abstrackr password", message)
             c.pwd_msg = "OK -- check your email (and your spam folder!)"
             return render('/accounts/recover.mako')
         else:
