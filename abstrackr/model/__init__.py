@@ -180,7 +180,7 @@ class ResetPassword(Base):
     __tablename__ = "ResetPassword"
     id = sa.Column(types.Integer, primary_key=True)
     user_email = sa.Column(types.Unicode(80))
-    token = types.Unicode(10)
+    token = sa.Column(types.Unicode(10))
 
 class Group(Base):
     __tablename__ = "group"
