@@ -74,13 +74,13 @@ class AccountController(BaseController):
         reset_pwd_q = model.meta.Session.query(model.ResetPassword)
         # we pull all in case they've tried to reset their pwd a few times
         # by the way, these should time-expire...
-        matches = self._get_user_from_email(reset_pwd_q.filter(model.ResetPassword.token==token).all()
+        matches = reset_pwd_q.filter(model.ResetPassword.token==token).all()
         if len(matches) == 0:
             return """ 
                 Hrmm... It looks like you're trying to reset your password, but I can't match the provided token. 
                 Please go back to the email that was sent to you and make sure you've copied the URL correctly. 
                 """
-        user = maches[0].user_email
+        user = self._get_user_from_email(maches[0].user_email)
         model.session.delete(reset_pwd_q)
         user._set_password(token)
         return "ok. your password has been set to %s (you can change it once you've logged in)." % token
