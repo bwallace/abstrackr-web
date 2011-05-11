@@ -23,10 +23,16 @@ Want to invite additional reviewers? <br/>Just have them follow this link (while
             </tr>
             % for i,assignment in enumerate(c.assignments):
                 <tr>
-                <td>${c.reviewer_ids_to_names_d[assignment.reviewer_id]}</td>          
-                <td>${assignment.num_assigned}</td>
+                <td>${c.reviewer_ids_to_names_d[assignment.reviewer_id]}</td>     
+                % if assignment.num_assigned < 0:
+                    <td>--</td>
+                % else:
+                    <td>${assignment.num_assigned}</td>
+                % endif     
                 <td>${assignment.done_so_far}</td>
-                <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
+                % if assignment.date_assigned is not None:
+                    <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
+                % endif
                 % if assignment.date_due is not None:
                     <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
                 % else:
