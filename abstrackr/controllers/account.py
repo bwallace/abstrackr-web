@@ -41,6 +41,7 @@ class AccountController(BaseController):
             print err
         
     def recover_password(self):
+        c.pwd_msg = ""
         return render('/accounts/recover.mako')
         
     def reset_password(self):
@@ -48,11 +49,14 @@ class AccountController(BaseController):
         user_for_email = self._get_user_from_email(user_email)
         if user_for_email:
             self.send_email_to_user(user_for_email, "hi", "resetting stuff!")
+            c.pwd_msg = "OK -- check your email (and your spam folder!)"
+            return render('/accounts/recover.mako')
         else:
-            return """
+            c.pwd_msg = """
                 Well, this is awkward. 
                 We don't have a user in our database with email: %s. 
-                Go back and try again?""" % user_email
+                Try again?""" % user_email
+            return render('/accounts/recover.mako')
         
     def send_email_to_user(self, user, subject, message):
         server = smtplib.SMTP("localhost")
