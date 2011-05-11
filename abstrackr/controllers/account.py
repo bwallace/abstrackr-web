@@ -51,10 +51,12 @@ class AccountController(BaseController):
         if user_for_email:
             token = self.gen_token_to_reset_pwd(user_for_email)
             message = """
-                        Hi, %s. Someone (hopefully you!) asked to reset your abstrackr password. 
+                        Hi, %s. \n
+                        Someone (hopefully you!) asked to reset your abstrackr password. 
                         To do so, follow this link:\n
-                        \t http://sunfire34.eecs.tufts.edu/account/reset_my_password/%s.\n 
-                        If you didn't request to reset your password, just ignore this email.
+                        \t http://sunfire34.eecs.tufts.edu/account/confirm_password_reset/%s.\n 
+                        Note that your password will be temporarily changed if you follow this link!
+                        If you didn't request to reset your password, just ignore this email. 
                       """ % (user_for_email.fullname, token)
             
             self.send_email_to_user(user_for_email, "resetting your abstrackr password", message)
@@ -66,6 +68,22 @@ class AccountController(BaseController):
                 We don't have a user in our database with email: %s. 
                 Try again?""" % user_email
             return render('/accounts/recover.mako')
+        
+    def confirm_password_reset(self, id):
+        token = id
+        reset_pwd_q = model.meta.Session.query(model.ResetPassword)
+        # we pull all in case they've tried to reset their pwd a few times
+        # by the way, these should time-expire...
+        matches = self._get_user_from_email(reset_pwd_q.filter(model.ResetPassword.token==token).all()
+        if len(matches) == 0:
+            return """ 
+                Hrmm... It looks like you're trying to reset your password, but I can't match the provided token. 
+                Please go back to the email that was sent to you and make sure you've copied the URL correctly. 
+                """
+        user = maches[0].user_email
+        model.session.delete(reset_pwd_q)
+        user._set_password(token)
+        return "ok. your password has been set to %s (you can change it once you've logged in)." % token
         
     def gen_token_to_reset_pwd(self, user):
         # generate a random token for the user to reset their password; stick
