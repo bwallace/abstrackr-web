@@ -5,7 +5,7 @@
 <div class="content">
 
 Forgot your password, huh? tsk, tsk. <br/><br/>
-Enter your email below and we'll send you instructions to reset it. (Make sure to check your spam folder for the email.)
+Enter your email below and we'll send you instructions to reset it. 
 <br/><br/>
     <center>
 
@@ -15,5 +15,6 @@ Enter your email below and we'll send you instructions to reset it. (Make sure t
     <tr><td></td><td>${h.submit('post', 'reset my password!')}</td></tr>
   ${h.end_form()}
   </table>
+  <font color="black">${c.pwd_msg}</font>
   </center>
 </div>
