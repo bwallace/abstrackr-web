@@ -48,7 +48,14 @@ class AccountController(BaseController):
         user_email = request.params['email']
         user_for_email = self._get_user_from_email(user_email)
         if user_for_email:
-            self.send_email_to_user(user_for_email, "hi", "resetting stuff!")
+            token = self.gen_token_to_reset_pwd()
+            message = """
+                        Hi, %s. Someone (hopefully you!) asked to reset your abstrackr password. 
+                        To do so, follow this link: %s. If you didn't request to reset your 
+                        password, just ignore this email.
+                      """ % (user.fullname, token)
+                      
+            self.send_email_to_user(user_for_email, "resetting your abstrackr password", "resetting stuff!")
             c.pwd_msg = "OK -- check your email (and your spam folder!)"
             return render('/accounts/recover.mako')
         else:
@@ -58,6 +65,24 @@ class AccountController(BaseController):
                 Try again?""" % user_email
             return render('/accounts/recover.mako')
         
+    def gen_token_to_reset_pwd(self, user):
+        # generate a random token for the user to reset their password; stick
+        # it in the database
+        make_token = lambda N: ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(N))
+        reset_pwd_q = model.meta.Session.query(model.ResetPassword)
+        existing_tokens = [entry.token for entry in reset_pwd_q.all()]
+        token_length=10
+        cur_token = make_token(token_length)
+        while cur_token in existing_token:
+            cur_token = make_code(code_length)
+        
+        reset = model.ResetPassword()
+        reset.token = cur_token
+        reset.email = user.email
+        model.Session.add(reset)
+        model.session.commit()
+        return cur_token
+            
     def send_email_to_user(self, user, subject, message):
         server = smtplib.SMTP("localhost")
         to = user.email
