@@ -18,4 +18,5 @@
 </div>
 
 don't have an account yet? <a href="${url(controller='account', action='create_account')}">register here</a>.
+or, maybe you forget your password? <a href="${url(controller='account', action='recover_password')}">recover it</a>.
 </center>
