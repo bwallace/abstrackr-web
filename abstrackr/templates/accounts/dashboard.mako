@@ -6,6 +6,7 @@
 <p align="right"> 
 <a class="tab" href = "${url(controller='review', action='join_a_review')}">join an existing review</a>
 <a class="tab" href="${url(controller='review', action='create_new_review')}">start a new review</a>
+<a class="tab" href="${url(controller='account', action='logout')}">logout</a>
 </p>
 
 <div class="content">
@@ -106,7 +107,11 @@
                 <tr>
                 <td><a href="${url(controller='review', action='show_review', id=assignment.review_id)}">
                         ${c.review_ids_to_names_d[assignment.review_id]}</td>          
-                <td>${assignment.num_assigned}</td>
+                %if not assignment.assignment_type == "perpetual":
+                    <td>${assignment.num_assigned}</td>
+                %else:
+                    <td>--</td>
+                %endif
                 <td>${assignment.done_so_far}</td>
                 <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
                 %if not assignment.assignment_type == "perpetual" and assignment.date_due is not None:
