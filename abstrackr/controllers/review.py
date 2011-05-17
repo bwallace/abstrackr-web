@@ -408,25 +408,33 @@ class ReviewController(BaseController):
             assignment_q = model.meta.Session.query(model.Assignment)
             assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
             assignment.done_so_far += 1
-            if assignment.assignment_type != "perpetual" and assignment.done_so_far >= assignment.num_assigned:
-                assignment.done = True
             model.Session.commit()
             
-            # update the number of times this citation has been labeled; 
-            # if we have collected a sufficient number of labels, pop it from
-            # the queue
-            priority_obj = self._get_priority_for_citation_review(study_id, review_id)
-            priority_obj.num_times_labeled += 1
-            priority_obj.is_out = False
-            model.Session.commit()
-            
-            # are we through with this citation/review?
-            review = self._get_review_from_id(review_id)
-    
-            if review.screening_mode == "single" or \
-                    review.screening_mode == "double" and priority_obj.num_times_labeled >= 2:
-                model.Session.delete(priority_obj)
+            ###
+            # for finite assignments, we need to check if we're through.
+            if assignment.assignment_type != "perpetual":
+                if assignment.done_so_far >= assignment.num_assigned:
+                    assignment.done = True
+                    model.Session.commit()
+            else:
+                # for `perpetual' (single, double or n-screening) case, we need to
+                # keep track of the priority table. 
+                #
+                # update the number of times this citation has been labeled; 
+                # if we have collected a sufficient number of labels, pop it from
+                # the queue
+                priority_obj = self._get_priority_for_citation_review(study_id, review_id)
+                priority_obj.num_times_labeled += 1
+                priority_obj.is_out = False
                 model.Session.commit()
+                
+                # are we through with this citation/review?
+                review = self._get_review_from_id(review_id)
+        
+                if review.screening_mode == "single" or \
+                        review.screening_mode == "double" and priority_obj.num_times_labeled >= 2:
+                    model.Session.delete(priority_obj)
+                    model.Session.commit()
             
             return self.screen_next(review_id, assignment_id)
         
@@ -453,7 +461,6 @@ class ReviewController(BaseController):
     def screen(self, review_id, assignment_id):
         assignment = self._get_assignment_from_id(assignment_id)
         if assignment is None:
-            pdb.set_trace()
             redirect(url(controller="review", action="screen", \
                         review_id=review_id, assignment_id = assignment_id))    
             
@@ -503,7 +510,7 @@ class ReviewController(BaseController):
             # in the case of initial assignments, we never remove the citations,
             # thus we need to ascertain that we haven't already screened it
             eligible_pool = self._get_init_ids_for_review(review.review_id)
-            # a bit worried about runtime here (O(|eligible_pool| x |already_labeled|))
+            # a bit worried about runtime here (O(|eligible_pool| x |already_labeled|)).
             # hopefully eligible_pool shrinks as sufficient labels are acquired (and it 
             # shoudl always be pretty small for initial assignments).
             already_labeled = self._get_already_labeled_ids(review.review_id)
@@ -765,11 +772,11 @@ class ReviewController(BaseController):
         model.Session.commit()
         
     def _create_initial_assignment_for_review(self, review_id, n):
-        # picks a random set of the citations from the
-        # specified review and adds them into the
-        # FixedAssignment table -- participants
-        # in this review should subsequently be tasked
-        # with Assignments that reference this 
+        '''
+        picks a random set of the citations from the specified review and 
+        adds them into the FixedAssignment table -- participants in this 
+        review should subsequently be tasked with Assignments that reference this.
+        '''
         
         # first grab some ids at random
         init_ids = random.sample([citation.citation_id for citation in self._get_citations_for_review(review_id)], n)
@@ -778,6 +785,12 @@ class ReviewController(BaseController):
             init_a.review_id = review_id
             init_a.citation_id = citation_id
             model.Session.add(init_a)
+            model.Session.commit()
+            
+            # need also to remove this id from the priority queue
+            priority_q = model.meta.Session.query(model.Priority)
+            priority_entry = priority_q.filter(model.Priority.citation_id == citation_id).one()
+            model.Session.delete(priority_entry)
             model.Session.commit()
             
     def _mark_up_citation(self, review_id, citation):
