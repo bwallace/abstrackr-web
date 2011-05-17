@@ -23,7 +23,7 @@ Awesome, you're ready to start screening.
 Have any other reviewers that will be screening abstracts register on abstrackr, if they have not. They can then join this review by following this link (send it to them):
 
 <center>
-<h2><a href="http://localhost:5000/join/${c.review.code}">http://localhost:5000/join/${c.review.code}</a></h2>
+<h2><a href="http://abstrackr.tuftscaes.org/join/${c.review.code}">http://abstrackr.tuftscaes.org/join/${c.review.code}</a></h2>
 </center>
 
 
