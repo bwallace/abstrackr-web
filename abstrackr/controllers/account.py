@@ -12,6 +12,10 @@ import smtplib
 import string
 import random
 
+# validation stuff
+from pylons.decorators import validate
+import abstrackr.model.form as form
+
 log = logging.getLogger(__name__)
 
 class AccountController(BaseController):
@@ -126,18 +130,15 @@ class AccountController(BaseController):
     def create_account(self):
         return render('/accounts/register.mako')
         
+    @validate(schema=form.RegisterForm(), form='create_account')
     def create_account_handler(self):
         '''
-        TODO need to ascertain user doesn't already exist!
-        See: http://pylonshq.com/docs/en/1.0/controllers/
-        in particular,
-            user = model.User.get_by(name=request.params['name'])
-        If user exists here, abort
+        Note that the verification goes on in model/form.py.
         '''
         # create the new user; post to db via sqlalchemy
         new_user = model.User()
         new_user.username = request.params['username']
-        new_user.fullname = " ".join([request.params['first name'], request.params['last name']])
+        new_user.fullname = " ".join([request.params['first_name'], request.params['last_name']])
         new_user.experience = request.params['experience']
         new_user._set_password(request.params['password'])
         new_user.email = request.params['email']
