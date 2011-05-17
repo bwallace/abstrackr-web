@@ -10,8 +10,8 @@
     </head>
     <body>
         <p align="right">
-        <img src = "../../abstrackr.png">
-        </p align>
+        <img src = "../../abstrackr.png"></img>
+        </p>
        
 
 <!-- *** BEGIN page content *** -->
