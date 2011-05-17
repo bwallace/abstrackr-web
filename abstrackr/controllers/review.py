@@ -431,11 +431,19 @@ class ReviewController(BaseController):
                 # are we through with this citation/review?
                 review = self._get_review_from_id(review_id)
         
-                if review.screening_mode == "single" or \
-                        review.screening_mode == "double" and priority_obj.num_times_labeled >= 2:
-                    model.Session.delete(priority_obj)
-                    model.Session.commit()
-            
+                if review.screening_mode in ("single", "double"):
+                    if priority_obj.num_times_labeled >= 2:
+                        model.Session.delete(priority_obj)
+                        model.Session.commit()
+        
+                    # has this person already labeled everything in this review?
+                    num_citations_in_review = len(self._get_citations_for_review(review_id))
+                    num_screened = len(self._get_already_labeled_ids(review.review_id))
+                    if num_screened >= num_citations_in_review:
+                        assignment.done = True
+                        model.Session.commit()
+                    
+                    
             return self.screen_next(review_id, assignment_id)
         
     @ActionProtector(not_anonymous())
