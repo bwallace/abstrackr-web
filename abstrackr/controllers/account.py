@@ -184,7 +184,7 @@ class AccountController(BaseController):
         # pull all assignments for this person
         assignment_q = model.meta.Session.query(model.Assignment)
         all_assignments = assignment_q.filter(model.Assignment.reviewer_id == person.id).all()
-        
+
         # make life easier on client side
         review_ids_to_names_d = {}
         for review in c.participating_projects:

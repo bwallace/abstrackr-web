@@ -66,7 +66,7 @@
             <tr align="center">
             <th width="25%">review</th><th span=20>number to screen</th><th>screened so far</th><th width="20%">assigned</th><th width="20%">due</th><th width="20%"></th>
             </tr>
-            % for i,assignment in enumerate(c.outstanding_assignments):
+            % for i, assignment in enumerate(c.outstanding_assignments):
                 <tr>
                 <td><a href="${url(controller='review', action='show_review', id=assignment.review_id)}">
                         ${c.review_ids_to_names_d[assignment.review_id]}</td>          

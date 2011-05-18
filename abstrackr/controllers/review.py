@@ -89,8 +89,12 @@ class ReviewController(BaseController):
         print "done."
         
         if new_review.initial_round_size > 0:
-            init_ids = self._create_initial_assignment_for_review(new_review.review_id, new_review.initial_round_size)
-            # need to remove the initial ids from the priority queue.
+            self._create_initial_task_for_review(new_review.review_id, new_review.initial_round_size)
+            
+        # if we're single or double- screening, we create a 
+        # perpetual task here
+        if new_review.screening_mode in (u"single", u"double"):
+            self._create_perpetual_task_for_review(new_review.review_id)
             
         # join the person administrating the review to the review.
         self._join_review(new_review.review_id)
@@ -164,10 +168,11 @@ class ReviewController(BaseController):
         labels = [",".join(["(internal) id", "pubmed id", "refman id", "labeler", "label"])]
         for citation, label in model.meta.Session.query(\
             model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
-            filter(model.Label.review_id==id).all():   
+              filter(model.Label.review_id==id).all():   
                 user_name = self._get_username_from_id(label.reviewer_id)
                 labels.append(",".join(\
-                   [str(x) for x in [citation.citation_id, citation.pmid_id, citation.refman_id, user_name, label.label]]))
+                   [str(x) for x in \
+                    [citation.citation_id, citation.pmid_id, citation.refman_id, user_name, label.label]]))
         
         response.headers['Content-type'] = 'text/csv'
         response.headers['Content-disposition'] = 'attachment; filename=labels_%s.csv' % id
@@ -221,10 +226,10 @@ class ReviewController(BaseController):
         for p in priorities:
             model.Session.delete(p)
             
-        init_q = model.meta.Session.query(model.InitialAssignment)
-        inits = init_q.filter(model.InitialAssignment.review_id == review.review_id).all()
-        for init in inits:
-            model.Session.delete(init)
+        fa_q = model.meta.Session.query(model.FixedAssignment)
+        fas = fa_q.filter(model.FixedAssignment.review_id == review.review_id).all()
+        for fa in fas:
+            model.Session.delete(fa)
         
             
         # finally, delete the review
@@ -234,28 +239,92 @@ class ReviewController(BaseController):
         redirect(url(controller="account", action="welcome"))
         
     @ActionProtector(not_anonymous())
+    def show_conflicts(self, id):
+        get_conflicting = self._get_conflicts()
+        
+        ### TODO first, delete any existing conflict assignment
+        # for this review
+        
+        ### now create an assignment to review these
+        conflict_a = model.FixedAssignment()
+        conflict_a.assignment_type = "conflict"
+        conflict_a.review_id = review_id
+        conflict_a.citation_id = citation_id
+        model.Session.add(init_a)
+        model.Session.commit()
+    
+    def _get_conflicts(self, review_id):
+        citation_ids_to_labels = {}
+        for citation, label in model.meta.Session.query(\
+          model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
+          filter(model.Label.review_id==id).all():
+            if citation.citation_id in citation_ids_to_labels.keys():
+                citation_ids_to_labels[citation.citation_id].append(label)
+            else:
+                citation_ids_to_labels[citation.citation_id] = [label]
+        
+        citation_ids_to_conflicting_labels = {}
+        # walk over all of the 
+        for citation_id in [c_id for c_id in citation_ids_to_labels.keys() if citation_ids_to_labels[c_id]>1]:
+            if len(set([label.label for label in citation_ids_to_labels[c_id]])) > 1:
+                citation_ids_to_conflicting_labels[c_id] = citation_ids_to_labels[c_id]
+        
+        return citation_ids_to_conflicting_labels
+                
+              
+    @ActionProtector(not_anonymous())
     def admin(self, id):
-        review_q = model.meta.Session.query(model.Review)
-        review = review_q.filter(model.Review.review_id == id).one()
-        c.review = review
+        c.review = self._get_review_from_id(id)
         c.participating_reviewers = self._get_participants_for_review(id)
         
         # make sure we're actually the project lead
         current_user = request.environ.get('repoze.who.identity')['user']
-        if not review.project_lead_id == current_user.id:
+        if not c.review.project_lead_id == current_user.id:
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
 
         # for the client side
-        reviewer_ids_to_names_d = {}
-        for reviewer in c.participating_reviewers:
-            reviewer_ids_to_names_d[reviewer.id] = reviewer.username
-        c.reviewer_ids_to_names_d = reviewer_ids_to_names_d
+        c.reviewer_ids_to_names_d = self._reviewer_ids_to_names(c.participating_reviewers)
+        
+        return render("/reviews/admin.mako")
+            
+    @ActionProtector(not_anonymous())
+    def assignments(self, id):
+        # make sure we're actually the project lead (by the way, should probably
+        # handle this verification in a decorator...)
+        current_user = request.environ.get('repoze.who.identity')['user']
+        c.review = self._get_review_from_id(id)
+        if not c.review.project_lead_id == current_user.id:
+            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname        
+            
+        c.participating_reviewers = self._get_participants_for_review(id)
+        c.reviewer_ids_to_names_d = self._reviewer_ids_to_names(c.participating_reviewers)
         
         assignments_q = model.meta.Session.query(model.Assignment)
         assignments = assignments_q.filter(model.Assignment.review_id == id)
         c.assignments = assignments
-        return render("/reviews/admin.mako")
+        return render("/reviews/assignments.mako")
+    
+    def _reviewer_ids_to_names(self, reviewers):
+        # for the client side
+        reviewer_ids_to_names_d = {}
+        for reviewer in reviewers:
+            reviewer_ids_to_names_d[reviewer.id] = reviewer.username
+        reviewer_ids_to_names_d = reviewer_ids_to_names_d
+        return reviewer_ids_to_names_d
+        
+    @ActionProtector(not_anonymous())    
+    def participants(self, id):
+        # make sure we're actually the project lead (by the way, should probably
+        # handle this verification in a decorator...)
+        current_user = request.environ.get('repoze.who.identity')['user']
+        c.review = self._get_review_from_id(id)
+        if not c.review.project_lead_id == current_user.id:
+            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname        
             
+        c.participating_reviewers = self._get_participants_for_review(id)
+    
+        return render("/reviews/participants.mako")
+        
     @ActionProtector(not_anonymous())
     def show_review(self, id):
         review_q = model.meta.Session.query(model.Review)
@@ -513,11 +582,12 @@ class ReviewController(BaseController):
     def _get_next_citation(self, assignment, review):
         next_id = None
         # if the current assignment is an initial round,
-        # we pull from the InitialAssignment table
+        # we pull from the FixedAssignments table
         if assignment.assignment_type == "initial":
             # in the case of initial assignments, we never remove the citations,
             # thus we need to ascertain that we haven't already screened it
-            eligible_pool = self._get_init_ids_for_review(review.review_id)
+            #eligible_pool = self._get_init_ids_for_review(review.review_id)
+            eligible_pool = self._get_ids_for_task(assignment.task_id)
             # a bit worried about runtime here (O(|eligible_pool| x |already_labeled|)).
             # hopefully eligible_pool shrinks as sufficient labels are acquired (and it 
             # shoudl always be pretty small for initial assignments).
@@ -526,6 +596,9 @@ class ReviewController(BaseController):
             next_id = None
             if len(eligible_pool) > 0:
                 next_id = eligible_pool[0]
+        elif assignment.assignment_type == "conflicts":
+            # this is an assignment that was created to review conflicting labels.
+            pass
         else:
             priority = self._get_next_priority(review.review_id)
             if priority is None:
@@ -663,15 +736,13 @@ class ReviewController(BaseController):
             review = self._get_review_from_id(review_id)
             if review.screening_mode in (u"single", u"double"):
                 # then we automatically add a `perpetual' assignment
-                self._make_perpetual_assignment(current_user.id, review_id)
-                
-            if review.initial_round_size > 0:
-                self._make_initial_assignment(current_user.id, review_id)
-
-            model.Session.commit()
+                self._assign_perpetual_task(current_user.id, review.review_id)
+             
+            # assign any initial tasks for this review to the joinee.  
+            self._assign_initial_tasks(current_user.id, review.review_id)
             return True
         return False     
-            
+        
     def _get_next_priority(self, review_id):
         '''
         returns citation ids to be screened for the specified
@@ -699,12 +770,21 @@ class ReviewController(BaseController):
         return None
         
     def _get_init_ids_for_review(self, review_id):
-        init_q = model.meta.Session.query(model.InitialAssignment)
+        init_q = model.meta.Session.query(model.FixedAssignment)
         init_ids = [ia.citation_id for ia in \
-                     init_q.filter(model.InitialAssignment.review_id == review_id).\
-                        order_by(model.InitialAssignment.citation_id).all()]    
+                     init_q.filter(and_(\
+                            model.FixedAssignment.review_id == review_id,\
+                            model.FixedAssignment.assignment_type == "initial")).\
+                        order_by(model.FixedAssignment.citation_id).all()]    
         return init_ids
     
+    def _get_ids_for_task(self, task_id):
+        q = model.meta.Session.query(model.FixedTask)
+        eligible_ids = [fixed_task.citation_id for fixed_task in \
+                                q.filter(model.FixedTask.task_id == task_id).\
+                                order_by(model.FixedTask.citation_id).all()]    
+        return eligible_ids
+        
     def _get_already_labeled_ids(self, review_id):
         ''' 
         returns a list of citation ids corresponding to those citations that
@@ -753,46 +833,38 @@ class ReviewController(BaseController):
         except:
             return None
         
-    def _make_perpetual_assignment(self, reviewer_id, review_id):
-        new_assignment = model.Assignment()
-        new_assignment.review_id = review_id
-        new_assignment.reviewer_id = reviewer_id
-        new_assignment.date_due = None # TODO
-        new_assignment.done = False
-        new_assignment.done_so_far = 0
-        new_assignment.num_assigned = -1 # this is meaningless for `perpetual' assignments
-        new_assignment.date_assigned = datetime.datetime.now()
-        new_assignment.assignment_type = u"perpetual"
-        model.Session.add(new_assignment)
-        model.Session.commit()
-    
-    def _make_initial_assignment(self, reviewer_id, review_id):
-        new_assignment = model.Assignment()
-        new_assignment.review_id = review_id
-        new_assignment.reviewer_id = reviewer_id
-        new_assignment.date_due = None # TODO
-        new_assignment.done = False
-        new_assignment.done_so_far = 0
-        new_assignment.num_assigned = self._get_review_from_id(review_id).initial_round_size
-        new_assignment.date_assigned = datetime.datetime.now()
-        new_assignment.assignment_type = u"initial"
-        model.Session.add(new_assignment)
+    def _create_perpetual_task_for_review(self, review_id):
+        new_task = model.Task()
+        new_task.review = review_id
+        new_task.task_type = u"perpetual"
+        new_task.num_assigned = -1 # this is meaningless for `perpetual' assignments
+        model.Session.add(new_task)
         model.Session.commit()
         
-    def _create_initial_assignment_for_review(self, review_id, n):
+    def _create_initial_task_for_review(self, review_id, n):
         '''
         picks a random set of the citations from the specified review and 
-        adds them into the FixedAssignment table -- participants in this 
+        adds them into the FixedTask table -- participants in this 
         review should subsequently be tasked with Assignments that reference this.
         '''
-        
         # first grab some ids at random
-        init_ids = random.sample([citation.citation_id for citation in self._get_citations_for_review(review_id)], n)
+        init_ids = random.sample(\
+                [citation.citation_id for citation in self._get_citations_for_review(review_id)], n)
+        # create an entry in the Assignments table
+        init_task = model.Task()
+        init_task.task_type = "initial"
+        init_task.review = review_id
+        init_task.num_assigned = n
+        model.Session.add(init_task)
+        model.Session.commit()
+        
+        # now associate the initial ids drawn
+        # with this Task
         for citation_id in init_ids:
-            init_a = model.InitialAssignment()
-            init_a.review_id = review_id
-            init_a.citation_id = citation_id
-            model.Session.add(init_a)
+            fixed_task_entry = model.FixedTask()
+            fixed_task_entry.task_id = init_task.id
+            fixed_task_entry.citation_id = citation_id
+            model.Session.add(fixed_task_entry)
             model.Session.commit()
             
             # need also to remove this id from the priority queue
@@ -800,6 +872,58 @@ class ReviewController(BaseController):
             priority_entry = priority_q.filter(model.Priority.citation_id == citation_id).one()
             model.Session.delete(priority_entry)
             model.Session.commit()
+            
+    def _assign_initial_tasks(self, user_id, review_id):
+        task_q = model.meta.Session.query(model.Task)
+        initial_tasks_for_review = task_q.filter(and_(\
+                        model.Task.review == review_id,
+                        model.Task.task_type == u"initial"
+                    )).all()
+        
+        for task in initial_tasks_for_review:
+            self._assign_task(user_id, task, review_id)
+
+    def _assign_perpetual_task(self, user_id, review_id):
+        '''
+        If there is a perpetual task associated with the
+        given review, it assigns it to user_id.
+        '''
+        task_q = model.meta.Session.query(model.Task)
+
+        perpetual_tasks_for_review = task_q.filter(and_(\
+                        model.Task.review == review_id,
+                        model.Task.task_type == u"perpetual"
+                    )).all()
+      
+       
+        if len(perpetual_tasks_for_review) > 0:
+            # note that we assume there's only *one* perpetual 
+            # task per review, or in any case we ignore any
+            # others.
+            self._assign_task(user_id, perpetual_tasks_for_review[0], \
+                                review_id)
+            
+        
+    def _assign_task(self, user_id, task, review_id, due_date=None):
+        assignment = model.Assignment()
+        assignment.review_id = review_id
+        assignment.reviewer_id = user_id
+        assignment.task_id = task.id
+        if due_date is not None:
+            assignment.due_date = due_date
+        assignment.date_assigned = datetime.datetime.now()
+        assignment.done_so_far = 0
+        ##
+        # note that we keep these two fields 
+        # in the assignment table, even though
+        # they are redundant with the entries in
+        # the task table. we do this for convienence. 
+        assignment.num_assigned = task.num_assigned
+        assignment.assignment_type = task.task_type
+        
+        model.Session.add(assignment)
+        model.Session.commit()
+    
             
     def _mark_up_citation(self, review_id, citation):
         # pull the labeled terms for this review
