@@ -12,4 +12,4 @@
 <label for="password">Password:</label>
 <input type="password" id="password" name="password" /><br />
 <input type="submit" id="submit" value="Submit" />
-</form>
+</form> 
