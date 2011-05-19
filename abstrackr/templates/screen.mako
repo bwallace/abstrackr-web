@@ -32,16 +32,6 @@
 
 </p>
 
-<%def name="write_label(label)">
-    % if label == 1:
-        <b><font color='green'>"relevant"</font></b>
-    % elif label == 0:
-        <b><font color='light green'>"maybe" (?)</font></b>
-    % else:
-        <b><font color='red'>"irrelevant"</font></b>
-    % endif
-</%def>
-
 
 <div id="citation" class="content" style='float: center'>
 <h2>${c.cur_citation.marked_up_title}</h2>

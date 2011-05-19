@@ -5,6 +5,17 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 <b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
 <b>refman ID:</b> ${c.cur_citation.refman_id}<br/><br/>
 
+<%def name="write_label(label)">
+    % if label == 1:
+        <b><font color='green'>"relevant"</font></b>
+    % elif label == 0:
+        <b><font color='light green'>"maybe" (?)</font></b>
+    % else:
+        <b><font color='red'>"irrelevant"</font></b>
+    % endif
+</%def>
+
+
 % if c.cur_lbl is not None:
     % if c.assignment_type == "conflict":
         % for label in c.cur_lbl:
