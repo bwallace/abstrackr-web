@@ -19,6 +19,7 @@
     <div>
     <img style="vertical-align:middle" src = "../../admin.png"><span style="">= go to the administration page</span>
     <img style="vertical-align:middle"  src = "../../export_sm.png"><span style="">= export labels</span>
+    <img style="vertical-align:middle" src = "../../review_conflicts.png"><span style="">= review conflicting labels</span>
     <img style="vertical-align:middle" src = "../../delete.png"><span style="">= delete review</span>
     <div>
     
@@ -31,6 +32,8 @@
                      <img src = "../../admin.png"></a></td> 
         <td><a href="${url(controller='review', action='export_labels', id=review.review_id)}">
                   <img src = "../../export_sm.png"></a></td>
+        <td><a href="${url(controller='review', action='review_conflicts', id=review.review_id)}">
+                  <img src = "../../review_conflicts.png"></a></td>
         <td><a href="${url(controller='review', action='delete_review', id=review.review_id)}" 
                        onclick="javascript:return confirm('are you sure you want to delete this review?\nall labels will be lost.')">
                   <img src = "../../delete.png"></a></td> 
