@@ -149,14 +149,15 @@ class AccountController(BaseController):
         greeting_message = """
             Hi, %s.\n
             
-            Thanks for signing up at abstrackr (http://abstrackr.tuftscaes.org).\n 
+            Thanks for signing up at abstrackr (http://abstrackr.tuftscaes.org). You
+            should be able to sign up now with username %s (only you know your password).
             
             This is just a welcome email to say hello, and that we've got your email.
             Should you ever need to reset your password, we'll send you instructions 
             to this email. In the meantime, happy screening!
             
             -- The Tufts EPC.
-        """ % (new_user.fullname)
+        """ % (new_user.fullname, new_user.username)
         
         self.send_email_to_user(new_user, "welcome to abstrackr", greeting_message)
         
