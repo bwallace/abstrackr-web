@@ -254,13 +254,14 @@ class ReviewController(BaseController):
         redirect(url(controller="account", action="welcome"))
         
     @ActionProtector(not_anonymous())
-    def review_conflicts(self, review_id):
+    def review_conflicts(self, id):
         '''
         the basic idea here is to find all of the conflicting ids, then
         shove these into a FixedTask type task (i.e., a task with an 
         enumerated set of ids to be labeled). This task is then assigned
         to the project lead (assuemd to be the current user).
         '''
+        review_id = id
         conflicting_ids = self._get_conflicts(review_id)
         
         task_q = model.meta.Session.query(model.Task)
