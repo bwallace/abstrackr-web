@@ -28,6 +28,7 @@ def make_map(config):
     map.connect('/label_term/{review_id}/{label}', controller='review', action='label_term')
     map.connect('/relabel_term/{term_id}/{new_label}', controller='review', action='relabel_term')
     map.connect('/review_my_labels/{review_id}', controller='review', action='review_labels')
+    map.connect('/review_conflicts/{review_id}', controller='review', action='review_conflicts')
     map.connect('/review_my_labels/{review_id}/{assignment_id}', controller='review', action='review_labels')
     map.connect('/review/review_terms/{id}/{assignment_id}', controller='review', action='review_terms')
     map.connect('/show_label/{review_id}/{citation_id}', controller='review', action='show_labeled_citation')

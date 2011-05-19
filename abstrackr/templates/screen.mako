@@ -32,6 +32,16 @@
 
 </p>
 
+<%def name="write_label(label)">
+    % if label == 1:
+        <b><font color='green'>"relevant"</font></b>
+    % elif label == 0:
+        <b><font color='light green'>"maybe" (?)</font></b>
+    % else:
+        <b><font color='red'>"irrelevant"</font></b>
+    % endif
+</%def>
+
 
 <div id="citation" class="content" style='float: center'>
 <h2>${c.cur_citation.marked_up_title}</h2>
@@ -40,16 +50,17 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 <b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
 <b>refman ID:</b> ${c.cur_citation.refman_id}<br/><br/>
 
+
 % if c.cur_lbl is not None:
-<center>
-    % if c.cur_lbl.label == 1:
-        you labeled this citation as <b><font color='green'>"relevant"</font></b> on ${c.cur_lbl.label_last_updated}
-    % elif c.cur_lbl.label == 0:
-        you labeled this citation as <b><font color='light green'>"maybe" (?)</font></b> on ${c.cur_lbl.label_last_updated}
+    % if c.assignment_type == "conflict":
+        % for label in c.cur_lbl:
+            <b>${c.reviewer_ids_to_names_d[label.reviewer_id]}</b> labeled this citation as ${write_label(label.label)} on ${label.label_last_updated}<br/>
+        % endfor
     % else:
-        you labeled this citation as <b><font color='red'>"irrelevant"</font></b> on ${c.cur_lbl.label_last_updated} 
+    <center>
+        you labeled this citation as ${write_label(c.cur_lbl.label)} on ${c.cur_lbl.label_last_updated}
+     </center>
     % endif
- </center>
 % endif
 
 

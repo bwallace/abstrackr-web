@@ -134,38 +134,53 @@ class ReviewerProject(Base):
     reviewer_id = sa.Column(types.Integer)
     
 class Assignment(Base):
-    '''
-    an Assignment is a unit of work. assignments have types; 
-    some are `perpetual`, i.e., they basically say `allow the
-    person to whom this is assigned to keep on labeling, until
-    there are no more citations that have not been labeled the
-    desired number of times`, and there are `finite`, in which
-    reviewers are to label a fixed number of citations.
-    '''
     __tablename__ = "Assignments"
     id = sa.Column(types.Integer, primary_key=True)
     review_id = sa.Column(types.Integer)
     reviewer_id = sa.Column(types.Integer)
-    # this is 'perpetual', 'initial' or 'finite'; the former indicates a 'perpetual'
-    # screening task -- i.e., they will continue screening
-    # while abstracts remain in the Priority queue for this
-    # review. The latter two are special cases; in which only n
-    # citations will be screened. in the 'initial' case, 
-    assignment_type = sa.Column(types.Unicode(50))
-    # both of the following are N/A for 'perpetual'
-    num_assigned = sa.Column(types.Integer)
-
+    task_id = sa.Column(types.Integer)
     done_so_far = sa.Column(types.Integer)
     date_assigned = sa.Column(types.DateTime())
     date_due = sa.Column(types.DateTime())
     done = sa.Column(types.Boolean)
     
-class InitialAssignment(Base):
-    __tablename__ = "InitialAssignments"
+    # both of these fields are redundant
+    # with the corresponding Task entry,
+    # but it is easier to keep them here, too.
+    num_assigned = sa.Column(types.Integer)
+    # this is the same as `task_type'. 
+    assignment_type = sa.Column(types.Unicode(50))
+    
+    
+class Task(Base):
+    '''
+    a Task is a unit of work. Tasks have types; 
+    some are `perpetual`, i.e., they basically say `allow the
+    person to whom this is assigned to keep on labeling, until
+    there are no more citations that have not been labeled the
+    desired number of times`, and there are `finite`, in which
+    assignees are to label a fixed number of citations. Tasks are 
+    always associated with exactly one review, but multiple
+    reviewers can be assigned the same Task (see the Assignment table).
+    '''
+    __tablename__ = "Tasks"
+    id = sa.Column(types.Integer, primary_key=True)
+    review = sa.Column(types.Integer)
+    # this is 'perpetual', 'initial' or 'finite'; the former indicates a 'perpetual'
+    # screening task -- i.e., they will continue screening
+    # while abstracts remain in the Priority queue for this
+    # review. The latter two are special cases; in which only n
+    # citations will be screened. in the 'initial' case, 
+    task_type = sa.Column(types.Unicode(50))
+    # both of the following are N/A for 'perpetual'
+    num_assigned = sa.Column(types.Integer)
+    
+class FixedTask(Base):
+    __tablename__ = "FixedTasks"
     # the id is meaningless, but we want a primary key to make SQL 
     # happy, so...
     id = sa.Column(types.Integer, primary_key=True) 
-    review_id = sa.Column(types.Integer)
+    task_id = sa.Column(types.Integer)
     citation_id = sa.Column(types.Integer)
     
 ####################################
