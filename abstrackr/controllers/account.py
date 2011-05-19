@@ -144,8 +144,25 @@ class AccountController(BaseController):
         new_user.email = request.params['email']
         model.Session.add(new_user)
         model.Session.commit()
+        
+        # send out an email
+        greeting_message = """
+            Hi, %s.\n
+            
+            Thanks for signing up at abstrackr (http://abstrackr.tuftscaes.org).\n 
+            
+            This is just a welcome email to say hello, and that we've got your email.
+            Should you ever need to reset your password, we'll send you instructions 
+            to this email. In the meantime, happy screening!
+            
+            -- The Tufts EPC.
+        """ % (new_user.fullname)
+        
+        self.send_email_to_user(new_user, "welcome to abstrackr", greeting_message)
+        
         redirect(url(controller="account", action="login"))
         
+
     def _get_user_from_email(self, email):
         '''
         If a user with the provided email exists in the database, their
