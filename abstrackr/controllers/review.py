@@ -137,14 +137,21 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def leave_review(self, id):
         current_user = request.environ.get('repoze.who.identity')['user']
-        # for now just adding right away; may want to 
-        # ask project lead for permission though.
+        self._remove_user_from_review(current_user.id, int(id))
+        redirect(url(controller="account", action="welcome"))
+        
+    @ActionProtector(not_anonymous())
+    def remove_from_review(self, reviewer_id, review_id):
+        self._remove_user_from_review(reviewer_id, review_id)
+        redirect(url(controller="review", action="admin", id=review_id))
+        
+    def _remove_user_from_review(self, reviewer_id, review_id):
         reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
         reviewer_reviews = reviewer_review_q.filter(and_(\
-                 model.ReviewerProject.review_id == id, 
-                 model.ReviewerProject.reviewer_id==current_user.id)).all()
+                 model.ReviewerProject.review_id == review_id, 
+                 model.ReviewerProject.reviewer_id==reviewer_id)).all()
                  
-        for reviewer_review in reviewer_reviews:  
+        for reviewer_review in reviewer_reviews:
             # note that there should only be one entry;
             # this is just in case.   
             model.Session.delete(reviewer_review)
@@ -152,15 +159,13 @@ class ReviewController(BaseController):
         # next, we need to delete all assignments for this person and review
         assignments_q = model.meta.Session.query(model.Assignment)
         assignments = assignments_q.filter(and_(\
-                    model.Assignment.review_id == id,
-                    model.Assignment.reviewer_id == current_user.id
+                    model.Assignment.review_id == review_id,
+                    model.Assignment.reviewer_id == reviewer_id
         )).all()
         
         for assignment in assignments:
             model.Session.delete(assignment)
             model.Session.commit()
-            
-        redirect(url(controller="account", action="welcome"))
         
         
     @ActionProtector(not_anonymous())
@@ -192,7 +197,7 @@ class ReviewController(BaseController):
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname    
     
         ###
-        # should probably re-factor in methods...
+        # should probably re-factor into routines...
         ###
         # first delete all associated citations
         citation_q = model.meta.Session.query(model.Citation)
@@ -251,7 +256,7 @@ class ReviewController(BaseController):
         model.Session.delete(review)
         model.Session.commit()
         
-        redirect(url(controller="account", action="welcome"))
+        redirect(url(controller="account", action="my_projects"))
         
     @ActionProtector(not_anonymous())
     def review_conflicts(self, id):
@@ -490,8 +495,7 @@ class ReviewController(BaseController):
     def label_citation(self, review_id, assignment_id, study_id, seconds, label):
         # unnervingly, this commit() must remain here, or sql
         # alchemy seems to get into a funk. I realize this is 
-        # cargo-cult programming... 
-        # TODO further investigate
+        # cargo-cult programming... TODO further investigate
         model.meta.Session.commit()
         
         current_user = request.environ.get('repoze.who.identity')['user']
@@ -1034,17 +1038,38 @@ class ReviewController(BaseController):
                             model.LabeledFeature.reviewer_id == reviewer_id)).all()
         citation.marked_up_title = citation.title
         citation.marked_up_abstract = citation.abstract
+        
+        # sort the labeled terms by length (inverse)
+        labeled_terms.sort(cmp=lambda x,y: len(y.term) - len(x.term))
+        
+        # strip these to sanitize input to RE.
+        # note that this means users cannot provide REs
+        # themselves.
+        meta_chars = ". ^ $ * + ? { } [ ] \ | ( )".split(" ")
         for term in labeled_terms:
-            title_matches = list(set(re.findall(term.term, citation.marked_up_title)))
-
-            for match in title_matches:
-                citation.marked_up_title = citation.marked_up_title.replace(match, "<font color='%s'>%s</font>" % (COLOR_D[term.label], match))
+            # 'sanitize' the string, i.e., escape special chars
+            term_text = []
+            for x in term.term:
+                if x in meta_chars:
+                    term_text.append("\%s"%x)
+                else:
+                    term_text.append(x)
+                    
+            #term_text = "".join([x for x in term.term if not x in meta_chars else "\%s"%x])
+            term_text = "".join(term_text)
+            term_re = re.compile(term_text, re.IGNORECASE)
             
-            if citation.marked_up_abstract is not None:
-                abstract_matches = list(set(re.findall(term.term, citation.marked_up_abstract)))
-                for match in abstract_matches:
-                    citation.marked_up_abstract = \
-                       citation.marked_up_abstract.replace(match, "<font color='%s'>%s</font>" % (COLOR_D[term.label], match))
+            # (case-insensitive) replace the term in the title text
+            citation.marked_up_title = term_re.sub(\
+                        "<font color='%s'>%s</font>" % (COLOR_D[term.label], term.term),\
+                        citation.marked_up_title)
+                  
+            if citation.marked_up_abstract is not None:      
+                # ... and in the abstract text
+                citation.marked_up_abstract = term_re.sub(\
+                            "<font color='%s'>%s</font>" % (COLOR_D[term.label], term.term),\
+                            citation.marked_up_abstract)
+                        
             else:
                 citation.marked_up_abstract = ""
         citation.marked_up_title = literal(citation.marked_up_title)

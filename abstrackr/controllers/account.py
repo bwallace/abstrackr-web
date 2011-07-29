@@ -187,6 +187,7 @@ class AccountController(BaseController):
         Greet the user if she logged in successfully or redirect back
         to the login form otherwise(using ActionProtector decorator).
         """
+        '''
         person = request.environ.get('repoze.who.identity')['user']
         c.person = person
         
@@ -213,6 +214,61 @@ class AccountController(BaseController):
         c.finished_assignments = [a for a in all_assignments if a.done]
         
         return render('/accounts/dashboard.mako')
+        '''
+        redirect(url(controller="account", action="my_work"))
+        
+    @ActionProtector(not_anonymous())
+    def my_work(self):
+        person = request.environ.get('repoze.who.identity')['user']
+        c.person = person
+        
+        # pull all assignments for this person
+        assignment_q = model.meta.Session.query(model.Assignment)
+        all_assignments = assignment_q.filter(model.Assignment.reviewer_id == person.id).all()
+        
+        c.outstanding_assignments = [a for a in all_assignments if not a.done]
+        c.finished_assignments = [a for a in all_assignments if a.done]   
+        
+        project_q = model.meta.Session.query(model.Review)   
+        junction_q = model.meta.Session.query(model.ReviewerProject)
+        participating_project_ids = \
+            [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
+        c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids]
+        c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects )
+        
+        c.my_work = True
+        c.my_projects = False
+        return render('/accounts/dashboard.mako')
+        
+        
+    @ActionProtector(not_anonymous())
+    def my_projects(self):
+        person = request.environ.get('repoze.who.identity')['user']
+        c.person = person
+        
+        project_q = model.meta.Session.query(model.Review)       
+        c.leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()
+        
+        # pull the reviews that this person is participating in
+        junction_q = model.meta.Session.query(model.ReviewerProject)
+        participating_project_ids = \
+            [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
+        c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids]
+                
+        c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects)
+        
+        c.my_work = False
+        c.my_projects = True
+        
+        return render('/accounts/dashboard.mako')
+        
+    def _get_review_ids_to_names_d(self, reviews):
+        # make life easier on client side
+        review_ids_to_names_d = {}
+        for review in reviews:
+            review_ids_to_names_d[review.review_id] = review.name
+        return review_ids_to_names_d
+        
         
     @ActionProtector(not_anonymous())
     def test_user_access(self):
