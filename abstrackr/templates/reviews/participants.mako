@@ -1,5 +1,5 @@
-
 <%inherit file="../site.mako" />
+
 <%def name="title()">${c.review.name}</%def>
 <script language="JavaScript">
     var cal = new CalendarPopup();
@@ -23,9 +23,15 @@ Want to invite additional reviewers? <br/>Just have them follow this link (while
 
 
 <table class="list_table">
-<tr align="center"><th>person</th><th>screened so far</th><th></th></tr>
-%for i,review in enumerate(c.participants):
-            
+<tr align="center"><th>person</th><th></th></tr>
+%for participant in c.participating_reviewers:
+       <tr>
+       <td>${participant.fullname}</td>
+       <td class="actions">
+       <a href="/review/remove_from_review/${participant.id}/${c.review.review_id}")>
+        remove from review</a>
+       </tr>     
+       
 %endfor
 <table>
 
