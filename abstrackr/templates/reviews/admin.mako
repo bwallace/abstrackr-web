@@ -12,13 +12,46 @@
 
 
 <h1>${c.review.name}: administrivia</h1>
-
-<p align="right"> 
-<a class="tab" href="${url(controller='review', action='assignments', id=c.review.review_id)}">assignments</a>
-<a class="tab" href="${url(controller='review', action='participants', id=c.review.review_id)}">participants</a>
-</p>
+<div class="actions">
+<a href="${url(controller='review', action='assignments', id=c.review.review_id)}">manage assignments</a>
+</div>
 
 <div class="content">
-Review conflicts
+
+<h2>Participants</h2>
+<table class="list_table">
+<tr align="center"><th>person</th><th></th></tr>
+%for participant in c.participating_reviewers:
+       <tr>
+       <td>${participant.fullname}</td>
+       <td class="actions">
+       <a href="/review/remove_from_review/${participant.id}/${c.review.review_id}")>
+        remove from review</a>
+       </tr>     
+       
+%endfor
+<table>
+
+<br/>
+
+<div align="right">
+Want to invite additional reviewers? <br/><br/>
+<form action="${url(controller='review', action='invite_reviewers')}" method="POST">
+
+<div class="actions">
+<label for="emails">enter their emails (comma-separated).</label>
+<input type="text" id="emails" name="emails" /><br />
+<input type="submit" id="submit" value="invite them" />
+</div>
+</form>
+</div>
+
+<p align="right">
+(Alternatively, have them follow this link (while logged in to abstrackr): <a href="http://localhost:5000/join/${c.review.code}">http://localhost:5000/review/join/${c.review.code}</a>)
+</p>
+
+
+</div>
+
 
 </div>
