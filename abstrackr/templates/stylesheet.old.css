@@ -1,11 +1,10 @@
-body { background-color:	#ddd; color: #333;margin-left: 10%; margin-right: 10%;  }
+body { background-color: #ddd; color: #333; }
 
 body, p, ol, ul, td {
   font-family: 'Lucida Sans Unicode', 'Lucida Grande', sans-serif;
   font-size:   13px;
   line-height: 18px;
 }
-
 
 .container
 {
@@ -23,29 +22,20 @@ body, p, ol, ul, td {
 	margin-right: 0;
 }
 
-#login-header{
-    color: #ddd;
-    position: absolute;
-    right: 10px;
-    font-size: 11px;
-    top: 5px;
-}
-
 .content{
-	padding: 20px;
+	padding: 25px;
 	background-color: #fff;
 	-moz-box-shadow: 3px 3px 4px #aaa;
 	-webkit-box-shadow: 3px 3px 4px #aaa;
 	box-shadow: 3px 3px 4px #aaa;
 	-moz-border-radius-topright: 4px;
 border-top-right-radius: 4px;
-
+-moz-border-radius-topleft: 4px;
+border-top-left-radius: 4px;
 	-moz-border-radius-bottomright: 4px;
 border-bottom-right-radius: 4px;
 -moz-border-radius-bottomleft: 4px;
 border-bottom-left-radius: 4px;
-
-  border: 1px solid #000000;
 }
 
 pre {
@@ -54,94 +44,9 @@ pre {
   font-size: 11px;
 }
 
-
-
-a{
-	text-decoration: none;
-	color: #2c539e;
-}
-
+a { color: #000; }
 a:visited { color: #666; }
-a:hover{
-	text-decoration: underline;
-}
-
-	
-
-
-/* ---- BUTTON CSS FROM: http://www.bloggerswatch.com/internet/css-trick-submit-button-should-look-same-everywhere/ */
-.actions a, .actions button, .inline-actions a, .inline-actions button, .saved, button{
-    margin:0 7px 0 0;
-    background-color:#f5f5f5;
-    #border:1px solid #dedede;
-    border-top:1px solid #eee;
-    border-left:1px solid #eee;
-    font-size:12px;
-    line-height:130%;
-    text-decoration:none;
-    font-weight:bold;
-    color:#565656;
-    cursor:pointer;
-    padding:6px; 
-    border:1px dotted gray;
-}
-
-
-.inline-actions a:hover, .actions a:hover, .actions input:hover{
-    color: green;
-}
-
-.small-actions a, .small-actions button{
-    margin:0 7px 0 0;
-    background-color:#f5f5f5;
-    border:1px solid #dedede;
-    border-top:1px solid #eee;
-    border-left:1px solid #eee;
-    font-size:10px;
-    line-height:130%;
-    text-decoration:none;
-    font-weight:bold;
-    color:#565656;
-    cursor:pointer;
-    padding:6px; 
-    border:1px dotted gray;
-}
-
-.actions input{
-        margin:0 7px 0 0;
-    background-color:#f5f5f5;
-    border:1px solid #dedede;
-    border-top:1px solid #eee;
-    border-left:1px solid #eee;
-    font-size:12px;
-    line-height:130%;
-    text-decoration:none;
-    font-weight:bold;
-    color:#565656;
-    cursor:pointer;
-    padding:6px; 
-    border:1px dotted gray;
-}
-
-.actions a, .small-actions a{
-width: 100px;
-}
-
-.actions button, .small-actions a, .inline-actions button, button{
-    width:auto;
-    overflow:visible;
-    padding:6px; /* IE6 */
-}
-
-.actions button img, .actions a img, .inline-actions button img, .inline-actions a img{
-    margin:0 3px -3px 0 !important;
-    padding:0;
-    border:none;
-    width:16px;
-    height:16px;
-
-}
-
+a:hover { color: #ccc; }
 
 div.field, div.actions {
   margin-bottom: 10px;
@@ -161,7 +66,6 @@ div.field, div.actions {
   width: 450px;
   border: 2px solid red;
   padding: 7px;
-  
   padding-bottom: 0;
   margin-bottom: 20px;
   background-color: #f0f0f0;
@@ -185,10 +89,10 @@ div.field, div.actions {
 	visibility:hidden;
 }
 h1{
-font-size: 24px;
+font-size: 20px;
 font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
 padding-bottom: 10px;
-color: 	#2B65EC;
+color: #3479BF;
 }
 
 h2{
@@ -238,7 +142,7 @@ table
 	width: 100%;
 	border: 1px solid #ccc;
 	color: #333;
-	padding: 4px;
+	padding: 3px;
 }
 
 .listing_item:hover{
@@ -303,12 +207,10 @@ padding: 8px;
 
 .odd, .odd.td{
 	background: #eee;
-	vertical-align: middle;
 }
 
 .even, .even.td{
     background:#dedede;
-    vertical-align: middle;
 }
 
 .odd td.calculated{
@@ -340,29 +242,10 @@ padding: 8px;
 	color: red;
 }
 
-a.active_tab {
-    
-
-  background-color: #ffffff;
-  border: 1px solid #000000;
-  border-bottom-width: 0px;
-  padding: 2px 1em 2px 1em;
-  text-decoration: none;
-}
-
-a.tab {
-  background-color: #f0f0f0;
-  border: 1px solid #000000;
-  border-bottom-width: 0px;
-  padding: 2px 1em 2px 1em;
-  text-decoration: none;
-  text-align: right;
-}
-
 
 table.list_table{
-width: 100%;
-background:#fff;
+width: 95%;
+background:#D3E4E5;
 border:1px solid gray;
 color:#fff;
 font:normal 12px verdana, arial, helvetica, sans-serif;
@@ -371,20 +254,18 @@ margin-right: auto;
 }
 
 table.list_table td{
-padding: 10px;
-text-align: center;
-vertical-align:middle;
+padding: 2px;
+text-align: left;
 color:#363636;
-
 }
 
 table.list_table tr{
-border:2px gray;
+border:1px dotted gray;
 
 }
 
 table.list_table tr:hover { 
- background:yellow;
+ background:#ccffcc;
  #border:1px solid #99cc99;
  #color:#000000;
 }
@@ -419,7 +300,7 @@ table.form_table{
 }
 
 .actions{
-text-align: right;
+text-align: left;
 }
 
 #top-header{
@@ -446,7 +327,6 @@ background-color: #ddd;
 	margin: 0px;
 	height: 24px;
 	background-color: #aaa;
-	font-color: black;
 	position: absolute;
 	top: 0px;
 	left: 0px;
@@ -478,7 +358,6 @@ ul#menu {
 margin-left: -40px;
 padding-top: 8px;
 }
-
 
 ul#menu li {
   display: inline; /* Shows each item side-by-side */
@@ -551,14 +430,11 @@ border: 1px solid #aaa;
 background: #D7F2F5;
 color: #003333;
 }
-
-
 .breadcrumbs{
 font-family: verdana, sans-serif;
 margin-top: -20px;
 margin-bottom: 15px;
 color: #333;
-
 font-size:10px;
 	margin-left: -8px;
 	margin-right: -8px;
@@ -566,18 +442,12 @@ font-size:10px;
 	padding-left: 8px;
 }
 
-
 .breadcrumbs a{
-
-color: blue;
+color: #666;
 }
 
 .breadcrumbs a:hover{
 color: #999;
-}
-
-.loading{
-    display: none;  
 }
 
 .searchbar{
@@ -619,57 +489,4 @@ border: 0px;
 {
 background: #D7F2F5;
 color: #003333;
-}
-
-table.pretty {
-  margin: 1em 1em 1em 2em;
-  background: whitesmoke;
-  border-collapse: collapse;
-}
-table.pretty th, table.pretty td {
-  border: 1px silver solid;
-  padding: 0.2em;
-}
-table.pretty th {
-  background: gainsboro;
-  text-align: center;
-}
-table.pretty caption {
-  margin-left: inherit;
-  margin-right: inherit;
-}
-
-/* jqModal base Styling courtesy of;
-  Brice Burgess <bhb@iceburg.net> */
-
-/* The Window's CSS z-index value is respected (takes priority). If none is supplied,
-  the Window's z-index value will be set to 3000 by default (in jqModal.js). You
-  can change this value by either;
-    a) supplying one via CSS
-    b) passing the "zIndex" parameter. E.g.  (window).jqm({zIndex: 500}); */
-  
-.jqmWindow {
-    display: none;
-    
-    position: fixed;
-    top: 17%;
-    left: 50%;
-    
-    margin-left: -300px;
-    width: 600px;
-    
-    background-color: #EEE;
-    color: #333;
-    border: 1px solid black;
-    padding: 12px;
-}
-
-.jqmOverlay { background-color: #000; }
-
-/* Fixed posistioning emulation for IE6
-     Star selector used to hide definition from browsers other than IE6
-     For valid CSS, use a conditional include instead */
-* html .jqmWindow {
-     position: absolute;
-     top: expression((document.documentElement.scrollTop || document.body.scrollTop) + Math.round(17 * (document.documentElement.offsetHeight || document.body.clientHeight) / 100) + 'px');
 }

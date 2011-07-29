@@ -5,7 +5,6 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <link rel="stylesheet" href="/stylesheet.css">
         <script type="text/javascript" src="/scripts/jquery-1.4.4.js"></script>
-        <script type="text/javascript" src="/scripts/jqModal.js"></script>
         <script type="text/javascript" src="/scripts/CalendarPopup.js"></script>
         <title>abstrackr: ${self.title()}</title>
     </head>
@@ -15,10 +14,6 @@
         <img src = "../../abstrackr.png"></img>
         </p>
        
-	<div id="login-header">
-	 <a href="/">home</a>  ||  <a href="/account/logout">sign out</a> || <a href="/help">help</a> || <a href="/account">my account</a> 
-
-	</div>
 	
 <!-- *** BEGIN page content *** -->
 ${self.body()}

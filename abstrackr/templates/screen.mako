@@ -24,13 +24,15 @@
 </div>
 
 
-<p align="right">
-<a class="tab" 
+
+<div class="actions">
+<a
   href="${url(controller='review', action='review_labels', review_id=c.review_id, assignment_id=c.assignment_id)}">review labels</a>
-<a class="tab" 
+<a 
   href="${url(controller='review', action='review_terms', id=c.review_id, assignment_id=c.assignment_id)}">review terms</a>
 
-</p>
+</div>
+
 
 
 <div id="citation" class="content" style='float: center'>

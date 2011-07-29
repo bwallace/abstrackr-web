@@ -1,4 +1,4 @@
-<%inherit file="../site.mako" />
+<%inherit file="../site_out.mako" />
 <%def name="title()">recover password</%def>
 
 
