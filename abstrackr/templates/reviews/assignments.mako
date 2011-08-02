@@ -13,14 +13,13 @@
 
 <h1>${c.review.name}: administrivia</h1>
 
-<p align="right"> 
-<a class="tab" href="${url(controller='review', action='assignments', id=c.review.review_id)}">assignments</a>
-<a class="tab" href="${url(controller='review', action='participants', id=c.review.review_id)}">participants</a>
-</p>
+<div class="actions">
+<a href="${url(controller='review', action='admin', id=c.review.review_id)}">manage participants</a>
+</div>
 
 <div class="content">
-Want to invite additional reviewers? <br/>Just have them follow this link (while logged in to abstrackr): <a href="http://localhost:5000/join/${c.review.code}">http://localhost:5000/review/join/${c.review.code}</a>
-<h2>Assignments</h2> 
+
+<h2>existing assignments</h2> 
     <center>
     <table width=80% class="list_table" align="center>>
             <tr align="center">
@@ -49,8 +48,8 @@ Want to invite additional reviewers? <br/>Just have them follow this link (while
     </center>
 <br/><br/>
 
-<h2>Create new assignment</h2>
-
+<h2>create new assignment</h2>
+<center>
 <br/>
 <form name="new_assignment" action="${url(controller='review', action='create_assignment', id=c.review.review_id)}">
 assign to: <br/><br/>
@@ -70,10 +69,10 @@ due date:</td><td>
 <a href="#"
    onClick="cal.select(document.forms['new_assignment'].due_date,'anchor1','MM/dd/yyyy'); return false;"
    NAME="anchor1" ID="anchor1">select</A> </td></tr>
-  <tr><td><INPUT TYPE=SUBMIT VALUE="Create assignment"></td></tr>
+  <tr><td></td><td class="actions"><INPUT TYPE=SUBMIT VALUE="create assignment"></td></tr>
 </table>
 </form>
-
+</center>
 
 
 </div>
