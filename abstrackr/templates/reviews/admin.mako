@@ -35,11 +35,10 @@
 <br/>
 
 <div align="right">
-Want to invite additional reviewers? <br/><br/>
 <form action="${url(controller='review', action='invite_reviewers')}" method="POST">
 
 <div class="actions">
-<label for="emails">enter their emails (comma-separated).</label>
+<label for="emails">Want to invite additional reviewers? Enter their emails (comma-separated).</label>
 <input type="text" id="emails" name="emails" /><br />
 <input type="submit" id="submit" value="invite them" />
 </div>
@@ -47,7 +46,7 @@ Want to invite additional reviewers? <br/><br/>
 </div>
 
 <p align="right">
-(Alternatively, have them follow this link (while logged in to abstrackr): <a href="http://localhost:5000/join/${c.review.code}">http://localhost:5000/review/join/${c.review.code}</a>)
+Alternatively, they can join the review themselves using this code: <b>${c.review.code}</b>
 </p>
 
 
