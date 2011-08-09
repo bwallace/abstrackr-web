@@ -132,7 +132,7 @@ class ReviewController(BaseController):
 
             Happy screening!
         """ % (project.name, \
-               "http://http://sunfire34.eecs.tufts.edu/review/join/%s"+ project.code)
+               "http://http://sunfire34.eecs.tufts.edu/review/join/%s" % project.code)
 
         server = smtplib.SMTP("localhost")
         to = email
