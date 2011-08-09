@@ -117,10 +117,9 @@ class ReviewController(BaseController):
         #pdb.set_trace()
         review = self._get_review_from_id(id)
         for email in emails:
-            pass
-            #self._invite_person_to_join(email, review)
+            self._invite_person_to_join(email, review)
 
-        #(controller="review", action="admin", id=id, admin_))
+        
         return self.admin(id, admin_msg="OK -- sent invites to: %s" % request.params['emails'])
 
     # @TODO this is redundant with code in account.py --
@@ -138,7 +137,7 @@ class ReviewController(BaseController):
 
             Happy screening.
         """ % (project.name, \
-               "http://http://sunfire34.eecs.tufts.edu/review/join/%s" % project.code)
+               "http://abstrackr.tuftscaes.org/review/join/%s" % project.code)
 
         server = smtplib.SMTP("localhost")
         to = email
