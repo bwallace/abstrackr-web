@@ -58,7 +58,7 @@ class AccountController(BaseController):
                         Hi, %s. \n
                         Someone (hopefully you!) asked to reset your abstrackr password. 
                         To do so, follow this link:\n
-                        \t http://sunfire34.eecs.tufts.edu/account/confirm_password_reset/%s.\n 
+                        \t http://abstrackr.tuftscaes.org/account/confirm_password_reset/%s.\n 
                         Note that your password will be temporarily changed if you follow this link!
                         If you didn't request to reset your password, just ignore this email. 
                       """ % (user_for_email.fullname, token)
@@ -74,6 +74,7 @@ class AccountController(BaseController):
                 Try again?""" % user_email
             return render('/accounts/recover.mako')
         
+    
     def confirm_password_reset(self, id):
         token = str(id)
         reset_pwd_q = model.meta.Session.query(model.ResetPassword)
@@ -126,7 +127,24 @@ class AccountController(BaseController):
         
         server.sendmail(sender, [to], body)
         
-        
+    
+    def my_account(self):
+        c.current_user = request.environ.get('repoze.who.identity')['user']
+        c.account_msg = ""
+        return render("/accounts/account.mako")
+
+    def change_password(self):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        if request.params["password"] == request.params["password_confirm"]:
+            current_user._set_password(request.params['password'])
+            model.Session.commit()
+            c.account_msg = "ok, your password has been changed."
+        else:
+            c.account_msg = "whoops -- the passwords didn't match! try again."
+
+        return render("/accounts/account.mako")
+      
+
     def create_account(self):
         return render('/accounts/register.mako')
         
