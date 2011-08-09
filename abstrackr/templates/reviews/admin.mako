@@ -55,17 +55,22 @@ jQuery(document).ready(function(){
 <input type="post" id="post" value="invite them" />
 </div>
 </form>
+    <div class="loading" id="okay_div">
+        okay! emails have been sent!
+    </div>
 </div>
 
+
+    <div class="loading" id="okay_div">
+        okay! emails have been sent!
+    </div>
 
 <p align="right">
 Alternatively, they can join the review themselves using this code: <b>${c.review.code}</b>
 </p>
 
 
-    <div class="loading" id="okay_div">
-        okay! emails have been sent!
-    </div>
+
 
 
 </div>

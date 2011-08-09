@@ -11,6 +11,7 @@ jQuery(document).ready(function(){
         $("#okay_div").fadeIn(2000)
     });
 });
+</script>
 
 <div class="breadcrumbs">
 <a href="${url(controller='account', action='welcome')}">./dashboard</a>/<a href="${url(controller='review', action='show_review', id=c.review.review_id)}">${c.review.name}</a>
@@ -34,6 +35,9 @@ Awesome, you're ready to start screening.
 <input type="post" id="submit" value="invite them!" />
 </div>
 </form>
+    <div class="loading" id="okay_div">
+        okay! emails have been sent!
+    </div>
 </div>
 
 <br/><br/>
