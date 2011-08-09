@@ -126,11 +126,12 @@ class ReviewController(BaseController):
             Hi there!
 
             What luck! You've had the good fortune of being invited to join the project: %s 
-            on abstrackr (http://abstrackr.tuftscaes.org). To do so, you're going to need to 
-            sign up for an account, if you don't already have one. Then just follow
-            this link: %s. 
+            on abstrackr (http://abstrackr.tuftscaes.org). 
 
-            Happy screening!
+            To do so, you're going to need to sign up for an account, if you don't already have one. 
+            Then just follow this link: %s. 
+
+            Happy screening.
         """ % (project.name, \
                "http://http://sunfire34.eecs.tufts.edu/review/join/%s" % project.code)
 

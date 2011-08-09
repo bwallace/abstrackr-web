@@ -53,7 +53,7 @@ jQuery(document).ready(function(){
 <div class="actions">
 <label for="emails">Want to invite additional reviewers? Enter their emails (comma-separated).</label>
 <input type="text" id="emails" name="emails" /><br />
-<input type="submit" id="submit" value="invite them" />
+<input type="post" id="submit" value="invite them" />
 </div>
 </form>
 </div>
