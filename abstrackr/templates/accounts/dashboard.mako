@@ -55,7 +55,11 @@
         % endfor
         </table>
     % else:
-        <h2>you're not participating in any projects yet.</h2>
+        % if len(c.leading_projects) > 0:
+            <h2>you're not participating in any projects yet (aside from those you're leading).</h2>
+        % else:
+            <h2>you're not participating in any projects yet.</h2>
+        % endif
     % endif
     <br/>
     
