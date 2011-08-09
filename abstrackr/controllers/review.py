@@ -162,29 +162,10 @@ class ReviewController(BaseController):
     def join(self, review_code):
         user_id = request.environ.get('repoze.who.identity')['user']
         review_q = model.meta.Session.query(model.Review)
-       
-        pdb.set_trace()
+            
         review_to_join = review_q.filter(model.Review.code==review_code).one()
         self._join_review(review_to_join.review_id)
-        redirect(url(controller="account", action="welcome"))  
-        #redirect(url(controller="review", action="join_review", id=review_to_join.review_id))
-  
-        
-    @ActionProtector(not_anonymous())
-    def join_review(self, id):
-        current_user = request.environ.get('repoze.who.identity')['user']
-        ###
-        # this is super-hacky, but there was a bug that was causing
-        # the current_user object to be None for reasons I cannot
-        # ascertain. refreshing the page inexplicably works; hence we
-        # do it here. need to test this further.
-        ####
-        if current_user is None:
-            redirect(url(controller="review", action="join_review", id=id))
-        else:
-            success = self._join_review(id)
-            print "\n\n\nOK, review joined.\n%s" % success
-            redirect(url(controller="account", action="welcome"))  
+        redirect(url(controller="account", action="welcome"))
         
     
     @ActionProtector(not_anonymous())
@@ -863,7 +844,7 @@ class ReviewController(BaseController):
             model.Session.add(new_assignment)
             model.Session.commit()
         
-        redirect(url(controller="review", action="join_review", id=id))     
+        redirect(url(controller="review", action="admin", id=id))     
               
         
     def _get_priority_for_citation_review(self, citation_id, review_id):
