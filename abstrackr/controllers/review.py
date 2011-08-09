@@ -114,9 +114,14 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def invite_reviewers(self, id):
         emails = request.params['emails'].split(",")
+        #pdb.set_trace()
         review = self._get_review_from_id(id)
         for email in emails:
-            self._invite_person_to_join(email, review)
+            pass
+            #self._invite_person_to_join(email, review)
+
+        #(controller="review", action="admin", id=id, admin_))
+        return self.admin(id, admin_msg="OK -- sent invites to: %s" % request.params['emails'])
 
     # @TODO this is redundant with code in account.py --
     # re-factor.
@@ -158,8 +163,11 @@ class ReviewController(BaseController):
     def join(self, review_code):
         user_id = request.environ.get('repoze.who.identity')['user']
         review_q = model.meta.Session.query(model.Review)
-        review_to_join = review_q.filter(model.Review.code==review_code).one()
-        redirect(url(controller="review", action="join_review", id=review_to_join.review_id))
+        try:
+            review_to_join = review_q.filter(model.Review.code==review_code).one()
+            redirect(url(controller="review", action="join_review", id=review_to_join.review_id))
+        except:
+            return "umm..."
         
     @ActionProtector(not_anonymous())
     def join_review(self, id):
@@ -378,7 +386,7 @@ class ReviewController(BaseController):
                 
               
     @ActionProtector(not_anonymous())
-    def admin(self, id):
+    def admin(self, id, admin_msg=""):
         # make sure we're actually the project lead
         if not self._current_user_leads_review(id):
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname        
@@ -392,7 +400,7 @@ class ReviewController(BaseController):
         
         # for the client side
         c.reviewer_ids_to_names_d = self._reviewer_ids_to_names(c.participating_reviewers)
-        
+        c.admin_msg = admin_msg
         return render("/reviews/admin.mako")
             
     @ActionProtector(not_anonymous())

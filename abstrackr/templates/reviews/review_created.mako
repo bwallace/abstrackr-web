@@ -32,7 +32,7 @@ Awesome, you're ready to start screening.
 <div class="actions">
 <label for="emails">Enter their emails (comma-separated).</label>
 <input type="text" id="emails" name="emails" /><br />
-<input type="post" id="submit" value="invite them!" />
+<input type="submit" id="submit" value="invite them!" />
 </div>
 </form>
     <div class="loading" id="okay_div">

@@ -7,7 +7,7 @@
 
 <script language="javascript">
 jQuery(document).ready(function(){
-    jQuery("#post").click(function(){
+    jQuery("#submit").click(function(){
         $("#okay_div").fadeIn(2000)
     });
 });
@@ -42,9 +42,13 @@ jQuery(document).ready(function(){
 	<table>
 
 	<br/>
-% else:
+% elif c.admin_msg == "":
 	<H2>Hrmm... You're the only person participating in this review. </h2><h2>But don't despair: you can invite people below! </H2>
 	<br/><br/>
+% endif
+
+% if c.admin_msg != "":
+	<H2>${c.admin_msg}</H2>
 % endif
 
 <div align="right">
@@ -52,7 +56,7 @@ jQuery(document).ready(function(){
 <div class="actions">
 <label for="emails">Want to invite additional reviewers? Enter their emails (comma-separated).</label>
 <input type="text" id="emails" name="emails" /><br />
-<input type="post" id="post" value="invite them" />
+<input type="submit" id="submit" value="invite them" />
 </div>
 </form>
     <div class="loading" id="okay_div">
