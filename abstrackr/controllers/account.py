@@ -248,12 +248,14 @@ class AccountController(BaseController):
         
         project_q = model.meta.Session.query(model.Review)       
         c.leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()
+        leading_project_ids = [proj.review_id for proj in c.leading_projects]
         
         # pull the reviews that this person is participating in
         junction_q = model.meta.Session.query(model.ReviewerProject)
         participating_project_ids = \
             [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
-        c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids]
+        c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids and \
+                                                not p.review_id in leading_project_ids]
                 
         c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects)
         

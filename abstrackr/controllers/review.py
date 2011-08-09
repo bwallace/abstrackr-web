@@ -9,6 +9,7 @@ from operator import itemgetter
 import csv
 import random
 import string
+import smtplib
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -82,15 +83,20 @@ class ReviewController(BaseController):
         model.Session.commit()
         
         # now parse the uploaded file
+        num_articles = None
         if xml_file.filename.endswith(".xml"):
             print "parsing uploaded xml..."
-            xml_to_sql.xml_to_sql(local_file_path, new_review)
+            num_articles = xml_to_sql.xml_to_sql(local_file_path, new_review)
         else:
             print "assuming this is a list of pubmed ids"
-            xml_to_sql.pmid_list_to_sql(local_file_path, new_review)
+            num_articles = xml_to_sql.pmid_list_to_sql(local_file_path, new_review)
         print "done."
         
+
         if new_review.initial_round_size > 0:
+            # make sure they don't specify an initial round size comprising more 
+            # articles than are in the review.
+            new_review.initial_round_size = min(num_articles, new_review.initial_round_size)
             self._create_initial_task_for_review(new_review.review_id, new_review.initial_round_size)
             
         # if we're single or double- screening, we create a 
@@ -104,6 +110,43 @@ class ReviewController(BaseController):
         c.review = new_review
         return render("/reviews/review_created.mako")
         
+
+    @ActionProtector(not_anonymous())
+    def invite_reviewers(self, id):
+        emails = request.params['emails'].split(",")
+        review = self._get_review_from_id(id)
+        for email in emails:
+            self._invite_person_to_join(email, review)
+
+    # @TODO this is redundant with code in account.py --
+    # re-factor.
+    def _invite_person_to_join(self, email, project):
+        subject = "Invitation to join review on abstrackr"
+        message = """
+            Hi there!
+
+            What luck! You've had the good fortune of being invited to join the project: %s 
+            on abstrackr (http://abstrackr.tuftscaes.org). To do so, you're going to need to 
+            sign up for an account, if you don't already have one. Then just follow
+            this link: %s. 
+
+            Happy screening!
+        """ % (project.name, \
+               "http://http://sunfire34.eecs.tufts.edu/review/join/%s"+ project.code)
+
+        server = smtplib.SMTP("localhost")
+        to = email
+        sender = "noreply@abstrackr.tuftscaes.org"
+        body = string.join((
+            "From: %s" % sender,
+            "To: %s" % to,
+            "Subject: %s" % subject,
+            "",
+            message
+            ), "\r\n")
+        
+        server.sendmail(sender, [to], body)
+
     @ActionProtector(not_anonymous())
     def join_a_review(self):
         review_q = model.meta.Session.query(model.Review)
@@ -243,7 +286,7 @@ class ReviewController(BaseController):
                 model.Session.commit()
             model.Session.delete(task)
             model.Session.commit()
-                
+    
             
         # ... and any assignments
         assignment_q = model.meta.Session.query(model.Assignment)     
@@ -335,14 +378,17 @@ class ReviewController(BaseController):
               
     @ActionProtector(not_anonymous())
     def admin(self, id):
-        c.review = self._get_review_from_id(id)
-        c.participating_reviewers = self._get_participants_for_review(id)
-        
         # make sure we're actually the project lead
+        if not self._current_user_leads_review(id):
+            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname        
+            
+            
         current_user = request.environ.get('repoze.who.identity')['user']
-        if not c.review.project_lead_id == current_user.id:
-            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
-
+        c.participating_reviewers = self._get_participants_for_review(id)
+        # eliminate our the lead themselves from this list
+        c.participating_reviewers = [reviewer for reviewer in c.participating_reviewers if \
+                                        reviewer.id != current_user.id]
+        
         # for the client side
         c.reviewer_ids_to_names_d = self._reviewer_ids_to_names(c.participating_reviewers)
         
@@ -352,9 +398,7 @@ class ReviewController(BaseController):
     def assignments(self, id):
         # make sure we're actually the project lead (by the way, should probably
         # handle this verification in a decorator...)
-        current_user = request.environ.get('repoze.who.identity')['user']
-        c.review = self._get_review_from_id(id)
-        if not c.review.project_lead_id == current_user.id:
+        if not self._current_user_leads_review(id):
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname        
             
         c.participating_reviewers = self._get_participants_for_review(id)
@@ -365,6 +409,11 @@ class ReviewController(BaseController):
         c.assignments = assignments
         return render("/reviews/assignments.mako")
     
+    def _current_user_leads_review(self, review_id):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        c.review = self._get_review_from_id(review_id)
+        return c.review.project_lead_id == current_user.id
+
     def _reviewer_ids_to_names(self, reviewers):
         # for the client side
         reviewer_ids_to_names_d = {}
