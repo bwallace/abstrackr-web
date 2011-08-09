@@ -7,10 +7,9 @@
 </div>
 
 %if c.assignment is not None:
-    <p align="right">
-    
-    <a class="tab" href="${url(controller='review', action='screen', review_id=c.assignment.review_id, assignment_id=c.assignment.id)}">get back to work!</a>
-    </p>
+<div class = "actions">
+    <a href="${url(controller='review', action='screen', review_id=c.assignment.review_id, assignment_id=c.assignment.id)}">get back to work!</a>
+    </div>
 %endif
 
 

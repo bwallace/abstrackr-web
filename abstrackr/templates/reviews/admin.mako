@@ -5,6 +5,14 @@
     var cal = new CalendarPopup();
 </script>
 
+<script language="javascript">
+jQuery(document).ready(function(){
+    jQuery("#submit").click(function(){
+        $("#okay_div").fadeIn(2000)
+    });
+});
+
+</script>
 
 <div class="breadcrumbs">
 ./<a href="${url(controller='account', action='my_projects')}">my projects</a>/<a href="${url(controller='review', action='show_review', id=c.review.review_id)}">${c.review.name}</a>
@@ -18,24 +26,29 @@
 
 <div class="content">
 
-<h2>Participants</h2>
-<table class="list_table">
-<tr align="center"><th>person</th><th></th></tr>
-%for participant in c.participating_reviewers:
-       <tr>
-       <td>${participant.fullname}</td>
-       <td class="actions">
-       <a href="/review/remove_from_review/${participant.id}/${c.review.review_id}")>
-        remove from review</a>
-       </tr>     
-       
-%endfor
-<table>
+% if len(c.participating_reviewers)>0:
+	<h2>Participants</h2>
+	<table class="list_table">
+	<tr align="center"><th>person</th><th></th></tr>
+	%for participant in c.participating_reviewers:
+	       <tr>
+	       <td>${participant.fullname}</td>
+	       <td class="actions">
+	       <a href="/review/remove_from_review/${participant.id}/${c.review.review_id}")>
+	        remove from review</a>
+	       </tr>     
+	       
+	%endfor
+	<table>
 
-<br/>
+	<br/>
+% else:
+	<H2>Hrmm... You're the only person participating in this review. </h2><h2>But don't despair: you can invite people below! </H2>
+	<br/><br/>
+% endif
 
 <div align="right">
-<form action="${url(controller='review', action='invite_reviewers')}" method="POST">
+<form action = "/review/invite_reviewers/${c.review.review_id}">
 
 <div class="actions">
 <label for="emails">Want to invite additional reviewers? Enter their emails (comma-separated).</label>
@@ -45,12 +58,15 @@
 </form>
 </div>
 
+
 <p align="right">
 Alternatively, they can join the review themselves using this code: <b>${c.review.code}</b>
 </p>
 
 
-</div>
+    <div class="loading" id="okay_div">
+        okay! emails have been sent!
+    </div>
 
 
 </div>
