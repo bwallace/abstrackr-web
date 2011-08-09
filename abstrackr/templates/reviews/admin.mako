@@ -7,7 +7,7 @@
 
 <script language="javascript">
 jQuery(document).ready(function(){
-    jQuery("#submit").click(function(){
+    jQuery("#post").click(function(){
         $("#okay_div").fadeIn(2000)
     });
 });
@@ -49,11 +49,10 @@ jQuery(document).ready(function(){
 
 <div align="right">
 <form action = "/review/invite_reviewers/${c.review.review_id}">
-
 <div class="actions">
 <label for="emails">Want to invite additional reviewers? Enter their emails (comma-separated).</label>
 <input type="text" id="emails" name="emails" /><br />
-<input type="post" id="submit" value="invite them" />
+<input type="post" id="post" value="invite them" />
 </div>
 </form>
 </div>
