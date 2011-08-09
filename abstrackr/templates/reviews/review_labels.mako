@@ -8,7 +8,7 @@
 
 %if c.assignment is not None:
 <div class = "actions">
-    <a href="${url(controller='review', action='screen', review_id=c.assignment.review_id, assignment_id=c.assignment.id)}">get back to work!</a>
+    <a href="${url(controller='review', action='screen', review_id=c.assignment.review_id, assignment_id=c.assignment.id)}">ok, get back to screening <img src="../../arrow_right.png"></img></a>
     </div>
 %endif
 

@@ -3,7 +3,7 @@
 ${c.cur_citation.authors}<br/><br/>
 ${c.cur_citation.marked_up_abstract}<br/><br/>
 <b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
-<b>refman ID:</b> ${c.cur_citation.refman_id}<br/><br/>
+<b>ID:</b> ${c.cur_citation.citation_id}<br/><br/>
 
 <%def name="write_label(label)">
     % if label == 1:
@@ -25,8 +25,10 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
     <center>
         you labeled this citation as ${write_label(c.cur_lbl.label)} on ${c.cur_lbl.label_last_updated}
      </center>
+   
     % endif
 % endif
+
 
 
 <script type="text/javascript">  

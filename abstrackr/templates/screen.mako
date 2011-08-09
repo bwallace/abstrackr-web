@@ -26,10 +26,14 @@
 
 
 <div class="actions">
-<a
-  href="${url(controller='review', action='review_labels', review_id=c.review_id, assignment_id=c.assignment_id)}">review labels</a>
-<a 
-  href="${url(controller='review', action='review_terms', id=c.review_id, assignment_id=c.assignment_id)}">review terms</a>
+% if c.cur_lbl is not None and c.assignment_type != "conflict":
+  <a href="${url(controller='review', action='screen', review_id=c.review_id, assignment_id=c.assignment_id)}">ok, get back to screening <img src="../../arrow_right.png"></img></a>
+% else:
+  <a
+    href="${url(controller='review', action='review_labels', review_id=c.review_id, assignment_id=c.assignment_id)}">review labels</a>
+  <a 
+    href="${url(controller='review', action='review_terms', id=c.review_id, assignment_id=c.assignment_id)}">review terms</a>
+% endif
 
 </div>
 
@@ -40,7 +44,7 @@
 ${c.cur_citation.authors}<br/><br/>
 ${c.cur_citation.marked_up_abstract}<br/><br/>
 <b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
-<b>refman ID:</b> ${c.cur_citation.refman_id}<br/><br/>
+<b>ID:</b> ${c.cur_citation.citation_id}<br/><br/>
 
 <%def name="write_label(label)">
     % if label == 1:

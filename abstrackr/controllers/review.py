@@ -130,14 +130,14 @@ class ReviewController(BaseController):
             Hi there!
 
             What luck! You've had the good fortune of being invited to join the project: %s 
-            on abstrackr (http://abstrackr.tuftscaes.org). 
+            on abstrackr. 
 
             To do so, you're going to need to sign up for an account, if you don't already have one. 
-            Then just follow this link: %s. 
+            Then you'll want to log in, and follow this link: %s. 
 
             Happy screening.
         """ % (project.name, \
-               "http://abstrackr.tuftscaes.org/review/join/%s" % project.code)
+               "http://abstrackr.tuftscaes.org/join/%s" % project.code)
 
         server = smtplib.SMTP("localhost")
         to = email
@@ -564,6 +564,7 @@ class ReviewController(BaseController):
             c.cur_lbl = existing_label
             c.assignment_id = c.cur_lbl.assignment_id
             citation_q = model.meta.Session.query(model.Citation)
+            c.assignment_type = assignment.assignment_type
             c.cur_citation = citation_q.filter(model.Citation.citation_id == study_id).one()
             c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
             c.review_id = review_id
