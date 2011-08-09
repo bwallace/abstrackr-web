@@ -16,7 +16,7 @@
         </p>
        
 	<div id="login-header">
-	 <a href="/">home</a>  ||  <a href="/account/logout">sign out</a> || <a href="/help">help</a> || <a href="/account">my account</a> 
+	 <a href="/">home</a>  ||  <a href="/account/logout">sign out</a> || <a href="/help">help</a>  
 
 	</div>
 	
