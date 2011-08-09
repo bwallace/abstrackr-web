@@ -1,3 +1,8 @@
+'''
+a slightly misnamed module, as it can actually handle more than XML.
+basically, this contains code to map data from a given format
+(pmid list, refman xml, etc.) to abstrackr's SQL representation.
+'''
 
 # std libs
 import pdb
@@ -37,10 +42,10 @@ def pubmed_ids_to_d(pmids):
 def pmid_list_to_sql(pmids_path, review):
     pmids = _parse_pmids(pmids_path)
     d = pubmed_ids_to_d(pmids)
-    
     print "ok. now inserting into sql..."
     dict_to_sql(d, review)
     print "ok."
+    return len(d)
 
 def _parse_pmids(pmids_path):
     pmids = []
@@ -58,6 +63,17 @@ def xml_to_sql(xml_path, review):
     print "ok. now inserting into sql..."
     dict_to_sql(d, review)
     print "ok."
+    return len(d)
+
+def filemaker_to_sql(dat_path, review):
+    '''
+    we assume that dat_path points to a file exported from FileMaker.
+    these files have the following format:
+
+    ReferenceNum\tRetrieveFullText1yes0no\tIncludedinReview1yes0no\tAbstract
+    '''
+    pass
+
 
 def dict_to_sql(xml_d, review): 
     cit_num = 0
