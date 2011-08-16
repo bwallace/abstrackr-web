@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291315627.1949999
+_modified_time = 1311799906.2980001
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/register.mako'
 _template_uri='/accounts/register.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -23,7 +23,7 @@ def _mako_generate_namespaces(context):
     pass
 def _mako_inherit(template, context):
     _mako_generate_namespaces(context)
-    return runtime._inherit_from(context, u'../site.mako', _template_uri)
+    return runtime._inherit_from(context, u'../site_out.mako', _template_uri)
 def render_body(context,**pageargs):
     context.caller_stack._push_frame()
     try:
@@ -39,10 +39,10 @@ def render_body(context,**pageargs):
         __M_writer(escape(h.form(url(controller='account', action='create_account_handler'))))
         __M_writer(u'\r\n    <tr><td><label>first name:</td> <td>')
         # SOURCE LINE 10
-        __M_writer(escape(h.text('first name')))
+        __M_writer(escape(h.text('first_name')))
         __M_writer(u'</label></td></tr>\r\n    <tr><td><label>last name:</td> <td>')
         # SOURCE LINE 11
-        __M_writer(escape(h.text('last name')))
+        __M_writer(escape(h.text('last_name')))
         __M_writer(u'</label></td></tr>\r\n    <tr><td><label>how many SRs have you participated in?:</td> <td>')
         # SOURCE LINE 12
         __M_writer(escape(h.text('experience', size=2)))

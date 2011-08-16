@@ -1,4 +1,4 @@
-body { background-color:	#ddd; color: #333;margin-left: 10%; margin-right: 10%;  }
+body { background-color:	#ddd; color: #333;margin-left: 5%; margin-right: 5%;  }
 
 body, p, ol, ul, td {
   font-family: 'Lucida Sans Unicode', 'Lucida Grande', sans-serif;
@@ -7,13 +7,17 @@ body, p, ol, ul, td {
 }
 
 
+
+
+
+
 .container
 {
-	width: 950px;
+	width: 100%;
 	margin: 0 auto;
-	#background-color: #fff;
-	padding-left: 8px;
-	padding-right: 8px;
+
+	padding-left: 2%;
+	padding-right: 2%;
 	#border: 1px solid #555;
 }
 
@@ -31,6 +35,12 @@ body, p, ol, ul, td {
     top: 5px;
 }
 
+#selectable .ui-selecting { background: #FECA40; }
+#selectable .ui-selected { background: yellow; color: black; }
+#selectable { list-style-type: none; margin: 0; padding: 0; width: 60%; }
+#selectable li { margin: 3px; padding: 0.4em; font-size: 1.4em; height: 16px; }
+
+
 .content{
 	padding: 20px;
 	background-color: #fff;
@@ -38,14 +48,31 @@ body, p, ol, ul, td {
 	-webkit-box-shadow: 3px 3px 4px #aaa;
 	box-shadow: 3px 3px 4px #aaa;
 	-moz-border-radius-topright: 4px;
-border-top-right-radius: 4px;
+  border-top-right-radius: 4px;
 
 	-moz-border-radius-bottomright: 4px;
-border-bottom-right-radius: 4px;
--moz-border-radius-bottomleft: 4px;
-border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  -moz-border-radius-bottomleft: 4px;
+  border-bottom-left-radius: 4px;
 
+  
   border: 1px solid #000000;
+}
+
+.sidebar {
+   float: left;
+  top:100px;
+  left:5px;
+
+  padding:5px;
+  background-color:#eee;
+  border:1px dashed #999;
+  line-height:17px;
+/* Again, the ugly brilliant hack. */
+  voice-family: "\"}\"";
+  voice-family:inherit;
+  width:12%;
+
 }
 
 pre {
@@ -53,8 +80,6 @@ pre {
   padding: 10px;
   font-size: 11px;
 }
-
-
 
 a{
 	text-decoration: none;
@@ -70,7 +95,7 @@ a:hover{
 
 
 /* ---- BUTTON CSS FROM: http://www.bloggerswatch.com/internet/css-trick-submit-button-should-look-same-everywhere/ */
-.actions a, .actions button, .inline-actions a, .inline-actions button, .saved, button{
+.actions a, .actions button, .inline-actions a, .inline-actions button, .saved, .sidebar, .sidebar button{
     margin:0 7px 0 0;
     background-color:#f5f5f5;
     #border:1px solid #dedede;
@@ -87,7 +112,7 @@ a:hover{
 }
 
 
-.inline-actions a:hover, .actions a:hover, .actions input:hover{
+.inline-actions a:hover, .actions a:hover, .actions input:hover, .sidebar input:hover{
     color: green;
 }
 
@@ -107,7 +132,7 @@ a:hover{
     border:1px dotted gray;
 }
 
-.actions input{
+.actions input, .sidebar input{
         margin:0 7px 0 0;
     background-color:#f5f5f5;
     border:1px solid #dedede;
@@ -181,24 +206,26 @@ div.field, div.actions {
   font-size: 12px;
   list-style: square;
 }
+
 .hidden_select{
 	visibility:hidden;
 }
+
 h1{
-font-size: 24px;
-font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
-padding-bottom: 10px;
-color: 	#2B65EC;
+  font-size: 24px;
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  padding-bottom: 10px;
+  color: 	#2B65EC;
 }
 
 h2{
-font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
-margin: 10px;
-font-size: 18px;
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  margin: 10px;
+  font-size: 18px;
 }
 
 h3{
-font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
 	font-size: 16px;
 	padding: 3px;
 	margin: 0px;
@@ -270,13 +297,13 @@ td.calculated{
 }
 
 .checkbox {
-width: 19px;
-height: 25px;
-padding: 0 5px 0 0;
-background: url(../images/checkbox.gif) no-repeat;
-display: block;
-clear: left;
-float: left;
+  width: 19px;
+  height: 25px;
+  padding: 0 5px 0 0;
+  background: url(../images/checkbox.gif) no-repeat;
+  display: block;
+  clear: left;
+  float: left;
 }
 
 .icon_explanation{
@@ -639,37 +666,4 @@ table.pretty caption {
   margin-right: inherit;
 }
 
-/* jqModal base Styling courtesy of;
-  Brice Burgess <bhb@iceburg.net> */
 
-/* The Window's CSS z-index value is respected (takes priority). If none is supplied,
-  the Window's z-index value will be set to 3000 by default (in jqModal.js). You
-  can change this value by either;
-    a) supplying one via CSS
-    b) passing the "zIndex" parameter. E.g.  (window).jqm({zIndex: 500}); */
-  
-.jqmWindow {
-    display: none;
-    
-    position: fixed;
-    top: 17%;
-    left: 50%;
-    
-    margin-left: -300px;
-    width: 600px;
-    
-    background-color: #EEE;
-    color: #333;
-    border: 1px solid black;
-    padding: 12px;
-}
-
-.jqmOverlay { background-color: #000; }
-
-/* Fixed posistioning emulation for IE6
-     Star selector used to hide definition from browsers other than IE6
-     For valid CSS, use a conditional include instead */
-* html .jqmWindow {
-     position: absolute;
-     top: expression((document.documentElement.scrollTop || document.body.scrollTop) + Math.round(17 * (document.documentElement.offsetHeight || document.body.clientHeight) / 100) + 'px');
-}

@@ -20,6 +20,8 @@ def make_map(config):
 
     # CUSTOM ROUTES HERE
     map.connect('/{controller}/{action}')
+    map.connect('/review/update_tags/{study_id}', controller='review', action='update_tags')
+    map.connect('/review/update_tag_types/{review_id}/{study_id}', controller='review', action='update_tag_types')
     map.connect('/{controller}/{action}/{id}')
     map.connect('/screen/{review_id}/{assignment_id}', controller='review', action='screen')
     map.connect('/screen_next/{review_id}/{assignment_id}', controller='review', action='screen_next')
@@ -32,6 +34,8 @@ def make_map(config):
     map.connect('/review/review_terms/{id}/{assignment_id}', controller='review', action='review_terms')
     map.connect('/show_label/{review_id}/{citation_id}', controller='review', action='show_labeled_citation')
     map.connect('/review/remove_from_review/{reviewer_id}/{review_id}', controller='review', action='remove_from_review')
+    map.connect('/review/tag_citation/{review_id}/{study_id}', controller='review', action='tag_citation')
+  
     map.connect('/join/{review_code}', controller='review', action='join')
     map.connect('/', controller='trackr', action='start')
     return map

@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291403915.9170001
+_modified_time = 1312911922.25
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/reviews/admin.mako'
 _template_uri='/reviews/admin.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -30,68 +30,68 @@ def render_body(context,**pageargs):
         __M_locals = __M_dict_builtin(pageargs=pageargs)
         url = context.get('url', UNDEFINED)
         c = context.get('c', UNDEFINED)
-        enumerate = context.get('enumerate', UNDEFINED)
+        len = context.get('len', UNDEFINED)
         __M_writer = context.writer()
         # SOURCE LINE 1
         __M_writer(u'\r\n')
         # SOURCE LINE 2
         __M_writer(u'\r\n')
         # SOURCE LINE 3
-        __M_writer(u'\r\n<script language="JavaScript">\r\n    var cal = new CalendarPopup();\r\n</script>\r\n\r\n\r\n<div class="breadcrumbs">\r\n<a href="')
-        # SOURCE LINE 10
-        __M_writer(escape(url(controller='account', action='welcome')))
-        __M_writer(u'">./dashboard</a>/<a href="')
+        __M_writer(u'\r\n<script language="JavaScript">\r\n    var cal = new CalendarPopup();\r\n</script>\r\n\r\n<script language="javascript">\r\njQuery(document).ready(function(){\r\n    jQuery("#submit").click(function(){\r\n        $("#okay_div").fadeIn(2000)\r\n    });\r\n});\r\n\r\n</script>\r\n\r\n<div class="breadcrumbs">\r\n./<a href="')
+        # SOURCE LINE 18
+        __M_writer(escape(url(controller='account', action='my_projects')))
+        __M_writer(u'">my projects</a>/<a href="')
         __M_writer(escape(url(controller='review', action='show_review', id=c.review.review_id)))
         __M_writer(u'">')
         __M_writer(escape(c.review.name))
         __M_writer(u'</a>\r\n</div>\r\n\r\n\r\n<h1>')
-        # SOURCE LINE 14
+        # SOURCE LINE 22
         __M_writer(escape(c.review.name))
-        __M_writer(u': administrivia</h1>\r\n\r\n<div class="content">\r\n<h2>Assignments</h2> \r\n    <center>\r\n    <table width=80% class="list_table" align="center>>\r\n            <tr align="center">\r\n            <th width="25%">reviewer</th><th span=20>number to screen</th><th>screened so far</th><th width="20%">assigned</th><th width="20%">due</th>\r\n            </tr>\r\n')
-        # SOURCE LINE 23
-        for i,assignment in enumerate(c.assignments):
-            # SOURCE LINE 24
-            __M_writer(u'                <tr>\r\n                <td>')
-            # SOURCE LINE 25
-            __M_writer(escape(c.reviewer_ids_to_names_d[assignment.reviewer_id]))
-            __M_writer(u'</td>          \r\n                <td>')
-            # SOURCE LINE 26
-            __M_writer(escape(assignment.num_assigned))
-            __M_writer(u'</td>\r\n                <td>')
-            # SOURCE LINE 27
-            __M_writer(escape(assignment.done_so_far))
-            __M_writer(u'</td>\r\n                <td>')
-            # SOURCE LINE 28
-            __M_writer(escape(assignment.date_assigned.month))
-            __M_writer(u'/')
-            __M_writer(escape(assignment.date_assigned.day))
-            __M_writer(u'/')
-            __M_writer(escape(assignment.date_assigned.year))
-            __M_writer(u'</td>\r\n                <td>')
-            # SOURCE LINE 29
-            __M_writer(escape(assignment.date_due.month))
-            __M_writer(u'/')
-            __M_writer(escape(assignment.date_due.day))
-            __M_writer(u'/')
-            __M_writer(escape(assignment.date_due.year))
-            __M_writer(u'</td>\r\n                </tr>\r\n')
-            pass
-        # SOURCE LINE 32
-        __M_writer(u'    </table>\r\n    </center>\r\n<br/><br/>\r\n\r\n<h2>Create new assignment</h2>\r\n\r\n<br/>\r\n<form name="new_assignment" action="')
-        # SOURCE LINE 39
-        __M_writer(escape(url(controller='review', action='create_assignment', id=c.review.review_id)))
-        __M_writer(u'">\r\nassign to: <br/><br/>\r\n')
-        # SOURCE LINE 41
-        for reviewer in c.participating_reviewers:
+        __M_writer(u': administrivia</h1>\r\n<div class="actions">\r\n<a href="')
+        # SOURCE LINE 24
+        __M_writer(escape(url(controller='review', action='assignments', id=c.review.review_id)))
+        __M_writer(u'">manage assignments</a>\r\n</div>\r\n\r\n<div class="content">\r\n\r\n')
+        # SOURCE LINE 29
+        if len(c.participating_reviewers)>0:
+            # SOURCE LINE 30
+            __M_writer(u'\t<h2>Participants</h2>\r\n\t<table class="list_table">\r\n\t<tr align="center"><th>person</th><th></th></tr>\r\n')
+            # SOURCE LINE 33
+            for participant in c.participating_reviewers:
+                # SOURCE LINE 34
+                __M_writer(u'\t       <tr>\r\n\t       <td>')
+                # SOURCE LINE 35
+                __M_writer(escape(participant.fullname))
+                __M_writer(u'</td>\r\n\t       <td class="actions">\r\n\t       <a href="/review/remove_from_review/')
+                # SOURCE LINE 37
+                __M_writer(escape(participant.id))
+                __M_writer(u'/')
+                __M_writer(escape(c.review.review_id))
+                __M_writer(u'")>\r\n\t        remove from review</a>\r\n\t       </tr>     \r\n\t       \r\n')
+                pass
             # SOURCE LINE 42
-            __M_writer(u'    <input type="checkbox" name="assign_to" value="')
-            __M_writer(escape(reviewer.username))
-            __M_writer(u'" checked="yes"/> ')
-            __M_writer(escape(reviewer.username))
-            __M_writer(u'<br/>\r\n')
+            __M_writer(u'\t<table>\r\n\r\n\t<br/>\r\n')
+            # SOURCE LINE 45
+        elif c.admin_msg == "":
+            # SOURCE LINE 46
+            __M_writer(u"\t<H2>Hrmm... You're the only person participating in this review. </h2><h2>But don't despair: you can invite people below! </H2>\r\n\t<br/><br/>\r\n")
             pass
-        # SOURCE LINE 44
-        __M_writer(u'<br/><br/>\r\n<table>\r\n<tr><td>number of citations for each assignee to screen:</td><td> <INPUT TYPE="text" NAME="n" SIZE=10></td></tr>\r\n<tr><td>percent of these that should be re-screens:</td><td> <INPUT TYPE="text" NAME="p_rescreen" VALUE="0" SIZE=10>\r\n</td>\r\n</tr>\r\n<tr>\r\n<td>\r\ndue date:</td><td> \r\n<INPUT TYPE="text" NAME="due_date" VALUE="" SIZE=10>\r\n<a href="#"\r\n   onClick="cal.select(document.forms[\'new_assignment\'].due_date,\'anchor1\',\'MM/dd/yyyy\'); return false;"\r\n   NAME="anchor1" ID="anchor1">select</A> </td></tr>\r\n  <tr><td><INPUT TYPE=SUBMIT VALUE="Create assignment"></td></tr>\r\n</table>\r\n</form>\r\n\r\n\r\n\r\n</div>\r\n')
+        # SOURCE LINE 49
+        __M_writer(u'\r\n')
+        # SOURCE LINE 50
+        if c.admin_msg != "":
+            # SOURCE LINE 51
+            __M_writer(u'\t<H2>')
+            __M_writer(escape(c.admin_msg))
+            __M_writer(u'</H2>\r\n')
+            pass
+        # SOURCE LINE 53
+        __M_writer(u'\r\n<div align="right">\r\n<form action = "/review/invite_reviewers/')
+        # SOURCE LINE 55
+        __M_writer(escape(c.review.review_id))
+        __M_writer(u'">\r\n<div class="actions">\r\n<label for="emails">Want to invite additional reviewers? Enter their emails (comma-separated).</label>\r\n<input type="text" id="emails" name="emails" /><br />\r\n<input type="submit" id="submit" value="invite them" />\r\n</div>\r\n</form>\r\n    <div class="loading" id="okay_div">\r\n        okay! emails have been sent!\r\n    </div>\r\n</div>\r\n\r\n\r\n    <div class="loading" id="okay_div">\r\n        okay! emails have been sent!\r\n    </div>\r\n\r\n<p align="right">\r\nAlternatively, they can join the review themselves using this code: <b>')
+        # SOURCE LINE 73
+        __M_writer(escape(c.review.code))
+        __M_writer(u'</b>\r\n</p>\r\n\r\n\r\n\r\n\r\n\r\n</div>\r\n')
         return ''
     finally:
         context.caller_stack._pop_frame()

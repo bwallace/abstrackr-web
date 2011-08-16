@@ -114,7 +114,6 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def invite_reviewers(self, id):
         emails = request.params['emails'].split(",")
-        #pdb.set_trace()
         review = self._get_review_from_id(id)
         for email in emails:
             self._invite_person_to_join(email, review)
@@ -532,10 +531,62 @@ class ReviewController(BaseController):
         
     
     @ActionProtector(not_anonymous())
+    def tag_citation(self, review_id, study_id):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        tags = []
+        for key,val in request.params.items():
+            if key == "tags[]" and not val in ("", " ", "(enter new tag)"):
+                tags.append(val)
+
+       
+        # check if any are to be added (i.e., for a new tag)
+        existing_tag_types = self._get_tag_types_for_review(review_id)
+        
+        tags = list(set(tags))
+        for user_tag in tags:
+            if user_tag not in existing_tag_types:
+                self.add_tag(review_id, user_tag)
+
+        # ok -- now, get tags for this citation; we're going to 
+        # untag everything first
+        cur_tags = self._get_tags_for_citation(study_id, texts_only=False)
+        for tag in cur_tags:
+            model.Session.delete(tag)
+            model.Session.commit()
+
+        # now add all the new tags
+        for tag in list(set(tags)):
+            new_tag = model.Tags()
+            new_tag.creator_id = current_user.id
+            new_tag.tag_id = self._get_tag_id(review_id, tag)
+            new_tag.citation_id = study_id
+            model.Session.add(new_tag)
+            model.Session.commit()
+
+
+
+    @ActionProtector(not_anonymous())
+    def add_tag(self, review_id, tag):
+
+        current_user = request.environ.get('repoze.who.identity')['user']
+
+        # make sure there isn't already an identical tag
+        cur_tags = self._get_tag_types_for_review(review_id)
+        tag = tag.strip()
+        if tag not in cur_tags:
+            new_tag = model.TagTypes()
+            new_tag.text = tag
+            new_tag.review_id = review_id
+            new_tag.creator_id = current_user.id
+            model.Session.add(new_tag)
+            model.Session.commit()
+
+
+    @ActionProtector(not_anonymous())
     def label_citation(self, review_id, assignment_id, study_id, seconds, label):
         # unnervingly, this commit() must remain here, or sql
         # alchemy seems to get into a funk. I realize this is 
-        # cargo-cult programming... TODO further investigate
+        # cargo-cult programming... @TODO further investigate
         model.meta.Session.commit()
         
         current_user = request.environ.get('repoze.who.identity')['user']
@@ -676,9 +727,28 @@ class ReviewController(BaseController):
             c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
             c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
         
+        # now get tags for this citation
+        c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
+        
+        # and these are all available tags
+        c.tag_types = self._get_tag_types_for_review(review_id)
+     
         model.meta.Session.commit()
         return render("/screen.mako")
           
+
+    @ActionProtector(not_anonymous())
+    def update_tags(self, study_id):
+        # now get tags for this citation
+        c.tags = self._get_tags_for_citation(study_id)
+        return render("/tag_fragment.mako")
+
+    @ActionProtector(not_anonymous())
+    def update_tag_types(self, review_id, study_id):
+        # now get tags for this citation
+        c.tag_types = self._get_tag_types_for_review(review_id)
+        c.tags = self._get_tags_for_citation(study_id)
+        return render("/tag_dialog_fragment.mako")
 
     @ActionProtector(not_anonymous())
     def screen_next(self, review_id, assignment_id):
@@ -689,7 +759,7 @@ class ReviewController(BaseController):
         c.review_name = self._get_review_from_id(review_id).name
         c.assignment_id = assignment_id
         c.assignment_type = assignment.assignment_type
-        
+
         c.cur_citation = self._get_next_citation(assignment, review)
         
         # but wait -- are we finished?
@@ -698,13 +768,21 @@ class ReviewController(BaseController):
             
         # mark up the labeled terms 
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
-        
+
         c.cur_lbl = None
         if assignment.assignment_type == "conflict":
             c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
             c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
-            
+         
+        # now get tags for this citation
+        c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
+        
+        # and these are all available tags
+        c.tag_types = self._get_tag_types_for_review(review_id)
+           
+        model.meta.Session.commit()
         return render("/citation_fragment.mako")
+     
         
     def _labels_to_reviewer_name_d(self, labels):
         reviewer_ids_to_names_d = {}
@@ -792,7 +870,7 @@ class ReviewController(BaseController):
         c.citations_d = {}
         for label in c.given_labels:
             c.citations_d[label.study_id] = self._get_citation_from_id(label.study_id)
-        
+
         # if an assignment id is given, it allows us to provide a 'get back to work'
         # link.
         c.assignment = assignment_id
@@ -818,6 +896,11 @@ class ReviewController(BaseController):
                                      model.Label.study_id == citation_id,
                                      model.Label.reviewer_id == current_user.id)).one()
         c.assignment_id = c.cur_lbl.assignment_id
+
+        # finally, grab tags
+        c.tag_types = self._get_tag_types_for_review(review_id)
+        c.tags = self._get_tags_for_citation(citation_id)
+
         return render("/screen.mako")
         
     @ActionProtector(not_anonymous())
@@ -927,6 +1010,51 @@ class ReviewController(BaseController):
                         order_by(model.FixedAssignment.citation_id).all()]    
         return init_ids
     
+    def _get_tag_id(self, review_id, text):
+        tag_q = model.meta.Session.query(model.TagTypes)
+        
+        tag_type = tag_q.filter(and_(
+                model.TagTypes.review_id == review_id,
+                model.TagTypes.text == text)).one()
+        return tag_type.id
+
+    def _get_tags_for_citation(self, citation_id, texts_only=True):
+        tag_q = model.meta.Session.query(model.Tags)
+        tags = tag_q.filter(model.Tags.citation_id == citation_id).all()
+        if texts_only:
+            return self._tag_ids_to_texts([tag.tag_id for tag in tags])
+        return tags
+    
+    def _tag_ids_to_texts(self, tag_ids):
+        return [self._text_for_tag(tag_id) for tag_id in tag_ids]
+    
+    def _text_for_tag(self, tag_id):
+        tag_type_q = model.meta.Session.query(model.TagTypes)
+        tag_obj = tag_type_q.filter(model.TagTypes.id == tag_id).one()
+        return tag_obj.text
+
+    def _get_tag_types_for_citation(self, citation_id, objects=False):
+        tags = self._get_tags_for_citation(citation_id)
+        # now map those types to names
+        tag_type_q = model.meta.Session.query(model.TagTypes)
+        tags = []
+        
+        for tag in tags:
+            tag_obj = tag_type_q.filter(model.TagTypes.id == tag.tag_id).one()
+     
+            if objects:
+                tags.append(tag_obj)
+            else:
+                tags.append(tag_obj.text)
+        
+        return tags
+
+    def _get_tag_types_for_review(self, review_id):
+        tag_q = model.meta.Session.query(model.TagTypes)
+        tag_types = tag_q.filter(model.TagTypes.review_id == review_id).all()
+        return [tag_type.text for tag_type in tag_types]
+
+
     def _get_ids_for_task(self, task_id):
         q = model.meta.Session.query(model.FixedTask)
         eligible_ids = [fixed_task.citation_id for fixed_task in \

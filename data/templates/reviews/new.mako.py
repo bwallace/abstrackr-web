@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291063013.0880001
+_modified_time = 1312988344.895
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/reviews/new.mako'
 _template_uri='/reviews/new.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -34,25 +34,36 @@ def render_body(context,**pageargs):
         # SOURCE LINE 1
         __M_writer(u'\r\n')
         # SOURCE LINE 2
-        __M_writer(u'\r\n\r\n<div class="content">\r\n<center>\r\n<table class="form_table">\r\n ')
-        # SOURCE LINE 7
-        __M_writer(escape(h.form(url(controller='review', action='create_review_handler'), multipart=True)))
+        __M_writer(u'\r\n\r\n<script language="javascript">\r\njQuery(document).ready(function(){\r\n    jQuery("#post").click(function(){\r\n        $("#loading_div").fadeIn(2000)\r\n    });\r\n});\r\n\r\n</script>\r\n\r\n\r\n<div class="content">\r\n<center>\r\n<table class="form_table">\r\n ')
+        # SOURCE LINE 17
+        __M_writer(escape(h.form(url(controller='review', action='create_review_handler'), multipart=True, id="new_project_form")))
         __M_writer(u'\r\n    <tr><td><label>project name:</td><td> ')
-        # SOURCE LINE 8
+        # SOURCE LINE 18
         __M_writer(escape(h.text('name')))
         __M_writer(u'</label></td></tr>\r\n    <tr><td><label>project description:</td> <td>')
-        # SOURCE LINE 9
+        # SOURCE LINE 19
         __M_writer(escape(h.textarea('description', rows="10", cols="40")))
-        __M_writer(u'</label></td></tr>\r\n    <tr><td><label>upload file:</td> <td>')
-        # SOURCE LINE 10
+        __M_writer(u'</label></td></tr>\r\n    <tr><td><label>upload file (list of PMIDs or refman XML):</td> <td>')
+        # SOURCE LINE 20
         __M_writer(escape(h.file('db')))
-        __M_writer(u' </label></td></tr>\r\n    \r\n    <tr><td></td><td>')
-        # SOURCE LINE 12
+        __M_writer(u' </label></td></tr>\r\n    <tr><td><label>screening mode:</td> <td>')
+        # SOURCE LINE 21
+        __M_writer(escape(h.select("screen_mode", None, ["Single-screen", "Double-screen", "Advanced"])))
+        __M_writer(u' </label></td></tr>\r\n    <tr><td><label>order abstracts by:</td> <td>')
+        # SOURCE LINE 22
+        __M_writer(escape(h.select("order", None, ["Random", "Most likely to be relevant", "Most ambiguous"])))
+        __M_writer(u' </label></td></tr>\r\n    <tr><td><label>initial round size:</td><td> ')
+        # SOURCE LINE 23
+        __M_writer(escape(h.text('init_size', '100')))
+        __M_writer(u'</label></td></tr>\r\n    <div class="actions">\r\n    \r\n\r\n\t\t\r\n    <tr><td></td><td></td><td class="actions"> <a href="')
+        # SOURCE LINE 28
+        __M_writer(escape(url(controller='account', action='welcome')))
+        __M_writer(u'">Cancel</a></td><td class="actions">')
         __M_writer(escape(h.submit('post', 'Create new review')))
-        __M_writer(u'</td></tr>\r\n    \r\n  ')
-        # SOURCE LINE 14
+        __M_writer(u'</td></tr>\r\n    </div>\r\n  ')
+        # SOURCE LINE 30
         __M_writer(escape(h.end_form()))
-        __M_writer(u'\r\n</table>\r\n</center>\r\n</div>')
+        __M_writer(u' \r\n</table>\r\n\r\n    <div class="loading" id="loading_div">\r\n        <img src="../../loading.gif"></img><br/>working on it...\r\n    </div>\r\n</center>\r\n\r\n\r\n</div>')
         return ''
     finally:
         context.caller_stack._pop_frame()

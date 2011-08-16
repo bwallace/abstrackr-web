@@ -10,8 +10,6 @@
     <a class="active_tab" href = "${url(controller='account', action='my_work')}">my work</a>
     <a class="tab" href="${url(controller='account', action='my_projects')}">my projects</a>
 %endif
-
-
 <div class="content">
 
 <br/> 

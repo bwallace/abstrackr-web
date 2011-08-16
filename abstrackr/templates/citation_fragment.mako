@@ -34,6 +34,15 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 <script type="text/javascript">  
     function setup_js(){
 
+        $("#selectable").selectable();
+      
+        $("#dialog").dialog({
+          height: 300,
+          modal: true,
+          autoOpen: false,
+          show: "blind",
+        });
+
         // unbind all attached events
         $("#accept").unbind();
         $("#maybe").unbind();
@@ -42,7 +51,13 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
         $("#double_pos_lbl_term").unbind();
         $("#neg_lbl_term").unbind();
         $("#double_neg_lbl_term").unbind();
+        $("#submit_btn").unbind();
+        $("#close_btn").unbind();
+        $("#tag_btn").unbind();
 
+        $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
+        $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
+        
         // reset the timer
         reset_timer();
                 
@@ -56,7 +71,6 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                 });
             });
         }
-    
     
         $("#accept").click(function() {
             $('#buttons').hide();
@@ -125,7 +139,7 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
             }
          }); 
         
-
+        
         $("#neg_lbl_term").click(function() {
             // call out to the controller to label the term
             var term_str = $("input#term").val()
@@ -150,7 +164,47 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                 $("#label_msg").fadeOut(3000)
                 markup_current();
             }
-         }); 
+         });
+         
+        $("#tag_btn").click(function()
+        {
+           $("#dialog" ).dialog( "open" );
+        });
+
+        $("#close_btn").click(function (e)
+        {
+           $("#dialog" ).dialog( "close" );
+        });
+
+        $("#submit_btn").click(function()
+        {
+           var tag_str = $("input#new_tag").val();
+
+           // now add all selected tags to the study
+           var tags = $.map($('.ui-selected, this'), function(element, i) {  
+             return $(element).text();  
+           });
+
+           // push new tag, too (if it's empty, we'll drop it server-side)
+           tags.push(tag_str);
+
+           $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", {tags: tags},
+              function(){
+                $("#tags").fadeOut('slow', function() {
+                  $("#tags").load("${'/review/update_tags/%s' % c.review_id}", function() {
+                    $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
+                    $("#tags").fadeIn('slow');
+                  });
+                });
+
+                $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
+                }
+            );
+
+            $( "#dialog" ).dialog( "close" );
+        });
+
+        $("#new_tag").val('');
     }    
     
 </script>

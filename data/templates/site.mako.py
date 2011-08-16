@@ -4,9 +4,9 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291315982.2620001
+_modified_time = 1313422865.668
 _template_filename=u'C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/site.mako'
-_template_uri=u'/reviews/../site.mako'
+_template_uri=u'/site.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
 _source_encoding='utf-8'
 from webhelpers.html import escape
@@ -20,11 +20,11 @@ def render_body(context,**pageargs):
         self = context.get('self', UNDEFINED)
         __M_writer = context.writer()
         # SOURCE LINE 1
-        __M_writer(u'\r\n<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\r\n<html>\r\n    <head>\r\n        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">\r\n        <link rel="stylesheet" href="/stylesheet.css">\r\n        <script type="text/javascript" src="/scripts/jquery-1.4.4.js"></script>\r\n        <script type="text/javascript" src="/scripts/CalendarPopup.js"></script>\r\n        <title>abstrackr: ')
-        # SOURCE LINE 9
+        __M_writer(u'\r\n<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\r\n<html>\r\n    <head>\r\n        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">\r\n        <link rel="stylesheet" href="/stylesheet.css">\r\n        <link rel="stylesheet" href="/jquery-ui-1.8.15.custom.css">\r\n\r\n        <script type="text/javascript" src="/scripts/jquery-1.6.2.min.js"></script>\r\n        <script type="text/javascript" src="/scripts/jquery-ui-1.8.15.custom.min.js"></script>\r\n        <script type="text/javascript" src="/scripts/jqModal.js"></script>\r\n        <script type="text/javascript" src="/scripts/CalendarPopup.js"></script>\r\n        <script type="text/javascript" src="/scripts/jquery.ui.selectable.js"></script>\r\n\r\n        <title>abstrackr: ')
+        # SOURCE LINE 15
         __M_writer(escape(self.title()))
-        __M_writer(u'</title>\r\n    </head>\r\n    <body>\r\n        <p align="right">\r\n        <img src = "../../abstrackr.png">\r\n        </p align>\r\n       \r\n\r\n<!-- *** BEGIN page content *** -->\r\n')
-        # SOURCE LINE 18
+        __M_writer(u'</title>\r\n    </head>\r\n    <body>\r\n\r\n        <p align="left">\r\n        <img src = "../../abstrackr.png"></img>\r\n        </p>\r\n       \r\n\t<div id="login-header">\r\n\t <a href="/">home</a>   || <a href="/help">help</a> || <a href="/account/my_account">my account</a> || <a href="/account/logout">sign out</a> \r\n\t</div>\r\n\t\r\n<!-- *** BEGIN page content *** -->\r\n')
+        # SOURCE LINE 28
         __M_writer(escape(self.body()))
         __M_writer(u'\r\n<!-- *** END page content *** -->\r\n\r\n    </body>\r\n</html>\r\n')
         return ''

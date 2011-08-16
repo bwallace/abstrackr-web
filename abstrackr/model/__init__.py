@@ -94,6 +94,27 @@ class Priority(Base):
     time_requested = sa.Column(types.DateTime())
     
     
+class TagTypes(Base):
+    ''' User added tags '''
+    __tablename__ = "TagTypes"
+    id = sa.Column(types.Integer, primary_key=True)
+    text = sa.Column(types.Unicode(500))
+    # review for which tag was generated
+    review_id = sa.Column(types.Integer)
+    label = sa.Column(types.SmallInteger)
+    # who invented this?
+    creator_id = sa.Column(types.Integer)
+    color = sa.Column(types.Unicode(50))
+
+class Tags(Base):
+    ''' Stores study/tag pairs '''
+    __tablename__ = "Tags"
+    id = sa.Column(types.Integer, primary_key=True)
+    tag_id = sa.Column(types.Integer)
+    creator_id = sa.Column(types.Integer)
+    citation_id = sa.Column(types.Integer) 
+
+
 class LabeledFeature(Base):
     ''' Stores labeled features, i.e., terms '''
     __tablename__ = "LabelFeatures"

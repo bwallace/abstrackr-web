@@ -1,4 +1,5 @@
 import formencode
+from formencode import validators
 from pylons.decorators import validate
 import abstrackr.model as model
 
@@ -22,6 +23,11 @@ class RegisterForm(formencode.Schema):
     password = formencode.validators.NotEmpty()
     username = UniqueUsername()
     
-    
 
-#user = model.User.get_by(name=request.params['name'])
+    
+class ChangePasswordForm(formencode.Schema):
+    allow_extra_fields = True
+    chained_validators = [validators.FieldsMatch(
+                         'password', 'password_confirm')]
+
+

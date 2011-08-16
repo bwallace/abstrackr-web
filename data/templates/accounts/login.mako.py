@@ -4,7 +4,7 @@ UNDEFINED = runtime.UNDEFINED
 __M_dict_builtin = dict
 __M_locals_builtin = locals
 _magic_number = 5
-_modified_time = 1291058751.878
+_modified_time = 1311799904.5009999
 _template_filename='C:\\dev\\abstrackr_web\\abstrackr\\abstrackr\\templates/accounts/login.mako'
 _template_uri='/accounts/login.mako'
 _template_cache=cache.Cache(__name__, _modified_time)
@@ -23,7 +23,7 @@ def _mako_generate_namespaces(context):
     pass
 def _mako_inherit(template, context):
     _mako_generate_namespaces(context)
-    return runtime._inherit_from(context, u'../site.mako', _template_uri)
+    return runtime._inherit_from(context, u'../site_out.mako', _template_uri)
 def render_body(context,**pageargs):
     context.caller_stack._push_frame()
     try:
@@ -49,7 +49,10 @@ def render_body(context,**pageargs):
         __M_writer(u'" method="POST">\r\n<label for="login">username</label>\r\n<input type="text" id="login" name="login" /><br />\r\n<label for="password">password</label>\r\n<input type="password" id="password" name="password" /><br />\r\n<input type="submit" id="submit" value="Submit" />\r\n</form>\r\n</div>\r\n\r\ndon\'t have an account yet? <a href="')
         # SOURCE LINE 20
         __M_writer(escape(url(controller='account', action='create_account')))
-        __M_writer(u'">register here</a>.\r\n</center>')
+        __M_writer(u'">register here</a>.<br/>\r\nor maybe you forget your password? <a href="')
+        # SOURCE LINE 21
+        __M_writer(escape(url(controller='account', action='recover_password')))
+        __M_writer(u'">recover it</a>.\r\n</center>')
         return ''
     finally:
         context.caller_stack._pop_frame()

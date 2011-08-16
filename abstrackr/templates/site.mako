@@ -4,9 +4,14 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <link rel="stylesheet" href="/stylesheet.css">
-        <script type="text/javascript" src="/scripts/jquery-1.4.4.js"></script>
+        <link rel="stylesheet" href="/jquery-ui-1.8.15.custom.css">
+
+        <script type="text/javascript" src="/scripts/jquery-1.6.2.min.js"></script>
+        <script type="text/javascript" src="/scripts/jquery-ui-1.8.15.custom.min.js"></script>
         <script type="text/javascript" src="/scripts/jqModal.js"></script>
         <script type="text/javascript" src="/scripts/CalendarPopup.js"></script>
+        <script type="text/javascript" src="/scripts/jquery.ui.selectable.js"></script>
+
         <title>abstrackr: ${self.title()}</title>
     </head>
     <body>
