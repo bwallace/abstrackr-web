@@ -9,7 +9,60 @@ body, p, ol, ul, td {
 
 
 
+  .tags ul{
+    margin:1em 0;
+    padding:.5em 10px;
+    text-align:center;
+    
+    }
+  .tags li{
+    margin:0;
+    padding:0;
+    list-style:none;
+    display:inline;
 
+    }
+  .tags li a{
+    text-decoration:none;
+    color:#fff;
+    padding:0 2px;  
+    }
+  .tags li a:hover{ 
+    color:#cff400;
+    }   
+  
+
+  
+  /* alternative layout */
+
+  .tags {
+    text-align:left;
+    padding:0;
+    background:none;
+    }
+  .tags li{
+    padding:2px 10px;
+    background:#efefef;
+    display:block;
+    }
+  
+  .tag1{font-size:120%;}
+  .tag2{font-size:120%;}
+  .tag3{font-size:120%;}
+  .tag4{font-size:120%;}
+  .tag5{font-size:120%;}
+
+
+  .tags .tag1{background:#7cc0f4;}
+  .tags .tag2{background:#67abe0;}
+  .tags .tag3{background:#4d92c7;}
+  .tags .tag4{background:#3277ad;}
+  .tags .tag5{background:#266ca2;}
+
+#tags_container h2{
+  font-size:200%; 
+  text-decoration:underline; 
+}
 
 .container
 {
@@ -110,6 +163,7 @@ a:hover{
     padding:6px; 
     border:1px dotted gray;
 }
+
 
 
 .inline-actions a:hover, .actions a:hover, .actions input:hover, .sidebar input:hover{
@@ -495,6 +549,7 @@ font-family: verdana, sans-serif;
 	font-weight: normal;
 	text-decoration: none;
 	color: #333;
+  font-color: black;
 }
 
 .login-link a:hover {

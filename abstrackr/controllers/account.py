@@ -243,7 +243,7 @@ class AccountController(BaseController):
         # pull all assignments for this person
         assignment_q = model.meta.Session.query(model.Assignment)
         all_assignments = assignment_q.filter(model.Assignment.reviewer_id == person.id).all()
-        
+        pdb.set_trace()
         c.outstanding_assignments = [a for a in all_assignments if not a.done]
         c.finished_assignments = [a for a in all_assignments if a.done]   
         

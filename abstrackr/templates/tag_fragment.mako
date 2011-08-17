@@ -7,11 +7,11 @@
 
 </script>
 
-
     % if len(c.tags) > 0:
-        % for tag in c.tags:
-            ${tag}<br/>
+        % for i,tag in enumerate(c.tags):
+            <li class=${"tag%s"%(i+1)}><a href="#">${tag}</a></li><br/>
         % endfor
+    </ul>
     % else:
         (no tags yet.)
     % endif

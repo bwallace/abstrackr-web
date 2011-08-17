@@ -7,6 +7,7 @@ basically, this contains code to map data from a given format
 # std libs
 import pdb
 import string 
+import csv
 
 # third party
 import sqlite3
@@ -20,6 +21,33 @@ import pubmedpy
 import abstrackr.model as model # for access to sqlalchemy
 
 pubmedpy.set_email("byron.wallace@gmail.com")
+
+# for tsv importing 
+OBLIGATORY_FIELDS = ["id", "title", "abstract"] # these have to be there
+OPTIONAL_FIELDS = ["authors", "keywords", "journal", "pmid"]
+
+
+def looks_like_tsv(file_path):
+    header_line = open(file_path, 'r').readline()
+    headers = [x.lower() for x in header_line.split("\t")]
+    if len(headers) == 0:
+        return False
+    
+    # title, etc.?
+    if all([field in headers for field in OBLIGATORY_FIELDS]):
+        return True
+    return False
+
+def _parse_pmids(pmids_path):
+    pmids = []
+    for pmid in [x.replace("\n", "") for x in open(pmids_path, 'r').readlines()]:
+        if pmid != "":
+            try:
+                pmids.append(int(pmid))
+            except:
+                print "couldn't parse this line; %s" % pmid
+    return pmids
+
 
 def pubmed_ids_to_d(pmids):
     print "fetching articles..."
@@ -38,7 +66,7 @@ def pubmed_ids_to_d(pmids):
         pmids_d[pmid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
                                              "keywords":keywords, "pmid":pmid, "authors":authors}
     return pmids_d
-                                            
+                                
 def pmid_list_to_sql(pmids_path, review):
     pmids = _parse_pmids(pmids_path)
     d = pubmed_ids_to_d(pmids)
@@ -47,16 +75,54 @@ def pmid_list_to_sql(pmids_path, review):
     print "ok."
     return len(d)
 
-def _parse_pmids(pmids_path):
-    pmids = []
-    for pmid in [x.replace("\n", "") for x in open(pmids_path, 'r').readlines()]:
-        if pmid != "":
-            try:
-                pmids.append(int(pmid))
-            except:
-                print "couldn't parse this line; %s" % pmid
-    return pmids
+def tsv_to_d(citations, field_index_d):
+    tsv_d = {}
+
+    for citation in citations:
+        cur_id = citation[field_index_d["id"]]
+        tsv_d[cur_id] = {}
+        for field in OPTIONAL_FIELDS:
+            if field in field_index_d:
+                #pdb.set_trace()
+                tsv_d[cur_id][field] = citation[field_index_d[field]]
+            else:
+                # just insert a blank string
+                tsv_d[cur_id][field] = ""
+        
+        # now add the obligatory fields
+        for field in OBLIGATORY_FIELDS:
+            tsv_d[cur_id][field] = citation[field_index_d[field]]
+
+    return tsv_d
+
+
+def tsv_to_sql(tsv_path, review):
+    # figure out the indices
+    #citations = open(tsv_path).readlines()
+    open_f = open(tsv_path)
+    citations = csv.reader(open_f, delimiter="\t")
+    # map field names to the corresponding indices
+    # in the tsv, as indicated by the header
+    field_index_d = _field_index_d(citations.next())
+    d = tsv_to_d(citations, field_index_d)
+    dict_to_sql(d, review)
+    open_f.close()
+    return len(d)
+
+
+def _field_index_d(headers):
+    field_index_d = {}
+    for field in OBLIGATORY_FIELDS:
+        # we know these exist
+        field_index_d[field] = headers.index(field)
     
+    # now let's see if they've optional headers
+    for field in OPTIONAL_FIELDS:
+        if field in headers:
+            field_index_d[field] = headers.index(field)
+    
+    return field_index_d
+
 def xml_to_sql(xml_path, review):
     print "building a dictionary from %s..." % xml_path
     d = xml_to_dict(xml_path)
@@ -65,16 +131,7 @@ def xml_to_sql(xml_path, review):
     print "ok."
     return len(d)
 
-def filemaker_to_sql(dat_path, review):
-    '''
-    we assume that dat_path points to a file exported from FileMaker.
-    these files have the following format:
-
-    ReferenceNum\tRetrieveFullText1yes0no\tIncludedinReview1yes0no\tAbstract
-    '''
-    pass
-
-
+    
 def dict_to_sql(xml_d, review): 
     cit_num = 0
     for ref_id, citation_d in xml_d.items():
@@ -107,7 +164,7 @@ def insert_priority_entry(review_id, citation_id, init_priority_num):
     model.Session.add(priority)
     model.Session.commit()
     
-    
+
 def xml_to_dict(fpath):
     '''
     Converts study data from (ref man generated) XML to a dictionary matching study IDs (keys) to

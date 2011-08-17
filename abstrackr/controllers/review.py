@@ -82,11 +82,13 @@ class ReviewController(BaseController):
         model.Session.add(new_review)
         model.Session.commit()
         
-        # now parse the uploaded file
+        # now parse the uploaded file; dispatch on type
         num_articles = None
         if xml_file.filename.endswith(".xml"):
             print "parsing uploaded xml..."
             num_articles = xml_to_sql.xml_to_sql(local_file_path, new_review)
+        elif xml_to_sql.looks_like_tsv(local_file_path):
+            num_articles = xml_to_sql.tsv_to_sql(local_file_path, new_review)
         else:
             print "assuming this is a list of pubmed ids"
             num_articles = xml_to_sql.pmid_list_to_sql(local_file_path, new_review)
@@ -108,6 +110,7 @@ class ReviewController(BaseController):
         self._join_review(new_review.review_id)
         
         c.review = new_review
+        c.num_articles = num_articles
         return render("/reviews/review_created.mako")
         
 

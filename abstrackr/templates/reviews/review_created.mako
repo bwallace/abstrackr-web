@@ -13,12 +13,17 @@ jQuery(document).ready(function(){
 });
 </script>
 
-<div class="breadcrumbs">
-<a href="${url(controller='account', action='welcome')}">./dashboard</a>/<a href="${url(controller='review', action='show_review', id=c.review.review_id)}">${c.review.name}</a>
-</div>
+
 
 
 <h1>Your review (${c.review.name}) has been succesfully created!</h1>
+
+<div class="actions">
+
+    <a href="${url(controller='account', action='my_work')}">ok, go to my home screen</a>
+ 
+</div>
+
 
 <div class="content">
 

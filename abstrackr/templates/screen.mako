@@ -19,10 +19,6 @@
 
 </script>
 
-<div class="breadcrumbs">
-./<a href="${url(controller='account', action='welcome')}">dashboard</a>
-          /<a href="${url(controller='review', action='show_review', id=c.review_id)}">${c.review_name}</a>
-</div>
 
 <div id="dialog" >
    <form>
@@ -63,18 +59,20 @@
 <div class="container">
 
   <div id="tags_container" class="sidebar">
-    <h2>tags</h2><br/><br/>
+    <h2>tags</h2><br/>
     <center>
-    <div id="tags">
+    <div id="tags" class="tags">
+    <ul>
     % if len(c.tags) > 0:
-        % for tag in c.tags:
-            ${tag}<br/>
+        % for i,tag in enumerate(c.tags):
+            <li class=${"tag%s"%(i+1)}><a href="#">${tag}</a></li><br/>
         % endfor
+    </ul>
     % else:
         (no tags yet.)
     % endif
     </div>
-    <br/><br/>
+    <br/>
     <input type="button" id="tag_btn" value="tag study..." />
     </center>
   </div>
@@ -263,7 +261,6 @@
                     });
                     
                     $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
-                    alert("ok!");
                   }
                );
 
