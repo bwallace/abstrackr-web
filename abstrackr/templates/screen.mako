@@ -36,7 +36,7 @@
           % endif
       % endfor
     </ul>
-   </center>
+ 
 
    <div class="actions" style="text-align: right;">
       <input id="submit_btn" type="button" value="tag" />

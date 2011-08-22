@@ -201,38 +201,6 @@ class AccountController(BaseController):
     '''
     @ActionProtector(not_anonymous())
     def welcome(self):
-        """
-        Greet the user if she logged in successfully or redirect back
-        to the login form otherwise(using ActionProtector decorator).
-        """
-        '''
-        person = request.environ.get('repoze.who.identity')['user']
-        c.person = person
-        
-        project_q = model.meta.Session.query(model.Review)       
-        c.leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()
-        
-        # pull the reviews that this person is participating in
-        junction_q = model.meta.Session.query(model.ReviewerProject)
-        participating_project_ids = \
-            [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
-        c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids]
-        
-        # pull all assignments for this person
-        assignment_q = model.meta.Session.query(model.Assignment)
-        all_assignments = assignment_q.filter(model.Assignment.reviewer_id == person.id).all()
-
-        # make life easier on client side
-        review_ids_to_names_d = {}
-        for review in c.participating_projects:
-            review_ids_to_names_d[review.review_id] = review.name
-        c.review_ids_to_names_d = review_ids_to_names_d
-        
-        c.outstanding_assignments = [a for a in all_assignments if not a.done]
-        c.finished_assignments = [a for a in all_assignments if a.done]
-        
-        return render('/accounts/dashboard.mako')
-        '''
         redirect(url(controller="account", action="my_work"))
         
     @ActionProtector(not_anonymous())
@@ -243,8 +211,15 @@ class AccountController(BaseController):
         # pull all assignments for this person
         assignment_q = model.meta.Session.query(model.Assignment)
         all_assignments = assignment_q.filter(model.Assignment.reviewer_id == person.id).all()
-        pdb.set_trace()
+
         c.outstanding_assignments = [a for a in all_assignments if not a.done]
+        # if there's an initial assignment, we'll only show that.
+        assignment_types = [assignment.assignment_type for assignment in \
+                                                    c.outstanding_assignments]
+        if "initial" in assignment_types:
+            c.outstanding_assignments = [c.outstanding_assignments[\
+                                                assignment_types.index("initial")]]
+
         c.finished_assignments = [a for a in all_assignments if a.done]   
         
         project_q = model.meta.Session.query(model.Review)   

@@ -203,9 +203,15 @@ class ReviewController(BaseController):
             model.Session.delete(assignment)
             model.Session.commit()
         
-        
+     
+    @ActionProtector(not_anonymous())
+    def get_fields(self, review_id):
+        c.review_id = review_id
+        return render("/reviews/export_fragment.mako")
+
     @ActionProtector(not_anonymous())
     def export_labels(self, id):
+        # get fields
         review_q = model.meta.Session.query(model.Review)
         review = review_q.filter(model.Review.review_id == id).one()
         labels = [",".join(["(internal) id", "pubmed id", "refman id", "labeler", "label"])]

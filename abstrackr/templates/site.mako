@@ -11,7 +11,7 @@
         <script type="text/javascript" src="/scripts/jqModal.js"></script>
         <script type="text/javascript" src="/scripts/CalendarPopup.js"></script>
         <script type="text/javascript" src="/scripts/jquery.ui.selectable.js"></script>
-
+  
         <title>abstrackr: ${self.title()}</title>
     </head>
     <body>

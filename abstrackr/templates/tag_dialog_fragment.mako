@@ -1,4 +1,7 @@
 
+  <script type="javascript">
+    alert("hi");
+  </script>
 
    <form>
    <center>
