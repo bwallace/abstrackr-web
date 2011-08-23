@@ -1,8 +1,8 @@
 
   <script type="javascript">
-    alert("hi");
+    $("#selectable").selectable();
   </script>
-
+  
    <form>
    <center>
     new tag: <input type="text" id="new_tag" name="new_tag" /><br />
