@@ -214,18 +214,59 @@ class ReviewController(BaseController):
         # get fields
         review_q = model.meta.Session.query(model.Review)
         review = review_q.filter(model.Review.review_id == id).one()
-        labels = [",".join(["(internal) id", "pubmed id", "refman id", "labeler", "label"])]
+        
+        none_to_str = lambda x: "" if x is None else x
+
+        fields_to_export = []
+        for key,val in request.params.items():
+            if key == "fields[]" and not val in ("", " ", "(enter new tag)"):
+                fields_to_export.append(str(val))
+        
+        labels = [",".join(fields_to_export)]
+       
+        #labels = [",".join(["(internal) id", "pubmed id", "refman id", "labeler", "label"])]
         for citation, label in model.meta.Session.query(\
             model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
               filter(model.Label.review_id==id).all():   
-                user_name = self._get_username_from_id(label.reviewer_id)
-                labels.append(",".join(\
-                   [str(x) for x in \
-                    [citation.citation_id, citation.pmid_id, citation.refman_id, user_name, label.label]]))
+                cur_line = []
+               
+                for field in fields_to_export:
+                    if field == "(internal) id":
+                        cur_line.append("%s" % citation.citation_id)
+                    elif field == "pubmed id":
+                        cur_line.append("%s" % citation.pmid_id)
+                    elif field == "label":
+                        cur_line.append("%s" % label.label)
+                    elif field == "labeler":
+                        user_name = self._get_username_from_id(label.reviewer_id)
+                        cur_line.append(user_name)
+                    elif field == "abstract":
+                        cur_line.append('"%s"' % none_to_str(citation.abstract).replace('"', "'"))
+                    elif field == "title":
+                        cur_line.append('"%s"' % citation.title.replace('"', "'"))
+                    elif field == "keywords":
+                        cur_line.append('"%s"' % citation.keywords.replace('"', "'"))
+                    elif field == "journal":
+                        pass
+                    elif field == "authors":
+                        cur_line.append('"%s"' % "".join(citation.authors))
+                    elif field == "tags":
+                        cur_tags = self._get_tags_for_citation(citation.citation_id)
+                        cur_line.append('"%s"' % ",".join(cur_tags))
+
+                        
+
+                
+                labels.append(",".join(cur_line))
+    
         
-        response.headers['Content-type'] = 'text/csv'
-        response.headers['Content-disposition'] = 'attachment; filename=labels_%s.csv' % id
-        return "\n".join(labels)
+        fout = open(os.path.join(\
+                "abstrackr", "public", "exports", "labels_%s.csv" % review.review_id), 'w')
+        fout.write("\n".join(labels))
+        fout.close()
+
+        c.download_url = "http://abstrackr.tuftscaes.org/exports/labels_%s.csv" % review.review_id
+        return render("/reviews/download_labels.mako")
         
 
     @ActionProtector(not_anonymous())
