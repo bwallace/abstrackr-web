@@ -3,27 +3,24 @@
 <%def name="title()">${c.review.name}</%def>
 
 
-<div class="breadcrumbs">
-<a href="${url(controller='account', action='welcome')}">./dashboard</a>
-</div>
-
 
 <h1>${c.review.name}</h1>
-
-<p align="right">
-% if c.is_admin:
-    <a class="tab" href="${url(controller='review', action='admin', id=c.review.review_id)}">admin</a>
-% endif
-<a class="tab" href="${url(controller='review', action='review_labels', review_id=c.review.review_id)}">review labels</a>
-<a class="tab" href="${url(controller='review', action='review_terms', id=c.review.review_id)}">review terms</a>
-</p>
-
+	<div class="actions">
+    <a
+      href="${url(controller='review', action='review_labels', review_id=c.review.review_id)}">review labels</a>
+    <a 
+      href="${url(controller='review', action='review_terms', id=c.review.review_id)}">review terms</a>
+</div>
 <div class="content">
 <h2>Project description</h2> 
 ${c.review.project_description}
 <br/><br/>
 <h2>Progress</h2>
-<center><img src = "${c.pi_url}"></img></center><br/>
+
+% if float(c.num_labels)/float(c.num_citations) >= .1:
+	<center><img src = "${c.pi_url}"></img></center><br/>
+% endif
+
 There are ${c.num_citations} citations in this review, so far ${c.num_labels} have been labeled.
 <br/><br/>
 

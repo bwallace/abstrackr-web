@@ -33,8 +33,6 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 
 <script type="text/javascript">  
     function setup_js(){
-
-        $("#selectable").selectable();
       
         $("#dialog").dialog({
           height: 300,
@@ -205,6 +203,7 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
         });
 
         $("#new_tag").val('');
+        $("#selectable").selectable();
     }    
     
 </script>
