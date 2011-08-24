@@ -1,7 +1,5 @@
 
-  <script type="javascript">
-    $("#selectable").selectable();
-  </script>
+
   
    <form>
    <center>

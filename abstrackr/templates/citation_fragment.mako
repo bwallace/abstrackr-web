@@ -32,8 +32,55 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 
 
 <script type="text/javascript">  
+
+    function setup_submit(){
+      $("#selectable").selectable();     
+      $("#submit_btn").unbind();
+      $("#submit_btn").click(function()
+      {
+          
+         var tag_str = $("input#new_tag").val();
+
+         // now add all selected tags to the study
+         var tags = $.map($('.ui-selected, this'), function(element, i) {  
+           return $(element).text();  
+         });
+
+         // push new tag, too (if it's empty, we'll drop it server-side)
+         tags.push(tag_str);
+
+         $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", {tags: tags},
+            function(){
+              $("#tags").fadeOut('slow', function() {
+                $("#tags").load("${'/review/update_tags/%s' % c.review_id}", function() {
+                  $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
+                  $("#tags").fadeIn('slow');
+                });
+              });
+              
+              $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
+            }
+         );
+
+         $( "#dialog" ).dialog( "close" );
+      });
+
+      $("#tag_btn").click(function()
+      {
+         $("#dialog" ).dialog( "open" );
+      });
+
+      $("#close_btn").click(function (e)
+      {
+         $("#dialog" ).dialog( "close" );
+      });
+
+      $("#new_tag").val(' ');
+
+    } 
+
     function setup_js(){
-      
+        
         $("#dialog").dialog({
           height: 300,
           modal: true,
@@ -53,7 +100,14 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
         $("#close_btn").unbind();
         $("#tag_btn").unbind();
 
-        $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
+        $("#dialog").load(
+            "${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}",
+            function() {
+              //$("#selectable").selectable();     
+              setup_submit();
+            }
+        );
+
         $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
         
         // reset the timer
@@ -81,7 +135,7 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                      setup_js();
                 });
             });
-         });   
+         });    
                
         $("#maybe").click(function() {
             $('#buttons').hide();
@@ -163,47 +217,12 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                 markup_current();
             }
          });
-         
-        $("#tag_btn").click(function()
-        {
-           $("#dialog" ).dialog( "open" );
-        });
 
-        $("#close_btn").click(function (e)
-        {
-           $("#dialog" ).dialog( "close" );
-        });
+        //setup_submit();
+    }   
 
-        $("#submit_btn").click(function()
-        {
-           var tag_str = $("input#new_tag").val();
 
-           // now add all selected tags to the study
-           var tags = $.map($('.ui-selected, this'), function(element, i) {  
-             return $(element).text();  
-           });
+    
 
-           // push new tag, too (if it's empty, we'll drop it server-side)
-           tags.push(tag_str);
-
-           $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", {tags: tags},
-              function(){
-                $("#tags").fadeOut('slow', function() {
-                  $("#tags").load("${'/review/update_tags/%s' % c.review_id}", function() {
-                    $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
-                    $("#tags").fadeIn('slow');
-                  });
-                });
-
-                $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
-                }
-            );
-
-            $( "#dialog" ).dialog( "close" );
-        });
-
-        $("#new_tag").val('');
-        $("#selectable").selectable();
-    }    
     
 </script>

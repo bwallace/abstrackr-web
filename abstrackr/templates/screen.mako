@@ -23,7 +23,7 @@
 <div id="dialog" >
    <form>
    <center>
-    new tag: <input type="text" id="new_tag" name="new_tag" /><br />
+    new tag: <input type="text" id="new_tag" name="new_tag" /> </input><br />
    </center>
    <br/>
 
@@ -114,7 +114,6 @@
 
       <script type="text/javascript">    
           function setup_js(){
-              $("#selectable").selectable();
               
               $( "#dialog" ).dialog({
                 height: 250,
@@ -228,19 +227,18 @@
                       markup_current();
                   }
                }); 
-
+              
               setup_submit();
           }
 
 
           function setup_submit(){
-            
             $("#selectable").selectable();
-              
+
             $("#submit_btn").unbind();
             $("#submit_btn").click(function()
             {
-              
+               //$("#selectable").selectable("enable");
                var tag_str = $("input#new_tag").val();
 
                // now add all selected tags to the study
@@ -269,6 +267,7 @@
 
             $("#tag_btn").click(function()
             {
+               
                $("#dialog" ).dialog( "open" );
             });
 
@@ -277,7 +276,8 @@
                $("#dialog" ).dialog( "close" );
             });
 
-            $("#new_tag").val('');
+            
+      
           }
 
 
