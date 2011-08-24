@@ -913,12 +913,13 @@ class ReviewController(BaseController):
             
             lbl_filter_num = {"included":1, "excluded":-1, "maybe (?)":0}[lbl_filter]
 
+            '''
             labels = [label for label in label_q.filter(\
                                    and_(model.Label.review_id == review_id,\
                                         model.Label.reviewer_id == current_user.id),\
                                         model.Label.label == lbl_filter_num)).\
                                             order_by(desc(model.Label.label_last_updated)).all()]     
-
+            '''
         c.given_labels = labels
         return render("/reviews/review_labels_fragment.mako")
 
