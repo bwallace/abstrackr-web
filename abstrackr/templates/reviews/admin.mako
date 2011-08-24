@@ -70,7 +70,7 @@ jQuery(document).ready(function(){
     </div>
 
 <p align="right">
-Alternatively, they can join the review themselves using this code: <b>${c.review.code}</b>
+Alternatively, they can join the review themselves by following this link: <b>http://abstrackr.tuftscaes.org/join/${c.review.code}</b>
 </p>
 
 

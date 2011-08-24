@@ -1,17 +1,3 @@
-<%inherit file="../site.mako" />
-<%def name="title()">review labels</%def>
-
-
-
-%if c.assignment is not None:
-<div class = "actions">
-    <a href="${url(controller='review', action='screen', review_id=c.assignment.review_id, assignment_id=c.assignment.id)}">ok, get back to screening <img src="../../arrow_right.png"></img></a>
-    </div>
-%endif
-
-
-<div class="content">
-<div id="labels_fragment">
 %if len(c.given_labels) > 0:
     labels you've provided: <br/><br/>
     <center>
@@ -46,5 +32,3 @@
 %else:
     whoops, you've not labeled anything yet. 
 %endif
-</div>
-</div>
