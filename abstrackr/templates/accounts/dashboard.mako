@@ -2,6 +2,29 @@
 <%def name="title()">home</%def>
 
 
+<script type="text/javascript" src="/scripts/jquery.alerts.js"></script>
+<link href="/scripts/jquery.alerts.css"  rel="stylesheet" type="text/css" media="screen" />
+
+<script language="javascript">
+
+    $(document).ready(function() { 
+  
+
+        $("#export").dialog({
+            height: 500,
+            width:500, 
+            modal: true,
+            autoOpen: false,
+            show: "blind",
+        });
+        
+    });
+</script>
+
+
+<div id="export" class="dialog">
+</div>
+
 	
 %if c.my_projects:
     <a class="tab" href = "${url(controller='account', action='my_work')}">my work</a>
@@ -16,10 +39,9 @@
 %if c.my_projects:
 
     %if len(c.leading_projects) > 0:
-        <h2>projects you're leading</h2> <br/><br/>
+        <h1>projects you're leading</h1>
         <center>
 
-        
         <br/>
         <table class="list_table">
         
@@ -28,26 +50,39 @@
             <td><a href="${url(controller='review', action='show_review', id=review.review_id)}">${review.name}</td>           
             <td class="inline-actions"><a href="${url(controller='review', action='admin', id=review.review_id)}">admin 
                          <img src = "../../admin_sm.png"></a></td> 
-            <td class="inline-actions"><a href="${url(controller='review', action='export_labels', id=review.review_id)}">
+            <td class="inline-actions">
+
+
+            <a href="#" onclick="javascript:    
+                      $('#export').load('${url(controller="review", action="get_fields", review_id=review.review_id)}', 
+                        function() {
+                            $('#export').dialog('open');
+                            $('#selectable').selectable();
+                      });
+                      ">
+
                       export<img src = "../../export_sm.png"></a></td>
             <td class="inline-actions"><a href="${url(controller='review', action='review_conflicts', id=review.review_id)}">
                       review conflicts<img src = "../../conflicts_sm.png"></a></td>
-            <td class="inline-actions"><a href="${url(controller='review', action='delete_review', id=review.review_id)}" 
-                           onclick="javascript:return confirm('are you sure you want to delete this review? all labels will be lost!')">
-                      delete<img src = "../../delete.png"></a></td> 
+            <td class="inline-actions">
+                <a href="#" onclick="javascript:jConfirm('are you sure you want to delete this review? all labels will be lost!', 
+                     'delete review?', function(r) {
+                        if(r) window.location = '${url(controller='review', action='delete_review', id=review.review_id)}'; 
+                   });">delete<img src = "../../delete.png"></a></td> 
         </tr>
         % endfor
         </table>
         <br/><br/><br/>
         </center>
     % endif 
-
+ 
     %if len(c.participating_projects) > 0:
-        <h2>projects you're participating in</h2> <br/><br/>
+        <h1>projects in which you're participating</h1>
         <table class="list_table">
         % for i,review in enumerate(c.participating_projects):
         <tr class="${'odd' if i%2 else 'even'}">
             <td><a href="${url(controller='review', action='show_review', id=review.review_id)}">${review.name}</td>    
+            <td class="inline-actions"><a href="${url(controller='review', action='review_labels', review_id=review.review_id)}">review my labels</td>  
             <td class="inline-actions"><a href="${url(controller='review', action='leave_review', id=review.review_id)}" 
                            onclick="javascript:return confirm('are you sure you want to leave this review?')">
             leave review</a></td>      
@@ -75,7 +110,7 @@
 %elif c.my_work:
 
     %if len(c.outstanding_assignments) > 0:
-        <h2>work you should be doing </h2><br/><br/>
+        <h1>work you should be doing </h1>
         <center>
         <table class="list_table" align="center>>
                 <tr align="center">
@@ -111,7 +146,7 @@
     %endif
     
     % if len(c.finished_assignments) > 0:
-        <h2>assignments you've completed</h2> <br/>
+        <h1>assignments you've completed</h1>
         <center>
         <table width=80% class="list_table" align="center>>
                 <tr align="center">
