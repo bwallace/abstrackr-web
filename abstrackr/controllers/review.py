@@ -901,9 +901,30 @@ class ReviewController(BaseController):
             c.assignment = self._get_assignment_from_id(assignment_id)
             
         return render("/reviews/edit_terms.mako")
-                         
+            
+            
     @ActionProtector(not_anonymous())
-    def review_labels(self, review_id, assignment_id=None):
+    def filter_labels(self, review_id, assignment_id=None, lbl_filter=None):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        
+        label_q = model.meta.Session.query(model.Label)
+        labels = None
+        if lbl_filter in ("included", "excluded", "maybe (?)"):
+            
+            lbl_filter_num = {"included":1, "excluded":-1, "maybe (?)":0}[lbl_filter]
+
+            labels = [label for label in label_q.filter(\
+                                   and_(model.Label.review_id == review_id,\
+                                        model.Label.reviewer_id == current_user.id)\
+                                        model.Label.label == lbl_filter_num)).\
+                                            order_by(desc(model.Label.label_last_updated)).all()]     
+
+        c.given_labels = labels
+        return render("/reviews/review_labels_fragment.mako")
+
+
+    @ActionProtector(not_anonymous())
+    def review_labels(self, review_id, assignment_id=None, lbl_filter=None):
         current_user = request.environ.get('repoze.who.identity')['user']
         
         label_q = model.meta.Session.query(model.Label)
