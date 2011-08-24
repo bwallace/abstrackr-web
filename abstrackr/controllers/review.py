@@ -915,7 +915,7 @@ class ReviewController(BaseController):
 
             labels = [label for label in label_q.filter(\
                                    and_(model.Label.review_id == review_id,\
-                                        model.Label.reviewer_id == current_user.id)\
+                                        model.Label.reviewer_id == current_user.id),\
                                         model.Label.label == lbl_filter_num)).\
                                             order_by(desc(model.Label.label_last_updated)).all()]     
 
