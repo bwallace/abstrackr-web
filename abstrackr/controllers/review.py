@@ -592,7 +592,7 @@ class ReviewController(BaseController):
         # check if any are to be added (i.e., for a new tag)
         existing_tag_types = self._get_tag_types_for_review(review_id)
         
-        tags = list(set(tags))
+        tags = [tag.strip() for tag in list(set(tags))]
         for user_tag in tags:
             if user_tag not in existing_tag_types:
                 self.add_tag(review_id, user_tag)
@@ -608,7 +608,10 @@ class ReviewController(BaseController):
         for tag in list(set(tags)):
             new_tag = model.Tags()
             new_tag.creator_id = current_user.id
-            new_tag.tag_id = self._get_tag_id(review_id, tag)
+            try:
+                new_tag.tag_id = self._get_tag_id(review_id, tag)
+            except:
+                pdb.set_trace()
             new_tag.citation_id = study_id
             model.Session.add(new_tag)
             model.Session.commit()
@@ -622,7 +625,7 @@ class ReviewController(BaseController):
 
         # make sure there isn't already an identical tag
         cur_tags = self._get_tag_types_for_review(review_id)
-        tag = tag.strip()
+
         if tag not in cur_tags:
             new_tag = model.TagTypes()
             new_tag.text = tag
