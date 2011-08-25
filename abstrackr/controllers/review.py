@@ -50,6 +50,7 @@ class ReviewController(BaseController):
     def create_review_handler(self):
         # first upload the xml file
         #xml_file = request.params['db']
+        print "I am here, I exist."
         xml_file = request.POST['db']
         local_file_path = "." + os.path.join(permanent_store, 
                           xml_file.filename.lstrip(os.sep))
