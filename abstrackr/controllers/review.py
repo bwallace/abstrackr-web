@@ -49,7 +49,8 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def create_review_handler(self):
         # first upload the xml file
-        xml_file = request.params['db']
+        #xml_file = request.params['db']
+        xml_file = request.POST['db']
         local_file_path = "." + os.path.join(permanent_store, 
                           xml_file.filename.lstrip(os.sep))
         local_file = open(local_file_path, 'w')
