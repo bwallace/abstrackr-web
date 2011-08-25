@@ -65,7 +65,7 @@ You can import a few different file types into <b>abstrackr</b>.<br/>
 <div class="content">
 <center>
 <table class="form_table">
- ${h.form(url(controller='review', action='create_review_handler'), multipart=True, id="new_project_form")}
+ ${h.form(url(controller='review', action='create_review_handler'), multipart=True, id="new_project_form",  method='post')}
     <tr><td><label>project name:</td><td> ${h.text('name')}</label></td></tr>
     <tr><td><label>project description:</td> <td>${h.textarea('description', rows="10", cols="40")}</label></td></tr>
     <tr><td><label>upload file (<a href="#" id="help-link">what can I import?</a>):</label></td> <td>${h.file('db')} </td></tr>
