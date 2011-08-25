@@ -78,7 +78,11 @@ class ReviewController(BaseController):
         screening_mode_str = request.params['screen_mode']
         new_review.screening_mode = \
                  {"Single-screen":"single", "Double-screen":"double", "Advanced":"advanced"}[screening_mode_str]
-        new_review.initial_round_size = int(request.params['init_size'])
+        
+        new_review.initial_round_size = 0
+        if 'init_size' in request.params.keys():
+            new_review.initial_round_size = int(request.params['init_size'])
+        
         model.Session.add(new_review)
         model.Session.commit()
         
@@ -287,19 +291,21 @@ class ReviewController(BaseController):
         citations_for_review = citation_q.filter(model.Citation.review_id == review.review_id).all()        
         for citation in citations_for_review:
             model.Session.delete(citation)
-        
+        model.Session.commit()
+
         # then delete the associations in the table mapping reviewers to 
         # reviews
         reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
         entries_for_review = reviewer_review_q.filter(model.ReviewerProject.review_id == review.review_id).all()
         for reviewer_review in entries_for_review:
             model.Session.delete(reviewer_review)
+        model.Session.commit()
             
         label_q = model.meta.Session.query(model.Label)
         labels = label_q.filter(model.Label.review_id == review.review_id).all()
         for l in labels:
             model.Session.delete(l)
-            model.Session.commit()
+        model.Session.commit()
             
         label_feature_q = model.meta.Session.query(model.LabeledFeature)
         labeled_features = label_feature_q.filter(model.LabeledFeature.review_id == review.review_id).all()
@@ -311,7 +317,7 @@ class ReviewController(BaseController):
         priorities = priority_q.filter(model.Priority.review_id == review.review_id).all()
         for p in priorities:
             model.Session.delete(p)
-            model.Session.commit()
+        model.Session.commit()
             
         # remove all tasks associated with this review
         task_q = model.meta.Session.query(model.Task)
@@ -768,6 +774,7 @@ class ReviewController(BaseController):
         c.assignment_type = assignment.assignment_type
         
         c.cur_citation = self._get_next_citation(assignment, review)
+        #pdb.set_trace()
         if c.cur_citation is None:
             if assignment.assignment_type == "conflict":
                 return "no conflicts!"
@@ -880,7 +887,7 @@ class ReviewController(BaseController):
                 priority.locked_by = request.environ.get('repoze.who.identity')['user'].id
                 priority.time_requested = datetime.datetime.now()
                 model.Session.commit()
-
+ 
         return None if next_id is None else self._get_citation_from_id(next_id)
         
     @ActionProtector(not_anonymous())
@@ -1073,6 +1080,7 @@ class ReviewController(BaseController):
         for priority_obj in ranked_priorities:
              if priority_obj.citation_id not in already_labeled:
                  return priority_obj
+        
         # this person has already labeled everything -- nothing more to do!
         return None
         

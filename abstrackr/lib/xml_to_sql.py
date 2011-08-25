@@ -138,14 +138,16 @@ def dict_to_sql(xml_d, review):
         cit_id = insert_citation(review.review_id, ref_id, citation_d)
         insert_priority_entry(review.review_id, cit_id, cit_num)
         cit_num += 1
-        
+    model.Session.commit()
+
 def insert_citation(review_id, ref_id, citation_d):
     citation = model.Citation()
     citation.review_id = review_id
     citation.refman_id = ref_id
     pmid = citation_d['pmid']
     citation.pmid_id =  pmid if (pmid is not None and pmid != '') else 0
-    citation.title = citation_d['title']
+    # we truncate the citation if it's too long!
+    citation.title = citation_d['title'][:480]
     citation.abstract = citation_d['abstract']
     citation.authors = " and ".join(citation_d['authors'])
     citation.keywords = ','.join(citation_d['keywords'])
@@ -162,7 +164,7 @@ def insert_priority_entry(review_id, citation_id, init_priority_num):
     priority.num_times_labeled = 0
     priority.is_out = False
     model.Session.add(priority)
-    model.Session.commit()
+    #model.Session.commit()
     
 
 def xml_to_dict(fpath):
