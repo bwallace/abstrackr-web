@@ -885,6 +885,20 @@ class ReviewController(BaseController):
         else:
             
             priority = self._get_next_priority(review)
+            # 8/29/11 -- remedy for issue wherein antiquated
+            # (deployed) code was not popping priority items
+            # after a sufficient number of labels were acquired
+            # (i.e,. after they were screened). this checks that this
+            # isn't the case here, and removes the priority object
+            # if so. may went to drop this down the road, it's 
+            # technically unnecessary with the current codebase (
+            # in which priority objects are dropped at label time correctly)
+            num_times_to_label = 1 if review.screening_mode == "single" else 2
+            while (priority.num_times_labeled >= num_times_to_label):
+                model.Session.delete(priority)
+                model.Session.commit()
+                priority = self._get_next_priority(review)
+
             if priority is None:
                 next_id = None
             else:
