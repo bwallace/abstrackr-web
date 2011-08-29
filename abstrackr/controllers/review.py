@@ -46,12 +46,14 @@ class ReviewController(BaseController):
     def create_new_review(self):
         return render("/reviews/new.mako")
     
-    @ActionProtector(not_anonymous())
+    #@ActionProtector(not_anonymous())
     def create_review_handler(self):
+        
         # first upload the xml file
         #xml_file = request.params['db']
         print "I am here, I exist."
         xml_file = request.POST['db']
+
         local_file_path = "." + os.path.join(permanent_store, 
                           xml_file.filename.lstrip(os.sep))
         local_file = open(local_file_path, 'w')
@@ -726,7 +728,9 @@ class ReviewController(BaseController):
                 review = self._get_review_from_id(review_id)
         
                 if review.screening_mode in ("single", "double"):
-                    if priority_obj.num_times_labeled >= 2:
+                    num_times_to_screen  = {"single":1, "double":2}[review.screening_mode]
+
+                    if priority_obj.num_times_labeled >= num_times_to_screen:
                         model.Session.delete(priority_obj)
                         model.Session.commit()
         
@@ -776,7 +780,7 @@ class ReviewController(BaseController):
         c.assignment_type = assignment.assignment_type
         
         c.cur_citation = self._get_next_citation(assignment, review)
-        #pdb.set_trace()
+
         if c.cur_citation is None:
             if assignment.assignment_type == "conflict":
                 return "no conflicts!"
@@ -879,7 +883,8 @@ class ReviewController(BaseController):
             if len(eligible_pool) > 0:
                 next_id = eligible_pool[0]
         else:
-            priority = self._get_next_priority(review.review_id)
+            
+            priority = self._get_next_priority(review)
             if priority is None:
                 next_id = None
             else:
@@ -1059,7 +1064,7 @@ class ReviewController(BaseController):
             return True
         return False     
         
-    def _get_next_priority(self, review_id):
+    def _get_next_priority(self, review):
         '''
         returns citation ids to be screened for the specified
         review, ordered by their priority (int he priority table).
@@ -1070,6 +1075,7 @@ class ReviewController(BaseController):
         Note: this will not return ids for instances that are 
         currently being labeled.
         '''
+        review_id = review.review_id
         priority_q = model.meta.Session.query(model.Priority)
         me = request.environ.get('repoze.who.identity')['user'].id
         ranked_priorities = [priority for priority in priority_q.filter(\
