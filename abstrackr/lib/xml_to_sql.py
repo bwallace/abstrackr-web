@@ -34,9 +34,15 @@ def looks_like_tsv(file_path):
         return False
     
     # title, etc.?
-    if all([field in headers for field in OBLIGATORY_FIELDS]):
+    if all([_field_in(field, headers) for field in OBLIGATORY_FIELDS]):
         return True
     return False
+
+def _field_in(field, headers):
+    # we'll only enforce that a string *start* with
+    # the field; this avoids issues with, e.g.,
+    # pluralization and new lines.
+    return any([x.startswith(field) for x in headers])
 
 def _parse_pmids(pmids_path):
     pmids = []
@@ -83,16 +89,15 @@ def tsv_to_d(citations, field_index_d):
         tsv_d[cur_id] = {}
         for field in OPTIONAL_FIELDS:
             if field in field_index_d:
-                #pdb.set_trace()
-                tsv_d[cur_id][field] = citation[field_index_d[field]]
+                    tsv_d[cur_id][field] = \
+                            citation[field_index_d[field]].decode('utf8', 'replace')
             else:
                 # just insert a blank string
                 tsv_d[cur_id][field] = ""
         
         # now add the obligatory fields
         for field in OBLIGATORY_FIELDS:
-            tsv_d[cur_id][field] = citation[field_index_d[field]]
-
+            tsv_d[cur_id][field] = citation[field_index_d[field]].decode('utf8', 'replace')
     return tsv_d
 
 
@@ -143,17 +148,24 @@ def dict_to_sql(xml_d, review):
 def insert_citation(review_id, ref_id, citation_d):
     citation = model.Citation()
     citation.review_id = review_id
+    try:
+        ref_id = int(ref_id)
+    except:
+        ref_id = None
+
     citation.refman_id = ref_id
     pmid = citation_d['pmid']
     citation.pmid_id =  pmid if (pmid is not None and pmid != '') else 0
     # we truncate the citation if it's too long!
     citation.title = citation_d['title'][:480]
-    citation.abstract = citation_d['abstract']
+    citation.abstract = citation_d['abstract'][:9980]
     citation.authors = " and ".join(citation_d['authors'])
     citation.keywords = ','.join(citation_d['keywords'])
     citation.journal = citation_d['journal']
+    
     model.Session.add(citation)
     model.Session.commit()
+
     return citation.citation_id
  
 def insert_priority_entry(review_id, citation_id, init_priority_num):
