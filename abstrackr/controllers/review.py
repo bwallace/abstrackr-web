@@ -292,7 +292,11 @@ class ReviewController(BaseController):
         ###
         # first delete all associated citations
         citation_q = model.meta.Session.query(model.Citation)
-        citations_for_review = citation_q.filter(model.Citation.review_id == review.review_id).all()        
+        try:
+            citations_for_review = citation_q.filter(model.Citation.review_id == review.review_id).all()        
+        except:
+            pdb.set_trace()
+            
         for citation in citations_for_review:
             model.Session.delete(citation)
         model.Session.commit()
@@ -455,7 +459,9 @@ class ReviewController(BaseController):
         c.reviewer_ids_to_names_d = self._reviewer_ids_to_names(c.participating_reviewers)
         
         assignments_q = model.meta.Session.query(model.Assignment)
-        assignments = assignments_q.filter(model.Assignment.review_id == id)
+        # note that we don't show the 'conflict' assignments here.
+        assignments = assignments_q.filter(and_(model.Assignment.review_id == id, \
+                                                model.Assignment.assignment_type != "conflict")).all()
         c.assignments = assignments
         return render("/reviews/assignments.mako")
     
