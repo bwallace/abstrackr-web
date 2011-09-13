@@ -20,6 +20,7 @@ def make_map(config):
 
     # CUSTOM ROUTES HERE
     map.connect('/{controller}/{action}')
+    map.connect('/review/delete_assignment/{review_id}/{assignment_id}', controller='review', action='delete_assignment')
     map.connect('/review/get_fields/{review_id}', controller='review', action='get_fields')
     map.connect('/review/update_tags/{study_id}', controller='review', action='update_tags')
     map.connect('/review/update_tag_types/{review_id}/{study_id}', controller='review', action='update_tag_types')
