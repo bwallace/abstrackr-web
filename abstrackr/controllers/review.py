@@ -50,8 +50,6 @@ class ReviewController(BaseController):
     def create_review_handler(self):
         
         # first upload the xml file
-        #xml_file = request.params['db']
-        print "I am here, I exist."
         xml_file = request.POST['db']
 
         local_file_path = "." + os.path.join(permanent_store, 
@@ -459,10 +457,15 @@ class ReviewController(BaseController):
         c.reviewer_ids_to_names_d = self._reviewer_ids_to_names(c.participating_reviewers)
         
         assignments_q = model.meta.Session.query(model.Assignment)
+  
+        assignments = assignments_q.filter(model.Assignment.review_id == id).all()
+
         # note that we don't show the 'conflict' assignments here.
-        assignments = assignments_q.filter(and_(model.Assignment.review_id == id, \
-                                                model.Assignment.assignment_type != "conflict")).all()
-        c.assignments = assignments
+        non_conflict_assignments = \
+            [assignment for assignment in assignments if \
+                     assignment.assignment_type != "conflict"]
+   
+        c.assignments = non_conflict_assignments
         return render("/reviews/assignments.mako")
     
     def _current_user_leads_review(self, review_id):
@@ -595,7 +598,20 @@ class ReviewController(BaseController):
         model.Session.add(new_labeled_feature)
         model.Session.commit()
         
-    
+    @ActionProtector(not_anonymous())
+    def delete_assignment(self, review_id, assignment_id):
+        if not self._current_user_leads_review(review_id):
+            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname        
+
+        assignment_q = model.meta.Session.query(model.Assignment)     
+        assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
+        model.Session.delete(assignment)
+        model.Session.commit()
+
+        redirect(url(controller="review", action="assignments", 
+                            id=review_id)) 
+        
+        
     @ActionProtector(not_anonymous())
     def tag_citation(self, review_id, study_id):
         current_user = request.environ.get('repoze.who.identity')['user']

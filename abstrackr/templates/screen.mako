@@ -238,7 +238,7 @@
             $("#submit_btn").unbind();
             $("#submit_btn").click(function()
             {
-               //$("#selectable").selectable("enable");
+               
                var tag_str = $("input#new_tag").val();
 
                // now add all selected tags to the study

@@ -23,7 +23,7 @@
     <center>
     <table width=80% class="list_table" align="center>>
             <tr align="center">
-            <th width="25%">reviewer</th><th span=20>number to screen</th><th>screened so far</th><th width="20%">assigned</th><th width="20%">due</th>
+            <th width="25%">reviewer</th><th span=20>number to screen</th><th>screened so far</th><th width="20%">assigned</th><th width="20%">due</th><th>delete</th>
             </tr>
             % for i,assignment in enumerate(c.assignments):
                 <tr>
@@ -40,8 +40,11 @@
                 % if assignment.date_due is not None:
                     <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>
                 % else:
-                    <td>None</td>
+                    <td>N/A</td>
                 % endif
+                <td><a href=
+                       "${url(controller='review', action='delete_assignment', review_id=c.review.review_id, assignment_id=assignment.id)}" 
+                       <img src="/delete_sm.png"></img></a>
                 </tr>
             % endfor
     </table>

@@ -76,7 +76,9 @@ You can import a few different file types into <b>abstrackr</b>.<br/>
     
 
 		
-    <tr><td></td><td></td><td class="actions"> <a href="${url(controller='account', action='welcome')}">Cancel</a></td><td class="actions">${h.submit('post', 'Create new review')}</td></tr>
+    <tr><td></td><td></td><td class="actions"> 
+    <a href="${url(controller='account', action='welcome')}">Cancel</a></td>
+    <td class="actions">${h.submit('post', 'Create new review')}</td></tr>
     </div>
   ${h.end_form()} 
 </table>
