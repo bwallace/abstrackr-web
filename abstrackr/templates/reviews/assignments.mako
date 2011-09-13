@@ -43,7 +43,7 @@
                     <td>N/A</td>
                 % endif
                 <td><a href=
-                       "${url(controller='review', action='delete_assignment', review_id=c.review.review_id, assignment_id=assignment.id)}" 
+                       "${url(controller='review', action='delete_assignment', review_id=c.review.review_id, assignment_id=assignment.id)}">
                        <img src="/delete_sm.png"></img></a>
                 </tr>
             % endfor
