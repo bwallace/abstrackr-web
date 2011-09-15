@@ -10,10 +10,10 @@
 	         return $(element).text();  
 	       });
 
-	       // ("#export").load
-	       	//$.get("${'/review/export_labels/%s' % c.review_id}", {fields: fields}, 
 
-	       $("#export").load("${'/review/export_labels/%s' % c.review_id}", {fields: fields});
+		   $("#export").load('/exporting.html', function(){
+	       		$("#export").load("${'/review/export_labels/%s' % c.review_id}", {fields: fields});
+	       });
 	       
 	       
 	    });
