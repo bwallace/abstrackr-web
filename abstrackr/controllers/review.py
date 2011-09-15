@@ -46,7 +46,7 @@ class ReviewController(BaseController):
     def create_new_review(self):
         return render("/reviews/new.mako")
     
-    #@ActionProtector(not_anonymous())
+    @ActionProtector(not_anonymous())
     def create_review_handler(self):
         
         # first upload the xml file
@@ -235,7 +235,7 @@ class ReviewController(BaseController):
             model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
               filter(model.Label.review_id==id).all():   
                 cur_line = []
-               
+                
                 for field in fields_to_export:
                     if field == "(internal) id":
                         cur_line.append("%s" % citation.citation_id)
@@ -253,14 +253,12 @@ class ReviewController(BaseController):
                     elif field == "keywords":
                         cur_line.append('"%s"' % citation.keywords.replace('"', "'"))
                     elif field == "journal":
-                        pass
+                        cur_line.append('"%s"' % none_to_str(citation.journal))
                     elif field == "authors":
                         cur_line.append('"%s"' % "".join(citation.authors))
                     elif field == "tags":
                         cur_tags = self._get_tags_for_citation(citation.citation_id)
                         cur_line.append('"%s"' % ",".join(cur_tags))
-
-                        
 
                 
                 labels.append(",".join(cur_line))
