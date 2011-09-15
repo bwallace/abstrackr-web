@@ -266,7 +266,9 @@ class ReviewController(BaseController):
         
         fout = open(os.path.join(\
                 "abstrackr", "public", "exports", "labels_%s.csv" % review.review_id), 'w')
-        fout.write("\n".join(labels))
+        lbls_str = "\n".join(labels)
+        lbls_str = lbls_str.encode("utf-8", "ignore")
+        fout.write(lbls_str)
         fout.close()
 
         c.download_url = "http://abstrackr.tuftscaes.org/exports/labels_%s.csv" % review.review_id
