@@ -114,7 +114,7 @@
         <center>
         <table class="list_table" align="center>>
                 <tr align="center">
-                <th width="25%">review</th><th >number to screen</th><th>screened so far</th><th width="20%">assigned</th><th width="10%">due</th><th width="30%"></th>
+                <th width="25%">review</th><th >number to screen</th><th>screened so far</th><th width="20%">assigned</th><th width="10%">due</th><th width="30%">actions</th>
                 </tr>
                 % for i, assignment in enumerate(c.outstanding_assignments):
                     <tr>
@@ -135,14 +135,16 @@
                     %endif
                     <td class="inline-actions">
                     <a href="${url(controller='review', action='screen', review_id=assignment.review_id, assignment_id=assignment.id)}">
-                    screen <img src="../../arrow_right.png"></img></a></td>
+                    screen <img src="../../arrow_right.png"></img></a>
+                    <a href="${url(controller='review', action='review_labels', review_id=assignment.review_id, assignment_id=assignment.id)}">review labels <img src="../../arrow_right.png"></a>
+                    </td>
                     </tr>
                 % endfor
         </table>
         </center>
          <br/><br/>
     %else:
-        <h2>hurray, you've no outstanding assignments!</h2>
+        <h2>hurray, you've no outstanding assignments!</h2><br/><br/>
     %endif
     
     % if len(c.finished_assignments) > 0:
@@ -150,7 +152,7 @@
         <center>
         <table width=80% class="list_table" align="center>>
                 <tr align="center">
-                <th width="25%">review</th><th span=20>number to screen</th><th>screened so far</th><th width="20%">assigned</th><th width="20%">due</th>
+<th width="25%">review</th><th >number to screen</th><th>screened so far</th><th width="20%">assigned</th><th width="10%">due</th><th width="30%">actions</th>
                 </tr>
                 % for i,assignment in enumerate(c.finished_assignments):
                     <tr>
@@ -168,7 +170,10 @@
                     %else:
                         <td>--</td>
                     %endif
-                    
+                        <td class="inline-actions">
+                                      <a href="${url(controller='review', action='review_labels', review_id=assignment.review_id, assignment_id=assignment.id)}">review labels <img src="../../arrow_right.png"></a>
+                        </td>
+                    </td>
                     </tr>
                 % endfor
         </table>

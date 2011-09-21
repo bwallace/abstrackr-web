@@ -795,7 +795,8 @@ class ReviewController(BaseController):
         review = self._get_review_from_id(review_id)
         if assignment.done:
             redirect(url(controller="account", action="welcome"))    
-           
+        
+    
         c.review_id = review_id
         c.review_name = review.name
         c.assignment_id = assignment_id
@@ -807,7 +808,10 @@ class ReviewController(BaseController):
             if assignment.assignment_type == "conflict":
                 return "no conflicts!"
             else:
-                return render("/assignment_complete.mako")
+                assignment.done = True
+                model.meta.Session.commit()
+                redirect(url(controller="account", action="welcome"))
+
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
         
         c.cur_lbl = None
@@ -852,6 +856,9 @@ class ReviewController(BaseController):
   
         # but wait -- are we finished?
         if assignment.done or c.cur_citation is None:
+            
+            assignment.done = True
+            model.meta.Session.commit()
             return render("/assignment_complete.mako")
             
         # mark up the labeled terms 
