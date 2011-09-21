@@ -802,7 +802,7 @@ class ReviewController(BaseController):
         c.assignment_type = assignment.assignment_type
         
         c.cur_citation = self._get_next_citation(assignment, review)
-
+        
         if c.cur_citation is None:
             if assignment.assignment_type == "conflict":
                 return "no conflicts!"
@@ -849,7 +849,7 @@ class ReviewController(BaseController):
         c.assignment_type = assignment.assignment_type
 
         c.cur_citation = self._get_next_citation(assignment, review)
-        
+  
         # but wait -- are we finished?
         if assignment.done or c.cur_citation is None:
             return render("/assignment_complete.mako")
@@ -907,29 +907,31 @@ class ReviewController(BaseController):
         else:
             
             priority = self._get_next_priority(review)
-            # 8/29/11 -- remedy for issue wherein antiquated
-            # (deployed) code was not popping priority items
-            # after a sufficient number of labels were acquired
-            # (i.e,. after they were screened). this checks that this
-            # isn't the case here, and removes the priority object
-            # if so. may went to drop this down the road, it's 
-            # technically unnecessary with the current codebase (
-            # in which priority objects are dropped at label time correctly)
-            num_times_to_label = 1 if review.screening_mode == "single" else 2
-            while (priority.num_times_labeled >= num_times_to_label):
-                model.Session.delete(priority)
-                model.Session.commit()
-                priority = self._get_next_priority(review)
 
             if priority is None:
                 next_id = None
             else:
-                next_id = priority.citation_id
-                ## 'check out' / lock the citation
-                priority.is_out = True
-                priority.locked_by = request.environ.get('repoze.who.identity')['user'].id
-                priority.time_requested = datetime.datetime.now()
-                model.Session.commit()
+                # 8/29/11 -- remedy for issue wherein antiquated
+                # (deployed) code was not popping priority items
+                # after a sufficient number of labels were acquired
+                # (i.e,. after they were screened). this checks that this
+                # isn't the case here, and removes the priority object
+                # if so. may went to drop this down the road, it's 
+                # technically unnecessary with the current codebase (
+                # in which priority objects are dropped at label time correctly)
+                num_times_to_label = 1 if review.screening_mode == "single" else 2
+                while (priority.num_times_labeled >= num_times_to_label):
+                    model.Session.delete(priority)
+                    model.Session.commit()
+                    priority = self._get_next_priority(review)
+
+
+                    next_id = priority.citation_id
+                    ## 'check out' / lock the citation
+                    priority.is_out = True
+                    priority.locked_by = request.environ.get('repoze.who.identity')['user'].id
+                    priority.time_requested = datetime.datetime.now()
+                    model.Session.commit()
  
         return None if next_id is None else self._get_citation_from_id(next_id)
         
