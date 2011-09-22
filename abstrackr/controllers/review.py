@@ -888,7 +888,7 @@ class ReviewController(BaseController):
         
     def _get_next_citation(self, assignment, review):
         next_id = None
-        pdb.set_trace()
+        
         # if the current assignment is a 'fixed' assignment (i.e.,
         # comprises a finite set of ids to be screened -- an initial round,
         # or conflicting round, e.g.) then we pull from the FixedAssignments table
