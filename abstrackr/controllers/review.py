@@ -888,6 +888,7 @@ class ReviewController(BaseController):
         
     def _get_next_citation(self, assignment, review):
         next_id = None
+        pdb.set_trace()
         # if the current assignment is a 'fixed' assignment (i.e.,
         # comprises a finite set of ids to be screened -- an initial round,
         # or conflicting round, e.g.) then we pull from the FixedAssignments table
@@ -926,7 +927,8 @@ class ReviewController(BaseController):
                 # if so. may went to drop this down the road, it's 
                 # technically unnecessary with the current codebase (
                 # in which priority objects are dropped at label time correctly)
-                num_times_to_label = 1 if review.screening_mode == "single" else 2
+                next_id = priority.citation_id
+                num_times_to_label = 2 if review.screening_mode == "double" else 1
                 while (priority.num_times_labeled >= num_times_to_label):
                     model.Session.delete(priority)
                     model.Session.commit()
@@ -1098,7 +1100,7 @@ class ReviewController(BaseController):
             reviewer_project.review_id = review_id
             model.Session.add(reviewer_project)
         
-            # now we check what type
+            # now we check what type of screening mode we're using
             review = self._get_review_from_id(review_id)
             if review.screening_mode in (u"single", u"double"):
                 # then we automatically add a `perpetual' assignment
