@@ -91,6 +91,11 @@ def tsv_to_d(citations, field_index_d):
             if field in field_index_d:
                     tsv_d[cur_id][field] = \
                             citation[field_index_d[field]].decode('utf8', 'replace')
+                    # issue 2 -- if this is the authors field, we expect author names
+                    # to be separated by commas. later in the pipeline, we'll expect
+                    # a *list* here, so we create that now.
+                    if field == "authors":
+                        tsv_d[cur_id][field] = tsv_d[cur_id][field].split(",")
             else:
                 # just insert a blank string
                 tsv_d[cur_id][field] = ""
