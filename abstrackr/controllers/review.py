@@ -222,6 +222,7 @@ class ReviewController(BaseController):
         review = review_q.filter(model.Review.review_id == id).one()
         
         none_to_str = lambda x: "" if x is None else x
+        zero_to_none = lambda x: "none" if x==0 else x
 
         fields_to_export = []
         for key,val in request.params.items():
@@ -230,17 +231,19 @@ class ReviewController(BaseController):
         
         labels = [",".join(fields_to_export)]
        
-        #labels = [",".join(["(internal) id", "pubmed id", "refman id", "labeler", "label"])]
+       
         for citation, label in model.meta.Session.query(\
             model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
               filter(model.Label.review_id==id).all():   
                 cur_line = []
-                
+                #pdb.set_trace()
                 for field in fields_to_export:
                     if field == "(internal) id":
                         cur_line.append("%s" % citation.citation_id)
+                    elif field == "(source) id":
+                        cur_line.append("%s" % citation.refman_id)
                     elif field == "pubmed id":
-                        cur_line.append("%s" % citation.pmid_id)
+                        cur_line.append("%s" % zero_to_none(citation.pmid_id))
                     elif field == "label":
                         cur_line.append("%s" % label.label)
                     elif field == "labeler":

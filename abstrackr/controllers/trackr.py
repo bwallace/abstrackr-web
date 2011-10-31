@@ -1,3 +1,4 @@
+import pdb
 import logging
 
 from pylons import request, response, session, tmpl_context as c, url
@@ -16,6 +17,7 @@ class TrackrController(BaseController):
         Without the login counter, we won't be able to tell if the user has
         tried to log in with wrong credentials
         """
+
         identity = request.environ.get('repoze.who.identity')
         came_from = str(request.GET.get('came_from', '')) or \
                     url(controller='account', action='welcome')
