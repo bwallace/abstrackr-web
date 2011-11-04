@@ -216,10 +216,26 @@ class AccountController(BaseController):
         # if there's an initial assignment, we'll only show that.
         assignment_types = [assignment.assignment_type for assignment in \
                                                     c.outstanding_assignments]
-        if "initial" in assignment_types:
-            c.outstanding_assignments = [c.outstanding_assignments[\
-                                                assignment_types.index("initial")]]
-
+                                 
+        #####
+        # for any review that has an initial assignment, we will show
+        # *only* that assignment, thereby forcingin participants to 
+        # finish initial assignments before moving on to other 
+        # assignments. fix for Issue #5.
+        ####
+        # which reviews have (outstanding) initial assigments?
+        reviews_with_initial_assignments = []
+        for assignment in c.outstanding_assignments:
+            if assignment.assignment_type == "initial":
+                reviews_with_initial_assignments.append(assignment.review_id)
+        
+        # now remove other (non-initial) assignments for reviews
+        # that have an initial assignment
+        filtered_assigments = [assignment for assignment in c.outstanding_assignments if \
+                                assignment.review_id not in reviews_with_initial_assignments or \
+                                assignment.assignment_type == "initial"]
+        c.outstanding_assignments = filtered_assigments
+                           
         c.finished_assignments = [a for a in all_assignments if a.done]   
         
         project_q = model.meta.Session.query(model.Review)   
