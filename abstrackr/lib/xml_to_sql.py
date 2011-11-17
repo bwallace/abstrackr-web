@@ -91,11 +91,13 @@ def tsv_to_d(citations, field_index_d):
             if field in field_index_d:
                     tsv_d[cur_id][field] = \
                             citation[field_index_d[field]].decode('utf8', 'replace')
+        
                     # issue 2 -- if this is the authors field, we expect author names
                     # to be separated by commas. later in the pipeline, we'll expect
                     # a *list* here, so we create that now.
-                    if field == "authors":
+                    if field == "authors" or field=="keywords":
                         tsv_d[cur_id][field] = tsv_d[cur_id][field].split(",")
+                    
             else:
                 # just insert a blank string
                 tsv_d[cur_id][field] = ""
@@ -237,6 +239,7 @@ def xml_to_dict(fpath):
             ref_ids_to_abs[refmanid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
                         "keywords":keywords, "pmid":pubmed_id, "authors":authors}
 
+    
     print "Finished. Returning %s title/abstract/keyword sets, %s of which have no abstracts." \
                     % (len(ref_ids_to_abs.keys()), num_no_abs)
     return ref_ids_to_abs

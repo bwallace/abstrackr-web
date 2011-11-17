@@ -3,6 +3,7 @@ from sqlalchemy import *
 from sqlalchemy.sql import select
 from sqlalchemy.sql import and_, or_
 import os, pdb, pickle
+import threading
 
 engine = create_engine("mysql://root:xxxxx@127.0.0.1:3306/abstrackr")
 metadata = MetaData(bind=engine)
@@ -118,3 +119,8 @@ def lbls_to_disk(review_ids, base_dir):
     pickle.dump(lbl_feature_d, fout)                     
     fout.close()
 
+
+
+class ReviewExtractor(threading.Thread):
+    def Run(self):
+        pass
