@@ -29,13 +29,14 @@ OPTIONAL_FIELDS = ["authors", "keywords", "journal", "pmid"]
 
 def looks_like_tsv(file_path):
     header_line = open(file_path, 'r').readline()
-    headers = [x.lower() for x in header_line.split("\t")]
+    headers = [x.lower().strip() for x in header_line.split("\t")]
     if len(headers) == 0:
         return False
     
     # title, etc.?
     if all([_field_in(field, headers) for field in OBLIGATORY_FIELDS]):
         return True
+    
     return False
 
 def _field_in(field, headers):
@@ -105,6 +106,7 @@ def tsv_to_d(citations, field_index_d):
         # now add the obligatory fields
         for field in OBLIGATORY_FIELDS:
             tsv_d[cur_id][field] = citation[field_index_d[field]].decode('utf8', 'replace')
+
     return tsv_d
 
 
@@ -115,7 +117,8 @@ def tsv_to_sql(tsv_path, review):
     citations = csv.reader(open_f, delimiter="\t")
     # map field names to the corresponding indices
     # in the tsv, as indicated by the header
-    field_index_d = _field_index_d(citations.next())
+    headers = [header.strip() for header in citations.next()]
+    field_index_d = _field_index_d(headers)
     d = tsv_to_d(citations, field_index_d)
     dict_to_sql(d, review)
     open_f.close()
