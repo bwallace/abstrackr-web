@@ -26,7 +26,7 @@ select the fields you'd like to export:<br/>
 
 <center>
 <ul id="selectable" class="ui-selectable">
-% for field in ["(internal) id", "pubmed id", "labeler", "label"]:
+% for field in ["(internal) id", "(source) id", "pubmed id", "labeler", "label"]:
  	<li class="ui-selected">${field}</li>
 % endfor
 
