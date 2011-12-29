@@ -227,7 +227,6 @@
                       markup_current();
                   }
                }); 
-              
               setup_submit();
           }
 
@@ -288,10 +287,19 @@
       </script>
     </div>
 
-
     <center>
     <div id="wait"></div>
     </center>
+    
+
+    <br/><br/>
+    <center>
+    <div id="progress"> 
+    you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)
+    </div>
+    </center>
+
+   
 
 
 

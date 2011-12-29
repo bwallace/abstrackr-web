@@ -218,11 +218,10 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
             }
          });
 
-        //setup_submit();
+        
+         $("#progress").html("you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)");
+
     }   
-
-
-    
-
     
 </script>
+

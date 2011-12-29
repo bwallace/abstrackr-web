@@ -117,6 +117,12 @@ class ReviewController(BaseController):
         
         c.review = new_review
         c.num_articles = num_articles
+
+        ###
+        # here is where we'll want to thread the process of *encoding*
+        # the documents comprising the review for consumption by the 
+        # machine learning stuff.
+
         return render("/reviews/review_created.mako")
         
 
@@ -804,7 +810,8 @@ class ReviewController(BaseController):
         c.review_name = review.name
         c.assignment_id = assignment_id
         c.assignment_type = assignment.assignment_type
-        
+        c.assignment = assignment 
+
         c.cur_citation = self._get_next_citation(assignment, review)
         
         if c.cur_citation is None:
@@ -854,7 +861,8 @@ class ReviewController(BaseController):
         c.review_name = self._get_review_from_id(review_id).name
         c.assignment_id = assignment_id
         c.assignment_type = assignment.assignment_type
-
+        c.assignment = assignment 
+        
         c.cur_citation = self._get_next_citation(assignment, review)
   
         # but wait -- are we finished?
