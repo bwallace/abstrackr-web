@@ -62,8 +62,13 @@
                       ">
 
                       export<img src = "../../export_sm.png"></a></td>
+                    
             <td class="inline-actions"><a href="${url(controller='review', action='review_conflicts', id=review.review_id)}">
                       review conflicts<img src = "../../conflicts_sm.png"></a></td>
+            
+            <td class="inline-actions"><a href="${url(controller='review', action='review_maybes', id=review.review_id)}">
+                      review maybes<img src = "../../maybe_sm.png"></a></td>
+
             <td class="inline-actions">
                 <a href="#" onclick="javascript:jConfirm('are you sure you want to delete this review? all labels will be lost!', 
                      'delete review?', function(r) {

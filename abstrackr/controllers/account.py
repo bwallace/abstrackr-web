@@ -219,9 +219,9 @@ class AccountController(BaseController):
                                  
         #####
         # for any review that has an initial assignment, we will show
-        # *only* that assignment, thereby forcingin participants to 
+        # *only* that assignment, thereby forcining participants to 
         # finish initial assignments before moving on to other 
-        # assignments. fix for Issue #5.
+        # assignments. fix for issue #5.
         ####
         # which reviews have (outstanding) initial assigments?
         reviews_with_initial_assignments = []

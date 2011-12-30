@@ -361,6 +361,14 @@ class ReviewController(BaseController):
         model.Session.commit()
         
         redirect(url(controller="account", action="my_projects"))
+       
+       
+    @ActionProtector(not_anonymous())
+    def review_maybes(self, id):
+        review_id = id
+        maybe_ids = self._get_maybes(review_id)
+        self._create_conflict_task_with_ids(review_id, maybe_ids)
+         
         
     @ActionProtector(not_anonymous())
     def review_conflicts(self, id):
@@ -372,7 +380,9 @@ class ReviewController(BaseController):
         '''
         review_id = id
         conflicting_ids = self._get_conflicts(review_id)
-        
+        self._create_conflict_task_with_ids(review_id, conflicting_ids)
+
+    def _create_conflict_task_with_ids(self, review_id, study_ids):
         task_q = model.meta.Session.query(model.Task)
         conflicts_task_for_this_review = \
             task_q.filter(and_(model.Task.review == review_id,\
@@ -380,7 +390,8 @@ class ReviewController(BaseController):
         
         # we delete any existing conflict Tasks for this review
         if len(conflicts_task_for_this_review) > 0:
-            # we assume there is only one such conflicts Task.
+            # we assume there is only one such conflicts Task;
+            # so if one already exists, we delete it.
             model.Session.delete(conflicts_task_for_this_review[0])
             model.Session.commit()
         
@@ -388,10 +399,10 @@ class ReviewController(BaseController):
         conflict_task = model.Task()
         conflict_task.task_type = "conflict"
         conflict_task.review_id = review_id
-        conflict_task.num_assigned = len(conflicting_ids)
+        conflict_task.num_assigned = len(study_ids)
         model.Session.add(conflict_task)
         model.Session.commit()
-        for conflicting_id in conflicting_ids:
+        for conflicting_id in study_ids:
             fixed_entry = model.FixedTask()
             fixed_entry.task_id = conflict_task.id
             fixed_entry.citation_id = conflicting_id
@@ -405,7 +416,7 @@ class ReviewController(BaseController):
         conflict_a.task_id = conflict_task.id
         conflict_a.date_assigned = datetime.datetime.now()
         conflict_a.assignment_type = conflict_task.task_type
-        conflict_a.num_assigned = len(conflicting_ids)
+        conflict_a.num_assigned = conflict_task.num_assigned 
         conflict_a.done_so_far = 0
         model.Session.add(conflict_a)
         model.Session.commit()
@@ -417,17 +428,11 @@ class ReviewController(BaseController):
             filter(model.Label.study_id==citation_id).all()
         
     def _get_conflicts(self, review_id):
-        citation_ids_to_labels = {}
-        for citation, label in model.meta.Session.query(\
-          model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
-          filter(model.Label.review_id==review_id).all():
-            if citation.citation_id in citation_ids_to_labels.keys():
-                citation_ids_to_labels[citation.citation_id].append(label)
-            else:
-                citation_ids_to_labels[citation.citation_id] = [label]
-        
+        citation_ids_to_labels = \
+            self._get_labels_dict_for_review(review_id)
+
+        # now figure out which citations have conflicting labels
         citation_ids_to_conflicting_labels = {}
-        # walk over all of the 
         
         for citation_id in [c_id for c_id in citation_ids_to_labels.keys() if citation_ids_to_labels[c_id]>1]:
             if len(set([label.label for label in citation_ids_to_labels[citation_id]])) > 1 and\
@@ -435,8 +440,35 @@ class ReviewController(BaseController):
                 citation_ids_to_conflicting_labels[citation_id] = citation_ids_to_labels[citation_id]
         
         return citation_ids_to_conflicting_labels
-                
-              
+         
+    def _get_all_citations_for_review(self, review_id):
+        return model.meta.Session.query(model.Citation, model.Label).\
+                  filter(model.Citation.citation_id==model.Label.study_id).\
+                  filter(model.Label.review_id==review_id).all()
+
+    def _get_labels_dict_for_review(self, review_id):
+        citation_ids_to_labels = {}
+        for citation, label in self._get_all_citations_for_review(review_id):
+            if citation.citation_id in citation_ids_to_labels.keys():
+                citation_ids_to_labels[citation.citation_id].append(label)
+            else:
+                citation_ids_to_labels[citation.citation_id] = [label]
+
+        return citation_ids_to_labels
+
+    def _get_maybes(self, review_id):
+        citation_ids_to_labels = \
+            self._get_labels_dict_for_review(review_id)
+
+        # which have 'maybe' labels?
+        citation_ids_to_maybe_labels = {}
+        for citation_id, labels_for_citation in citation_ids_to_labels.items():
+            #pdb.set_trace()
+            if 0 in [label.label for label in labels_for_citation]:
+                citation_ids_to_maybe_labels[citation_id] = labels_for_citation
+
+        return citation_ids_to_maybe_labels
+         
     @ActionProtector(not_anonymous())
     def admin(self, id, admin_msg=""):
         # make sure we're actually the project lead
@@ -816,7 +848,9 @@ class ReviewController(BaseController):
         
         if c.cur_citation is None:
             if assignment.assignment_type == "conflict":
-                return "no conflicts!"
+                ###
+                # TODO add more explanation here / return an actual page
+                return "nothing to see here (i.e., not conflicting labels and/or no maybe labels). hit back?"
             else:
                 assignment.done = True
                 model.meta.Session.commit()
@@ -862,7 +896,7 @@ class ReviewController(BaseController):
         c.assignment_id = assignment_id
         c.assignment_type = assignment.assignment_type
         c.assignment = assignment 
-        
+
         c.cur_citation = self._get_next_citation(assignment, review)
   
         # but wait -- are we finished?
@@ -1382,7 +1416,6 @@ class ReviewController(BaseController):
                 else:
                     term_text.append(x)
                     
-            #term_text = "".join([x for x in term.term if not x in meta_chars else "\%s"%x])
             term_text = "".join(term_text)
             term_re = re.compile(term_text, re.IGNORECASE)
             
