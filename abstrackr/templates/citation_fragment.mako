@@ -218,8 +218,9 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
             }
          });
 
-        
-         $("#progress").html("you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)");
+         % if 'assignment' in dir(c):
+            $("#progress").html("you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)");
+         % endif
 
     }   
     

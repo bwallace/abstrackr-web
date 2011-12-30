@@ -295,7 +295,9 @@
     <br/><br/>
     <center>
     <div id="progress"> 
-    you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)
+    % if 'assignment' in dir(c):
+        you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)
+    % endif
     </div>
     </center>
 
