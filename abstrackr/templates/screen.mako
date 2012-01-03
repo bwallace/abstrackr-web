@@ -47,7 +47,9 @@
 
 <div class="actions">
   % if c.cur_lbl is not None and c.assignment_type != "conflict":
-    <a href="${url(controller='review', action='screen', review_id=c.review_id, assignment_id=c.assignment_id)}">ok, get back to screening <img src="../../arrow_right.png"></img></a>
+      % if c.assignment_id is not None:
+        <a href="${url(controller='review', action='screen', review_id=c.review_id, assignment_id=c.assignment_id)}">ok, get back to screening <img src="../../arrow_right.png"></img></a>
+      % endif
   % else:
     <a
       href="${url(controller='review', action='review_labels', review_id=c.review_id, assignment_id=c.assignment_id)}">review labels</a>

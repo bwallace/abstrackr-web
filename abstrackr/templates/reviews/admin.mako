@@ -22,6 +22,8 @@ jQuery(document).ready(function(){
 <h1>${c.review.name}: administrivia</h1>
 <div class="actions">
 <a href="${url(controller='review', action='assignments', id=c.review.review_id)}">manage assignments</a>
+<a href="${url(controller='review', action='edit_review', id=c.review.review_id)}">edit settings</a>
+
 </div>
 
 <div class="content">

@@ -1,10 +1,4 @@
-<%inherit file="../site.mako" />
-<%def name="title()">edit terms</%def>
 
-<div class="breadcrumbs">
-./<a href="${url(controller='account', action='welcome')}">dashboard</a>
-          /<a href="${url(controller='review', action='show_review', id=c.review_id)}">${c.review_name}</a>
-</div>
 
 <div class="content">
 %if len(c.terms) > 0:

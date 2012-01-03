@@ -179,15 +179,15 @@ def insert_citation(review_id, ref_id, citation_d):
 
     return citation.citation_id
  
-def insert_priority_entry(review_id, citation_id, init_priority_num):
+def insert_priority_entry(review_id, citation_id, \
+                            init_priority_num, num_times_labeled=0):
     priority = model.Priority()
     priority.review_id = review_id
     priority.citation_id = citation_id
     priority.priority = init_priority_num
-    priority.num_times_labeled = 0
+    priority.num_times_labeled = num_times_labeled
     priority.is_out = False
     model.Session.add(priority)
-    #model.Session.commit()
     
 
 def xml_to_dict(fpath):

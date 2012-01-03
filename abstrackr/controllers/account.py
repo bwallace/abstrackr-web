@@ -229,6 +229,7 @@ class AccountController(BaseController):
             if assignment.assignment_type == "initial":
                 reviews_with_initial_assignments.append(assignment.review_id)
         
+
         # now remove other (non-initial) assignments for reviews
         # that have an initial assignment
         filtered_assigments = [assignment for assignment in c.outstanding_assignments if \
@@ -238,6 +239,8 @@ class AccountController(BaseController):
                            
         c.finished_assignments = [a for a in all_assignments if a.done]   
         
+        
+
         project_q = model.meta.Session.query(model.Review)   
         junction_q = model.meta.Session.query(model.ReviewerProject)
         participating_project_ids = \
@@ -250,6 +253,16 @@ class AccountController(BaseController):
         return render('/accounts/dashboard.mako')
         
         
+    @ActionProtector(not_anonymous())
+    def show_merge_review_screen(self):
+        person = request.environ.get('repoze.who.identity')['user']
+        c.person = person 
+
+        projects_person_leads = self._get_projects_person_leads(person)
+        c.reviews = projects_person_leads
+
+        return render('/reviews/merge_reviews.mako')
+
     @ActionProtector(not_anonymous())
     def my_projects(self):
         person = request.environ.get('repoze.who.identity')['user']
@@ -273,6 +286,11 @@ class AccountController(BaseController):
         
         return render('/accounts/dashboard.mako')
         
+    def _get_projects_person_leads(self, person):
+        project_q = model.meta.Session.query(model.Review)       
+        leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()
+        return leading_projects
+
     def _get_review_ids_to_names_d(self, reviews):
         # make life easier on client side
         review_ids_to_names_d = {}

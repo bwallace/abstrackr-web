@@ -107,6 +107,10 @@
 
     <center>
      <div class="actions">
+
+     % if len(c.leading_projects) > 1:
+        <a href="${url(controller='account', action='show_merge_review_screen')}"><img src ="../../merge_sm.png">merge reviews ...</a>
+     % endif
     <a href="${url(controller='review', action='create_new_review')}"><img src ="../../add.png">start a new project/review</a>
     </center>    
     </div>
