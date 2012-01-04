@@ -1056,6 +1056,7 @@ class ReviewController(BaseController):
                 priority_obj = self._get_priority_for_citation_review(study_id, review_id)
                 priority_obj.num_times_labeled += 1
                 priority_obj.is_out = False
+                priority_obj.locked_by = None
                 model.Session.commit()
                 
                 # are we through with this citation/review?
@@ -1222,7 +1223,9 @@ class ReviewController(BaseController):
                 # by convention. in the case that we're reviewing conflicts
                 # we use this special user.
                 reviewer_id = 0
-            already_labeled = self._get_already_labeled_ids(review.review_id, reviewer_id=reviewer_id)
+            already_labeled = \
+                self._get_already_labeled_ids(review.review_id, reviewer_id=reviewer_id)
+
             eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
             next_id = None
      
@@ -1251,12 +1254,12 @@ class ReviewController(BaseController):
                     priority = self._get_next_priority(review)
 
 
-                    next_id = priority.citation_id
-                    ## 'check out' / lock the citation
-                    priority.is_out = True
-                    priority.locked_by = request.environ.get('repoze.who.identity')['user'].id
-                    priority.time_requested = datetime.datetime.now()
-                    model.Session.commit()
+                next_id = priority.citation_id
+                ## 'check out' / lock the citation
+                priority.is_out = True
+                priority.locked_by = request.environ.get('repoze.who.identity')['user'].id
+                priority.time_requested = datetime.datetime.now()
+                model.Session.commit()
  
         return None if next_id is None else self._get_citation_from_id(next_id)
         
@@ -1441,14 +1444,32 @@ class ReviewController(BaseController):
         review_id = review.review_id
         priority_q = model.meta.Session.query(model.Priority)
         me = request.environ.get('repoze.who.identity')['user'].id
-        ranked_priorities = [priority for priority in priority_q.filter(\
-                                model.Priority.review_id == review_id).\
-                                    order_by(model.Priority.priority).all() if\
-                                    not (priority.is_out and priority.locked_by != me)]
+    
+        ranked_priorities =  priority_q.filter(\
+                                    model.Priority.review_id == review_id).\
+                                    order_by(model.Priority.priority).all() 
+        
+        # now filter the priorities, excluding those that are locked
+        # note that we also will remove locks here if a citation has
+        # been out for > 2 hours.
+        filtered_ranked_priorities = []
+        EXPIRE_TIME = 72000 # 72000 *seconds*: i.e., 2 hours
+        for priority in ranked_priorities:
+            if priority.is_out and not priority.locked_by == me:
+                # currently locked by someone else; here we check
+                # if the lock should be 'expired'
+                time_locked = (datetime.datetime.now()-priority.time_requested).seconds
+                if time_locked > EXPIRE_TIME:
+                    priority.is_out = False
+                    priority.locked_by = None
+                    model.Session.commit()
+                    filtered_ranked_priorities.append(priority)
+            elif not priority.is_out or priority.locked_by == me:
+                filtered_ranked_priorities.append(priority)
                                     
         best_that_i_havent_labeled = None
         already_labeled = self._get_already_labeled_ids(review_id)
-        for priority_obj in ranked_priorities:
+        for priority_obj in filtered_ranked_priorities:
              if priority_obj.citation_id not in already_labeled:
                  return priority_obj
         
