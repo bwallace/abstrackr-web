@@ -157,11 +157,26 @@ class ReviewController(BaseController):
     def edit_review_settings(self, id):
         if not self._current_user_leads_review(id):
             return "yeah, I don't think so."
+        
+
+        review = self._get_review_from_id(id)
+
+        ####
+        # check the screening-mode
         screening_mode_str = request.params['screen_mode'] 
         new_screening_mode =\
             {"Single-screen":"single", "Double-screen":"double", "Advanced":"advanced"}[screening_mode_str] 
         self._change_review_screening_mode(id, new_screening_mode)
-            
+
+        ####
+        # now the initial (pilot) round size
+        new_init_round_size = int(request.params['init_size']) # TODO verify
+        self._set_initial_screen_size_for_review(review, new_init_round_size)
+
+        c.edit_message = "ok -- settings changed."
+        redirect(url(controller="review", action="edit_review", id=id))
+        #if init_round_size == cur_init_assignment.
+
     def _change_review_screening_mode(self, review_id, new_screening_mode):
         '''
         screening_mode assume to be one of "single", "double", "advanced"
@@ -1212,7 +1227,6 @@ class ReviewController(BaseController):
         if assignment.assignment_type in ("initial", "conflict"):
             # in the case of initial assignments, we never remove the citations,
             # thus we need to ascertain that we haven't already screened it
-            #eligible_pool = self._get_init_ids_for_review(review.review_id)
             eligible_pool = self._get_ids_for_task(assignment.task_id)
             # a bit worried about runtime here (O(|eligible_pool| x |already_labeled|)).
             # hopefully eligible_pool shrinks as sufficient labels are acquired (and it 
@@ -1534,15 +1548,20 @@ class ReviewController(BaseController):
         # this person has already labeled everything -- nothing more to do!
         return None
         
-    def _get_init_ids_for_review(self, review_id):
-        init_q = model.meta.Session.query(model.FixedAssignment)
-        init_ids = [ia.citation_id for ia in \
-                     init_q.filter(and_(\
-                            model.FixedAssignment.review_id == review_id,\
-                            model.FixedAssignment.assignment_type == "initial")).\
-                        order_by(model.FixedAssignment.citation_id).all()]    
-        return init_ids
     
+    def _get_initial_task_for_review(self, review_id):
+        task_q = model.meta.Session.query(model.Task)
+        # there should only be one of these!
+        
+        init_task = task_q.filter(and_(\
+                            model.Task.review == review_id,\
+                            model.Task.task_type == "initial")).all()
+        if len(init_task) == 0:
+            return False # no initial task for this review
+        # really there shouldonly be one!
+        return init_task[0]
+
+
     def _get_tag_id(self, review_id, text):
         tag_q = model.meta.Session.query(model.TagTypes)
         
@@ -1565,6 +1584,7 @@ class ReviewController(BaseController):
         tag_type_q = model.meta.Session.query(model.TagTypes)
         tag_obj = tag_type_q.filter(model.TagTypes.id == tag_id).one()
         return tag_obj.text
+
 
     def _get_tag_types_for_citation(self, citation_id, objects=False):
         tags = self._get_tags_for_citation(citation_id)
@@ -1589,6 +1609,11 @@ class ReviewController(BaseController):
 
 
     def _get_ids_for_task(self, task_id):
+        '''
+        returns all the citation ids associated with the
+        given task -- note that we order these by the
+        citation id (somewhat arbitrarily!)
+        '''
         q = model.meta.Session.query(model.FixedTask)
         eligible_ids = [fixed_task.citation_id for fixed_task in \
                                 q.filter(model.FixedTask.task_id == task_id).\
@@ -1615,7 +1640,8 @@ class ReviewController(BaseController):
         reviewer_ids = \
             list(set([rp.reviewer_id for rp in reviewer_proj_q.filter(model.ReviewerProject.review_id == review_id).all()]))
         user_q = model.meta.Session.query(model.User)
-        reviewers = [user_q.filter(model.User.id == reviewer_id).one() for reviewer_id in reviewer_ids]
+        reviewers = [user_q.filter(model.User.id == reviewer_id).one() \
+                    for reviewer_id in reviewer_ids]
         return reviewers
     
     def _get_username_from_id(self, id):
@@ -1658,6 +1684,123 @@ class ReviewController(BaseController):
         model.Session.commit()
         return new_task
 
+    def _set_initial_screen_size_for_review(self, review, n):
+        '''
+        sets the initial screening size for the review specified by 
+        the review_id to n. if n is smaller than the original initial
+        round size, then studies from the allocated FixedTask will be 
+        removed. if it's bigger, then studies will be added.
+
+        --- warning -- this is typically an 'expensive' routine
+        '''
+        if n == review.initial_round_size:
+            # nothing to do
+            return None
+        
+
+        cur_init_task = self._get_initial_task_for_review(review.review_id)
+        if not cur_init_task:
+            # if there isn't an initial task already, create one
+            # here comprising 1 abstract
+            self._create_initial_task_for_review(review.review_id, 0)
+            cur_init_task = self._get_initial_task_for_review(review.review_id)
+            # now we need to assign the task to every participant
+            participants = self._get_participants_for_review(review.review_id)
+            for participant in participants:
+                self._assign_task(participant.id, cur_init_task, review.review_id)
+            
+        if n < review.initial_round_size:
+            num_to_remove = review.initial_round_size - n
+
+            # now grab the FixedTask objects associated with 
+            # the initial tasks. 
+            fixed_task_q = model.meta.Session.query(model.FixedTask)
+
+            # we order these by the citation_id, since this is what
+            # we do when we grab the next citation in a FixedTask.
+            fixed_task_objs = fixed_task_q.filter(\
+                                model.FixedTask.task_id == cur_init_task.id).\
+                                order_by(model.FixedTask.citation_id).all()
+            fixed_tasks_to_remove = fixed_task_objs[-num_to_remove:]
+
+            # this is for re-inserting entries into the priority queue
+            cur_max_priority = self._get_max_priority(review.review_id)+1
+            if len(fixed_tasks_to_remove) > 0:
+                for fixed_task in fixed_task_objs[-num_to_remove:]:
+                    model.Session.delete(fixed_task)
+                    model.Session.commit()
+                    ###
+                    # crucial -- we need to add this guy back onto
+                    # the priority queue!
+                    #
+                    # TODO (maybe?) right now, we're setting the num_times_labeled
+                    #       field to 0. but it's possible (though unlikely?) that someone
+                    #       (or multiple people!) have, in fact, labeled this as part of the
+                    #       initial round. this is only a 'problem' if someone sets the 
+                    #       the initial round, screens screens screens, then re-sets the
+                    #       the initial round to something smaller such that they've already
+                    #       screened beyond the latter number. I don't know why someone would
+                    #       do this. but in this case, they would end up re-screening some abstracts
+                    #       from the original initial round.
+                    xml_to_sql.insert_priority_entry(\
+                                review.review_id, fixed_task.citation_id, \
+                                    cur_max_priority, num_times_labeled=0)
+                    cur_max_priority += 1  
+
+        else:
+            # then n > review.init_round_size: we have to add
+            # citations to the fixed_task.
+            fixed_task_q = model.meta.Session.query(model.FixedTask)
+
+            # get a list of citation ids not already in the initial
+            # assignment (warning -- O(n^2), though the initial round will
+            # probably be << total # citations, so likely more O(n lg n).
+            all_citation_ids = \
+                [cit.citation_id for cit in self._get_citations_for_review(review.review_id)]
+
+            init_citation_ids = self._get_ids_for_task(cur_init_task.id)
+            citations_not_in_init = \
+              [cit_id for cit_id in all_citation_ids if not cit_id in init_citation_ids]
+
+            num_to_add = max(n-review.initial_round_size, len(citations_not_in_init))
+
+            for i in xrange(num_to_add):
+                citation_id = citations_not_in_init[i]
+                fixed_task_entry = model.FixedTask()
+                fixed_task_entry.task_id = cur_init_task.id
+                fixed_task_entry.citation_id = citation_id
+                model.Session.add(fixed_task_entry)
+                model.Session.commit()  
+
+                # and remove it from the priority queue.
+                self._remove_citation_from_priority_queue(citation_id)
+            
+        # update the assignment objects
+        init_assignments_for_tasks = \
+                self._get_assignments_associated_with_task(cur_init_task.id)
+        
+        for assignment in init_assignments_for_tasks:
+            assignment.done = (assignment.done_so_far >= n)
+            assignment.num_assigned = n
+            model.Session.commit()
+
+        # finally, update the initial round size field
+        # onthe review object
+        review.initial_round_size = n
+        model.Session.commit()
+
+
+    def _get_assignments_associated_with_task(self, task_id):
+        assignment_q = model.meta.Session.query(model.Assignment)
+        return assignment_q.filter(model.Assignment.task_id == task_id).all()
+        
+
+    def _remove_citation_from_priority_queue(self, citation_id):
+            priority_q = model.meta.Session.query(model.Priority)
+            priority_entry = priority_q.filter(model.Priority.citation_id == citation_id).one()
+            model.Session.delete(priority_entry)
+            model.Session.commit()
+
     def _create_initial_task_for_review(self, review_id, n):
         '''
         picks a random set of the citations from the specified review and 
@@ -1666,7 +1809,8 @@ class ReviewController(BaseController):
         '''
         # first grab some ids at random
         init_ids = random.sample(\
-                [citation.citation_id for citation in self._get_citations_for_review(review_id)], n)
+                [citation.citation_id for citation in \
+                    self._get_citations_for_review(review_id)], n)
         # create an entry in the Assignments table
         init_task = model.Task()
         init_task.task_type = "initial"
@@ -1702,7 +1846,6 @@ class ReviewController(BaseController):
 
  
     def _get_perpetual_assignments_for_review(self, review_id):
-        #perpetual_tasks_for_review = self._get_perpetual_tasks_for_review(review_id)
         assignment_q =  model.meta.Session.query(model.Assignment)
         perpetual_assignments = \
             assignment_q.filter(and_(model.Assignment.review_id == review_id,\

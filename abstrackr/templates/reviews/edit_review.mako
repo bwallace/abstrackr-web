@@ -30,7 +30,9 @@ jQuery(document).ready(function(){
 
     <tr><td><label>screening mode (<a href="#" id="screen-mode-link">what?</a>):</td> <td>${h.select("screen_mode", None, ["Single-screen", "Double-screen", "Advanced"])} </label></td></tr>
 
-
+     <tr><td><label>pilot round size (<a href="#" id="pilot-round-size">huh?</a>):</td><td> ${h.text('init_size', c.review.initial_round_size)}</label></td></tr>
+    
+    <div class="actions">
     <tr><td></td><td></td><td class="actions"> 
     <td class="actions">${h.submit('post', 'Apply to review')}</td></tr>
     </div>

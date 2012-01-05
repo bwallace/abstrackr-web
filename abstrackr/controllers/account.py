@@ -216,7 +216,7 @@ class AccountController(BaseController):
         # if there's an initial assignment, we'll only show that.
         assignment_types = [assignment.assignment_type for assignment in \
                                                     c.outstanding_assignments]
-                                 
+                                
         #####
         # for any review that has an initial assignment, we will show
         # *only* that assignment, thereby forcining participants to 
