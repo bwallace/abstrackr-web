@@ -76,6 +76,12 @@
     </div>
     <br/>
     <input type="button" id="tag_btn" value="tag study..." />
+    <br/><br/>
+
+    
+    <input type="button" id="edit_tags_btn" value="edit tags..." 
+                onclick="parent.location='/review/edit_tags/${c.review_id}/${c.assignment_id}'"> 
+   
     </center>
   </div>
 
@@ -260,7 +266,8 @@
                     });
                     
                     $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
-                  }
+                    
+                  }                     
                );
 
                $( "#dialog" ).dialog( "close" );

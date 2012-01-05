@@ -17,7 +17,7 @@
     <body>
 
         <p align="left">
-        <img src = "../../abstrackr.png"></img>
+        <img src = "http://sunfire34.eecs.tufts.edu/abstrackr.png"></img>
         </p>
        
 	<div id="login-header">

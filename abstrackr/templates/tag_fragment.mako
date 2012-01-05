@@ -11,6 +11,7 @@
         % for i,tag in enumerate(c.tags):
             <li class=${"tag%s"%(i+1)}><a href="#">${tag}</a></li><br/>
         % endfor
+        
     </ul>
     % else:
         (no tags yet.)

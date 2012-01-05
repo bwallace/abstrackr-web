@@ -1262,7 +1262,65 @@ class ReviewController(BaseController):
                 model.Session.commit()
  
         return None if next_id is None else self._get_citation_from_id(next_id)
-        
+      
+    @ActionProtector(not_anonymous())
+    def edit_tags(self, review_id, assignment_id):
+        current_user = request.environ.get('repoze.who.identity')['user']
+
+        tag_q = model.meta.Session.query(model.TagTypes)
+        tags = tag_q.filter(and_(\
+                                model.TagTypes.review_id == review_id,\
+                                model.TagTypes.creator_id == current_user.id
+                         )).all()
+        c.tags = tags
+
+        c.assignment_id = assignment_id
+        c.review_id = review_id
+        return render("/reviews/edit_tags.mako")
+    
+
+    @ActionProtector(not_anonymous())
+    def edit_tag(self, tag_id, assignment_id):
+        tag_q = model.meta.Session.query(model.TagTypes)
+        c.tag = tag_q.filter(model.TagTypes.id == tag_id).one()
+
+        c.assignment_id = assignment_id
+        return render("/reviews/edit_tag_fragment.mako")
+
+    @ActionProtector(not_anonymous())
+    def edit_tag_text(self, id):
+        tag_q = model.meta.Session.query(model.TagTypes)
+        current_user = request.environ.get('repoze.who.identity')['user']
+        tag = tag_q.filter(model.TagTypes.id == id).one()
+        if current_user.id == tag.creator_id:
+            tag.text = request.params['new_text']
+            model.Session.commit()
+    
+
+    @ActionProtector(not_anonymous())
+    def delete_tag(self, tag_id, assignment_id):
+        tag_q = model.meta.Session.query(model.TagTypes)
+        current_user = request.environ.get('repoze.who.identity')['user']
+        tag = tag_q.filter(model.TagTypes.id == tag_id).one()
+        review_id = tag.review_id
+        if current_user.id == tag.creator_id:
+            model.Session.delete(tag)
+            model.Session.commit()
+
+            # also delete all the tag objects associated
+            # with this TagType
+            tag_obj_q = model.meta.Session.query(model.Tags)
+            tags_of_this_type = tag_obj_q.filter(model.Tags.tag_id == tag_id).all()
+            for tag_obj in tags_of_this_type:
+                model.Session.delete(tag_obj)
+            model.Session.commit()    
+            
+            redirect(url(controller="review", action="edit_tags", \
+                            review_id=review_id, assignment_id=assignment_id))
+        else:
+            return "tsk, tsk."
+
+      
     @ActionProtector(not_anonymous())
     def review_terms(self, id, assignment_id=None):
         review_id = id
@@ -1277,8 +1335,8 @@ class ReviewController(BaseController):
         c.review_id = review_id
         c.review_name = self._get_review_from_id(review_id).name
     
-        # if an assignment id is given, it allows us to provide a 'get back to work'
-        # link.
+        # if an assignment id is given, it allows us to provide 
+        # a 'get back to work' link.
         c.assignment = assignment_id
         if assignment_id is not None:
             c.assignment = self._get_assignment_from_id(assignment_id)
@@ -1351,7 +1409,7 @@ class ReviewController(BaseController):
                                      model.Label.study_id == citation_id,
                                      model.Label.reviewer_id == current_user.id)).one()
         c.assignment_id = c.cur_lbl.assignment_id
-        #pdb.set_trace()
+ 
         # finally, grab tags
         c.tag_types = self._get_tag_types_for_review(review_id)
         c.tags = self._get_tags_for_citation(citation_id)

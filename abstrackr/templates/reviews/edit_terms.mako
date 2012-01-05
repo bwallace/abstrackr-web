@@ -1,4 +1,11 @@
+<%inherit file="../site.mako" />
+<%def name="title()">edit terms</%def>
 
+% if "assignment" in dir(c):
+  <div class = "actions">
+      <a href="${url(controller='review', action='screen', review_id=c.assignment.review_id, assignment_id=c.assignment.id)}">ok, get back to screening <img src="../../../arrow_right.png"></img></a>
+      </div>
+% endif
 
 <div class="content">
 %if len(c.terms) > 0:
