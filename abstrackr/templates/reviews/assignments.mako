@@ -15,6 +15,7 @@
 
 <div class="actions">
 <a href="${url(controller='review', action='admin', id=c.review.review_id)}">manage participants</a>
+<a href="${url(controller='review', action='edit_review', id=c.review.review_id)}">edit settings</a>
 </div>
 
 <div class="content">

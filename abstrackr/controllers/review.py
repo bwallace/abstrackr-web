@@ -147,10 +147,13 @@ class ReviewController(BaseController):
 
 
     @ActionProtector(not_anonymous()) 
-    def edit_review(self, id):
+    def edit_review(self, id, message=None):
         if not self._current_user_leads_review(id):
             return "yeah, I don't think so."
         c.review = self._get_review_from_id(id)
+        if message is not None:
+            c.msg = message
+ 
         return render("/reviews/edit_review.mako")
 
     @ActionProtector(not_anonymous())
@@ -173,8 +176,7 @@ class ReviewController(BaseController):
         new_init_round_size = int(request.params['init_size']) # TODO verify
         self._set_initial_screen_size_for_review(review, new_init_round_size)
 
-        c.edit_message = "ok -- settings changed."
-        redirect(url(controller="review", action="edit_review", id=id))
+        return self.edit_review(id, message="ok -- review updated.")
         #if init_round_size == cur_init_assignment.
 
     def _change_review_screening_mode(self, review_id, new_screening_mode):
@@ -1762,7 +1764,7 @@ class ReviewController(BaseController):
             citations_not_in_init = \
               [cit_id for cit_id in all_citation_ids if not cit_id in init_citation_ids]
 
-            num_to_add = max(n-review.initial_round_size, len(citations_not_in_init))
+            num_to_add = min(n-review.initial_round_size, len(citations_not_in_init))
 
             for i in xrange(num_to_add):
                 citation_id = citations_not_in_init[i]

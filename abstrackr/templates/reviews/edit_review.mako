@@ -18,6 +18,7 @@ jQuery(document).ready(function(){
 
 <h1>${c.review.name}: administrivia</h1>
 <div class="actions">
+<a href="${url(controller='review', action='admin', id=c.review.review_id)}">manage participants</a>
 <a href="${url(controller='review', action='assignments', id=c.review.review_id)}">manage assignments</a>
 </div>
 
@@ -40,8 +41,9 @@ jQuery(document).ready(function(){
 </table>
 </center>
 
-    <div class="loading" id="okay_div">
-       ok, settings applied to review!
-    </div>
+	% if 'msg' in dir(c):
+		<div id="okay_div"><font color='green'>${c.msg}</font>
+	 	</div>
+	% endif
 
 </div>
