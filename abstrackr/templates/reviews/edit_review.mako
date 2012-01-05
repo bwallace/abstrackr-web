@@ -4,9 +4,20 @@
 
 <script language="javascript">
 jQuery(document).ready(function(){
-    jQuery("#submit").click(function(){
+    jQuery("#post").click(function(){
+    	$("#dialog" ).dialog( "open" );
         $("#okay_div").fadeIn(2000)
+
     });
+
+    $( "#dialog" ).dialog({
+            height: 250,
+            width: 400,
+            modal: true,
+            autoOpen: false,   
+            show: "blind",
+        });
+
 });
 
 </script>
@@ -14,6 +25,17 @@ jQuery(document).ready(function(){
 <div class="breadcrumbs">
 ./<a href="${url(controller='account', action='my_projects')}">my projects</a>/<a href="${url(controller='review', action='show_review', id=c.review.review_id)}">${c.review.name}</a>
 </div>
+
+
+<div id="dialog" >
+  
+    <h2>processing your edits. </h2>
+    This may take awhile -- please don't navigate away from this page.<br/><br/>
+    <center>
+    <img src="../../loading.gif"></img>
+    </center>
+</div>
+
 
 
 <h1>${c.review.name}: administrivia</h1>
