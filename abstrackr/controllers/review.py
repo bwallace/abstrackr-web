@@ -1288,6 +1288,7 @@ class ReviewController(BaseController):
                          )).all()
         c.tags = tags
 
+        pdb.set_trace()
         c.assignment_id = assignment_id
         c.review_id = review_id
         return render("/reviews/edit_tags.mako")
