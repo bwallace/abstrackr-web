@@ -969,10 +969,8 @@ class ReviewController(BaseController):
         for tag in list(set(tags)):
             new_tag = model.Tags()
             new_tag.creator_id = current_user.id
-            try:
-                new_tag.tag_id = self._get_tag_id(review_id, tag)
-            except:
-                pdb.set_trace()
+            new_tag.tag_id = self._get_tag_id(review_id, tag)
+
             new_tag.citation_id = study_id
             model.Session.add(new_tag)
             model.Session.commit()
@@ -1569,7 +1567,7 @@ class ReviewController(BaseController):
         
         tag_type = tag_q.filter(and_(
                 model.TagTypes.review_id == review_id,
-                model.TagTypes.text == text)).one()
+                model.TagTypes.text == text)).all()[0]
         return tag_type.id
 
     def _get_tags_for_citation(self, citation_id, texts_only=True):
