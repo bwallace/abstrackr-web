@@ -19,12 +19,12 @@
             <tr class="${'odd' if i%2 else 'even'}">
               <td>${term.term}</td>           
               <td><img src="/${dict(zip([-2, -1, 1, 2],["two_thumbs_down.png", "thumbs_down.png", "thumbs_up.png", "two_thumbs_up.png"]))[term.label]}"></td> 
-              <td><a href="/review/delete_term/${term.id}"><img src = "/reject.png"/></a> </td>
+              <td><a href="/review/delete_term/${term.id}/${c.assignment.id}"><img src = "/reject.png"/></a> </td>
               <td>
-                    <a href="/relabel_term/${term.id}/1"><img src = "/thumbs_up.png" border="2" alt="indicative of relevance"></a>
-                    <a href="/relabel_term/${term.id}/2"><img src = "/two_thumbs_up.png" border="2" alt="strongly indicative of relevance"></a>
-                    <a href="/relabel_term/${term.id}/-1"><img src = "/thumbs_down.png"/ border="2" alt="indicative of irrelevance" ></a>
-                    <a href="/relabel_term/${term.id}/-2"><img src = "/two_thumbs_down.png"/ border="2" alt="strongly indicative of irrelevance"></a>
+                    <a href="/relabel_term/${term.id}/${c.assignment.id}/1"><img src = "/thumbs_up.png" border="2" alt="indicative of relevance"></a>
+                    <a href="/relabel_term/${term.id}/${c.assignment.id}/2"><img src = "/two_thumbs_up.png" border="2" alt="strongly indicative of relevance"></a>
+                    <a href="/relabel_term/${term.id}/${c.assignment.id}/-1"><img src = "/thumbs_down.png"/ border="2" alt="indicative of irrelevance" ></a>
+                    <a href="/relabel_term/${term.id}/${c.assignment.id}/-2"><img src = "/two_thumbs_down.png"/ border="2" alt="strongly indicative of irrelevance"></a>
               </td>
             </tr>
         % endfor

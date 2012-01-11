@@ -897,22 +897,23 @@ class ReviewController(BaseController):
         return render("/reviews/show_review.mako")
 
     @ActionProtector(not_anonymous())
-    def relabel_term(self, term_id, new_label):
+    def relabel_term(self, term_id, assignment_id, new_label):
         term_q = model.meta.Session.query(model.LabeledFeature)
         labeled_term =  term_q.filter(model.LabeledFeature.id == term_id).one()
         labeled_term.label = new_label
         model.Session.add(labeled_term)
         model.Session.commit()
-        redirect(url(controller="review", action="review_terms", id=labeled_term.review_id)) 
+        redirect(url(controller="review", action="review_terms", \
+                        id=labeled_term.review_id, assignment_id=assignment_id)) 
         
     @ActionProtector(not_anonymous())
-    def delete_term(self, id):
-        term_id = id
+    def delete_term(self, term_id, assignment_id):
         term_q = model.meta.Session.query(model.LabeledFeature)
         labeled_term = term_q.filter(model.LabeledFeature.id == term_id).one()
         model.Session.delete(labeled_term)
         model.Session.commit()
-        redirect(url(controller="review", action="review_terms", id=labeled_term.review_id)) 
+        redirect(url(controller="review", action="review_terms", \
+                        id=labeled_term.review_id, assignment_id=assignment_id)) 
         
         
     @ActionProtector(not_anonymous())
