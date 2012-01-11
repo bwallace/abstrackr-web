@@ -8,6 +8,7 @@ basically, this contains code to map data from a given format
 import pdb
 import string 
 import csv
+import random
 
 # third party
 import sqlite3
@@ -149,7 +150,10 @@ def xml_to_sql(xml_path, review):
     
 def dict_to_sql(xml_d, review): 
     cit_num = 0
-    for ref_id, citation_d in xml_d.items():
+    # issue #31: explicitly randomize ordering
+    xml_d_items = xml_d.items()
+    random.shuffle(xml_d_items)
+    for ref_id, citation_d in xml_d_items:
         cit_id = insert_citation(review.review_id, ref_id, citation_d)
         insert_priority_entry(review.review_id, cit_id, cit_num)
         cit_num += 1
