@@ -1283,7 +1283,14 @@ class ReviewController(BaseController):
         current_user = request.environ.get('repoze.who.identity')['user']
 
         tag_q = model.meta.Session.query(model.TagTypes)
-        tags = tag_q.filter(and_(\
+        tags = None
+
+        # fix for issue #35: allow admins to edit everyone's
+        #   tags
+        if self._current_user_leads_review(review_id):
+            tags = tag_q.filter(model.TagTypes.review_id == review_id).all()
+        else:
+            tags = tag_q.filter(and_(\
                                 model.TagTypes.review_id == review_id,\
                                 model.TagTypes.creator_id == current_user.id
                          )).all()
@@ -1306,7 +1313,7 @@ class ReviewController(BaseController):
         tag_q = model.meta.Session.query(model.TagTypes)
         current_user = request.environ.get('repoze.who.identity')['user']
         tag = tag_q.filter(model.TagTypes.id == id).one()
-        if current_user.id == tag.creator_id:
+        if current_user.id == tag.creator_id or self._current_user_leads_review(tag.review_id):
             tag.text = request.params['new_text']
             model.Session.commit()
     
