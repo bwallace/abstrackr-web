@@ -101,7 +101,7 @@ def batch_fetch(article_ids, batch_size=20):
       records = fetch_articles(article_ids[fetched_so_far:fetched_so_far+batch_size])
       fetched_so_far += batch_size
       all_records.extend([r for r in records])
-
+      print "fetched so far, total to fetch: %s, %s" % (fetched_so_far, total)
   
   return all_records
   
