@@ -146,6 +146,9 @@ class AccountController(BaseController):
       
 
     def create_account(self):
+        if 'then_join' in request.params:
+            c.then_join = request.params['then_join']
+        
         return render('/accounts/register.mako')
         
     @validate(schema=form.RegisterForm(), form='create_account')
@@ -177,9 +180,27 @@ class AccountController(BaseController):
             -- The Tufts EPC.
         """ % (new_user.fullname, new_user.username)
         
-        self.send_email_to_user(new_user, "welcome to abstrackr", greeting_message)
+        try:
+            self.send_email_to_user(new_user, "welcome to abstrackr", greeting_message)
+        except:
+            # this almost certainly means we're on our Windows dev box :)
+            pass
         
-        redirect(url(controller="account", action="login"))
+        ###
+        # log this user in programmatically (issue #28)
+        rememberer = request.environ['repoze.who.plugins']['cookie']
+        identity = {'repoze.who.userid': new_user.username}
+        response.headerlist = response.headerlist + \
+            rememberer.remember(request.environ, identity) 
+        rememberer.remember(request.environ, identity) 
+
+
+        # if they were originally trying to join a review prior to 
+        # registering, then join them now. (issue #8).
+        if 'then_join' in request.params and request.params['then_join'] != '':
+            redirect(url(controller="review", action="join", review_code=request.params['then_join']))
+        else:
+            redirect(url(controller="account", action="login"))
         
 
     def _get_user_from_email(self, email):

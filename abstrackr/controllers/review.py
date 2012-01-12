@@ -131,7 +131,6 @@ class ReviewController(BaseController):
 
         # now merge the reviews
         for review_id in reviews_to_merge:
-            pdb.set_trace()
             self._move_review(review_id, merged_review.review_id)
         
         if merged_review.screening_mode in (u"single", u"double"):
@@ -397,18 +396,7 @@ class ReviewController(BaseController):
                     # this tag (pre_existing_tag_id) is already
                     # associated with the target review
                     dupe_tag.tag_id = pre_existing_tag_id
-                    #model.Session.commit()
-                    #pdb.set_trace()
-                    '''
-                    moved_tag = model.Tags()
-                    moved_tag.citation_id = dupe_tag.citation_id
-                    moved_tag.creator_id = dupe_tag.creator_id
-                    moved_tag.tag_id = pre_existing_tag_id
-                    model.Session.add(moved_tag)
-                    model.Session.delete(dupe_tag)
-                    '''
                     model.Session.commit()
-                    pdb.set_trace()
                     
                 # now delete the duplicate tag.
                 model.Session.delete(tag_to_move)
