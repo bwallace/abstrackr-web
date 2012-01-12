@@ -131,6 +131,7 @@ class ReviewController(BaseController):
 
         # now merge the reviews
         for review_id in reviews_to_merge:
+            pdb.set_trace()
             self._move_review(review_id, merged_review.review_id)
         
         if merged_review.screening_mode in (u"single", u"double"):
@@ -355,12 +356,63 @@ class ReviewController(BaseController):
         
         ###
         # tags (technically, TagTypes)
-        tags_q = model.meta.Session.query(model.TagTypes)
-        tags = tags_q.filter(\
+        tag_types_q = model.meta.Session.query(model.TagTypes)
+        tag_types_to_move = tag_types_q.filter(\
                     model.TagTypes.review_id == old_review_id).all()
-        for tag in tags:
-            tag.review_id = new_review_id
-            model.Session.commit()
+        
+        # issues #29/#33: need to handle duplicate tags properly
+        # here -- so we pull all tags aleady associated with the
+        # review were are moving old_review to.
+        tag_texts_to_ids = {}
+        tags_already_in_new_review = tag_types_q.filter(\
+                    model.TagTypes.review_id == new_review_id).all()
+        for existing_tag in tags_already_in_new_review:
+            tag_texts_to_ids[existing_tag.text.lower()] = existing_tag.id
+
+        # now check the tags on the review being moved
+        # against those that already exist on the target
+        # review; if one exists, do not move it, but instead
+        # re-assign all associated tag objects to the existing
+        # tag-type.
+        for tag_to_move in tag_types_to_move:
+            if not tag_to_move.text.lower() in tag_texts_to_ids.keys():
+                # ok -- it's a new tag, simply changed its associated
+                # review to the new one
+                tag_to_move.review_id = new_review_id
+                model.Session.commit()
+            else:
+                # then we've already got a tag with the same
+                # text, so we de-dupe by moving all tags associated
+                # with this type to the existing tag
+                pre_existing_tag_id = tag_texts_to_ids[tag_to_move.text.lower()]
+
+                # for actual tags, not tag types
+                tags_q = model.meta.Session.query(model.Tags)
+                tags_of_this_type =\
+                     tags_q.filter(model.Tags.tag_id == tag_to_move.id).all()
+            
+                for dupe_tag in tags_of_this_type:
+                    # associate these tags with the already-existing
+                    # tag that has the same text -- note that
+                    # this tag (pre_existing_tag_id) is already
+                    # associated with the target review
+                    dupe_tag.tag_id = pre_existing_tag_id
+                    #model.Session.commit()
+                    #pdb.set_trace()
+                    '''
+                    moved_tag = model.Tags()
+                    moved_tag.citation_id = dupe_tag.citation_id
+                    moved_tag.creator_id = dupe_tag.creator_id
+                    moved_tag.tag_id = pre_existing_tag_id
+                    model.Session.add(moved_tag)
+                    model.Session.delete(dupe_tag)
+                    '''
+                    model.Session.commit()
+                    pdb.set_trace()
+                    
+                # now delete the duplicate tag.
+                model.Session.delete(tag_to_move)
+                model.Session.commit()
 
         ###
         # priority
