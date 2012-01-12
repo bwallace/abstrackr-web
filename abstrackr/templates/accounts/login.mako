@@ -17,6 +17,10 @@
 </form>
 </div>
 
-don't have an account yet? <a href="${url(controller='account', action='create_account')}">register here</a>.<br/>
+% if "join/" in c.came_from:
+	don't have an account yet? <a href="${url(controller='account', action='create_account', then_join=c.came_from.split("join/")[1])}">register here</a>.<br/>	
+% else:
+	don't have an account yet? <a href="${url(controller='account', action='create_account')}">register here</a>.<br/>
+% endif
 or maybe you forget your password? <a href="${url(controller='account', action='recover_password')}">recover it</a>.
 </center>

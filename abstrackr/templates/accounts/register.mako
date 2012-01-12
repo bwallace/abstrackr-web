@@ -6,7 +6,9 @@
     <center>
     
 <table class="form_table">
- ${h.form(url(controller='account', action='create_account_handler'))}
+  
+
+ ${h.form(url(controller='account', action='create_account_handler', then_join=c.then_join if 'then_join' in dir(c) else ''))}
     <tr><td><label>first name:</td> <td>${h.text('first_name')}</label></td></tr>
     <tr><td><label>last name:</td> <td>${h.text('last_name')}</label></td></tr>
     <tr><td><label>how many SRs have you participated in?:</td> <td>${h.text('experience', size=2)}</label></td></tr>
