@@ -179,6 +179,32 @@ class ReviewController(BaseController):
         return self.edit_review(id, message="ok -- review updated.")
         #if init_round_size == cur_init_assignment.
 
+
+    def _update_num_labels_in_priority_queue(self, review_id):
+        '''
+        iterate over the priority objects in the given review
+        and update the number of times the associated citations
+        have been screened. strictly speaking, this shouldn't be 
+        necessary -- this was written to fix a particular review
+        in which the counts were off, somehow.
+        '''
+        review = self._get_review_from_id(review_id)
+        screening_mode = review.screening_mode
+
+        # pull out associated priority entries
+        priority_q = model.meta.Session.query(model.Priority)
+        ranked_priorities =  priority_q.filter(\
+                                    model.Priority.review_id == review_id).\
+                                    order_by(model.Priority.priority).all() 
+                                    
+        for priority_obj in ranked_priorities:
+            num_lbls = len(self._get_labels_for_citation(priority_obj.citation_id))
+            if num_lbls != priority_obj.num_times_labeled:
+                print "\n\n\n******* I FOUND A DISAGREEMENT!!!"
+            priority_obj.num_times_labeled = num_lbls
+            model.Session.commit()
+
+  
     def _change_review_screening_mode(self, review_id, new_screening_mode):
         '''
         screening_mode assume to be one of "single", "double", "advanced"
@@ -1156,6 +1182,9 @@ class ReviewController(BaseController):
       
     @ActionProtector(not_anonymous())
     def screen(self, review_id, assignment_id):
+        # TODO remove me
+        self._update_num_labels_in_priority_queue(review_id)
+
         assignment = self._get_assignment_from_id(assignment_id)
         if assignment is None:
             redirect(url(controller="review", action="screen", \
