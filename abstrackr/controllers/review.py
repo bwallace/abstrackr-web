@@ -199,8 +199,6 @@ class ReviewController(BaseController):
                                     
         for priority_obj in ranked_priorities:
             num_lbls = len(self._get_labels_for_citation(priority_obj.citation_id))
-            if num_lbls != priority_obj.num_times_labeled:
-                print "\n\n\n******* I FOUND A DISAGREEMENT!!!"
             priority_obj.num_times_labeled = num_lbls
             model.Session.commit()
 
@@ -1182,8 +1180,6 @@ class ReviewController(BaseController):
       
     @ActionProtector(not_anonymous())
     def screen(self, review_id, assignment_id):
-        # TODO remove me
-        self._update_num_labels_in_priority_queue(review_id)
 
         assignment = self._get_assignment_from_id(assignment_id)
         if assignment is None:
