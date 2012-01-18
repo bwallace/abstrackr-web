@@ -5,7 +5,7 @@ from sqlalchemy.sql import and_, or_
 import os, pdb, pickle
 import threading
 
-engine = create_engine("mysql://root:xxxxx@127.0.0.1:3306/abstrackr")
+engine = create_engine("mysql://root:homer@127.0.0.1:3306/abstrackr")
 metadata = MetaData(bind=engine)
 
 ####
