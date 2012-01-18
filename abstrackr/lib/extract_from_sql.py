@@ -119,8 +119,13 @@ def lbls_to_disk(review_ids, base_dir):
     pickle.dump(lbl_feature_d, fout)                     
     fout.close()
 
+def write_review_to_disk(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
+    lbls_to_disk([review_id], base_dir)
 
+<<<<<<< HEAD
 
 class ReviewExtractor(threading.Thread):
     def Run(self):
         pass
+=======
+>>>>>>> 9036ca96dc093ba99f59d09f46a029bcb6fb5318
