@@ -48,7 +48,7 @@
 <div class="actions">
   % if c.cur_lbl is not None and c.assignment_type != "conflict":
       % if c.assignment_id is not None:
-        <a href="${url(controller='review', action='screen', review_id=c.review_id, assignment_id=c.assignment_id)}">ok, get back to screening <img src="../../arrow_right.png"></img></a>
+        <a href="${url(controller='review', action='screen', review_id=c.review_id, assignment_id=c.assignment_id)}">ok, get back to screening <img src="/arrow_right.png"></img></a>
       % endif
   % else:
     <a
@@ -110,8 +110,13 @@
       % if c.cur_lbl is not None:
           % if c.assignment_type == "conflict":
               % for label in c.cur_lbl:
+                % if "consensus_review" in dir(c) and c.consensus_review:
+                  a <b>consensus</b> label of ${write_label(label.label)} was given for this citation on on ${label.label_last_updated}<br/>
+                % else:
                   <b>${c.reviewer_ids_to_names_d[label.reviewer_id]}</b> labeled this citation as ${write_label(label.label)} on ${label.label_last_updated}<br/>
+                % endif
               % endfor
+
           % else:
           <center>
               you labeled this citation as ${write_label(c.cur_lbl.label)} on ${c.cur_lbl.label_last_updated}
@@ -317,9 +322,9 @@
     <center>
     <br clear="all"/>
     <div id = "buttons" >
-    <a href="#" id="accept"><img src = "../../accept.png"/></a> 
-    <a href="#" id="maybe"><img src = "../../maybe.png"/></a> 
-    <a href="#" id="reject"><img src = "../../reject.png"/></a> 
+    <a href="#" id="accept"><img src = "/accept.png"/></a> 
+    <a href="#" id="maybe"><img src = "/maybe.png"/></a> 
+    <a href="#" id="reject"><img src = "/reject.png"/></a> 
   </div>
 
 
@@ -332,17 +337,17 @@
   </td>
   <td width="10"></td>
   <td>
-  <a href="#" id="pos_lbl_term"><img src = "../../thumbs_up.png" border="2" alt="indicative of relevance"></a>
+  <a href="#" id="pos_lbl_term"><img src = "/thumbs_up.png" border="2" alt="indicative of relevance"></a>
   </td>
   <td>
-  <a href="#" id="double_pos_lbl_term"><img src = "../../two_thumbs_up.png" border="2" alt="strongly indicative of relevance"></a>
+  <a href="#" id="double_pos_lbl_term"><img src = "/two_thumbs_up.png" border="2" alt="strongly indicative of relevance"></a>
   </td>
   <td width="10"></td>
   <td>
-  <a href="#" id="neg_lbl_term"><img src = "../../thumbs_down.png"/ border="2" alt="indicative of irrelevance" ></a>
+  <a href="#" id="neg_lbl_term"><img src = "/thumbs_down.png"/ border="2" alt="indicative of irrelevance" ></a>
   </td>
   <td>
-  <a href="#" id="double_neg_lbl_term"><img src = "../../two_thumbs_down.png"/ border="2" alt="strongly indicative of irrelevance"></a>
+  <a href="#" id="double_neg_lbl_term"><img src = "/two_thumbs_down.png"/ border="2" alt="strongly indicative of irrelevance"></a>
   </td>
   </tr>
   </div>

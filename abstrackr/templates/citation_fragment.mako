@@ -15,19 +15,21 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
     % endif
 </%def>
 
-
-% if c.cur_lbl is not None:
-    % if c.assignment_type == "conflict":
-        % for label in c.cur_lbl:
-            <b>${c.reviewer_ids_to_names_d[label.reviewer_id]}</b> labeled this citation as ${write_label(label.label)} on ${label.label_last_updated}<br/>
-        % endfor
-    % else:
-    <center>
-        you labeled this citation as ${write_label(c.cur_lbl.label)} on ${c.cur_lbl.label_last_updated}
-     </center>
-   
-    % endif
-% endif
+  % if c.cur_lbl is not None:
+      % if c.assignment_type == "conflict":
+          % for label in c.cur_lbl:
+            % if "consensus_review" in dir(c) and c.consensus_review:
+              a <b>consensus</b> label of ${write_label(label.label)} was given for this citation on on ${label.label_last_updated}<br/>
+            % else:
+              <b>${c.reviewer_ids_to_names_d[label.reviewer_id]}</b> labeled this citation as ${write_label(label.label)} on ${label.label_last_updated}<br/>
+            % endif
+          % endfor
+      % else:
+      <center>
+          you labeled this citation as ${write_label(c.cur_lbl.label)} on ${c.cur_lbl.label_last_updated}
+       </center>
+      % endif
+  % endif
 
 
 

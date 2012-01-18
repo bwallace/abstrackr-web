@@ -283,7 +283,6 @@ class ReviewController(BaseController):
         labeled_once_ids = \
             [lbl.study_id for lbl in labels if has_one_lbl(lbl.study_id)]
 
-
         return labeled_once_ids
     
 
@@ -774,7 +773,8 @@ class ReviewController(BaseController):
         model.Session.add(conflict_a)
         model.Session.commit()
         
-        redirect(url(controller="review", action="screen", review_id=review_id, assignment_id=conflict_a.id)) 
+        redirect(url(controller="review", action="screen", \
+                        review_id=review_id, assignment_id=conflict_a.id)) 
     
     def _get_labels_for_citation(self, citation_id):
         return model.meta.Session.query(model.Label).\
@@ -1067,17 +1067,29 @@ class ReviewController(BaseController):
         model.meta.Session.commit()
         
         current_user = request.environ.get('repoze.who.identity')['user']
+        
         # check if we've already labeled this; if so, handle
         # appropriately
         label_q = model.meta.Session.query(model.Label)
-        existing_label = label_q.filter(and_(
+        
+        # pull the associated assignment object
+        assignment = self._get_assignment_from_id(assignment_id)
+
+        existing_label = None
+        if assignment.assignment_type == "conflict":
+            existing_label = label_q.filter(and_(
+                        model.Label.review_id == review_id, 
+                        model.Label.study_id == study_id, 
+                        model.Label.reviewer_id == CONSENSUS_USER)).all()
+            c.consensus_review = True
+        else:
+            existing_label = label_q.filter(and_(
                         model.Label.review_id == review_id, 
                         model.Label.study_id == study_id, 
                         model.Label.reviewer_id == current_user.id)).all()
-        # pull the associated assignment object
         
-        assignment = self._get_assignment_from_id(assignment_id)
-        if len(existing_label) > 0 and not assignment.assignment_type == "conflict":
+
+        if len(existing_label) > 0:
             # then this person has already labeled this example
             print "(RE-)labeling citation %s with label %s" % (study_id, label)
             existing_label = existing_label[0]
@@ -1088,9 +1100,10 @@ class ReviewController(BaseController):
             model.Session.commit()
             
             # if we are re-labelng, return the same abstract, reflecting the new
-            # label.
-            c.cur_lbl = existing_label
-            c.assignment_id = c.cur_lbl.assignment_id
+            # label. we put the single consensus label in a singleton list for the
+            # client in the case that this is a 'conflict' assignment.
+            c.cur_lbl = existing_label if assignment.assignment_type != "conflict" else [existing_label]
+            c.assignment_id = assignment_id
             citation_q = model.meta.Session.query(model.Citation)
             c.assignment_type = assignment.assignment_type
             c.cur_citation = citation_q.filter(model.Citation.citation_id == study_id).one()
@@ -1098,6 +1111,8 @@ class ReviewController(BaseController):
             c.review_id = review_id
             return render("/citation_fragment.mako")
         else:
+            # either there is no existing label or this is a consens label
+            # being provided (or both!)
             print "labeling citation %s with label %s" % (study_id, label)
             # first push the label to the database
             new_label = model.Label()
@@ -1432,6 +1447,7 @@ class ReviewController(BaseController):
             
     @ActionProtector(not_anonymous())
     def filter_labels(self, review_id, assignment_id=None, lbl_filter=None):
+        ''' @TODO finish or remove this '''
         current_user = request.environ.get('repoze.who.identity')['user']
         
         label_q = model.meta.Session.query(model.Label)
@@ -1455,12 +1471,37 @@ class ReviewController(BaseController):
     def review_labels(self, review_id, assignment_id=None, lbl_filter=None):
         current_user = request.environ.get('repoze.who.identity')['user']
         
+
+        # if an assignment id is given, it allows us to provide a 
+        # 'get back to work' link/button.
+        c.assignment = assignment_id
+        if assignment_id is not None:
+            c.assignment = self._get_assignment_from_id(assignment_id)
+
         label_q = model.meta.Session.query(model.Label)
-        already_labeled_by_me = [label for label in label_q.filter(\
+
+        already_labeled_by_me = None
+        ####
+        # issue #36; if this is a fixed assignment (e.g., reviewing maybes, etc.) then
+        # we want to only review those labels relevant to this assignment, i.e., labels
+        # for citations that are a part of this task
+   
+        # TODO 'conflict' is a misnomer; this variety subsumes
+        #           both 'conflict' and 'maybes' assignments
+        if c.assignment.assignment_type == "conflict":
+            already_consensus_labeled = label_q.filter(\
+                                          model.Label.assignment_id == c.assignment.id).all()
+            already_labeled_by_me = already_consensus_labeled
+
+        else:                                       
+            # otherwise, pull all labels from the current reviewer associated
+            # with the given review
+            already_labeled_by_me = [label for label in label_q.filter(\
                                    and_(model.Label.review_id == review_id,\
                                         model.Label.reviewer_id == current_user.id)).\
                                             order_by(desc(model.Label.label_last_updated)).all()] 
         
+
         c.given_labels = already_labeled_by_me
         c.review_id = review_id 
         c.review_name = self._get_review_from_id(review_id).name
@@ -1470,16 +1511,11 @@ class ReviewController(BaseController):
         for label in c.given_labels:
             c.citations_d[label.study_id] = self._get_citation_from_id(label.study_id)
 
-        # if an assignment id is given, it allows us to provide a 'get back to work'
-        # link.
-        c.assignment = assignment_id
-        if assignment_id is not None:
-            c.assignment = self._get_assignment_from_id(assignment_id)
      
         return render("/reviews/review_labels.mako")
             
     @ActionProtector(not_anonymous())
-    def show_labeled_citation(self, review_id, citation_id):
+    def show_labeled_citation(self, review_id, citation_id, assignment_id):
         current_user = request.environ.get('repoze.who.identity')['user']
         c.review_id = review_id
         c.review_name = self._get_review_from_id(review_id).name
@@ -1488,13 +1524,34 @@ class ReviewController(BaseController):
         c.cur_citation = citation_q.filter(model.Citation.citation_id == citation_id).one()
         # mark up the labeled terms 
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
-        c.assignment_type = None # just leaving this empty
-        
+
+        # issue #36 -- making label reviewing more intuitive
+        #pdb.set_trace()       
+        assignment = self._get_assignment_from_id(assignment_id)
+        c.assignment_type = assignment.assignment_type
+        c.consensus_review = False
         label_q = model.meta.Session.query(model.Label)
-        c.cur_lbl = label_q.filter(and_(
+        #pdb.set_trace()
+        if c.assignment_type == "conflict":
+            # then the assumption is that we're reviewing the labels provided
+            # by the 'consensus_user'
+            c.consensus_review = True       
+            # we return the single result in a list to make life easier on the client
+            # side; this way, the code doesn't care if it's reviewing a consensus
+            # label or showing a label with conflicts (multiple labels) -- it
+            # behaves the same.
+            c.cur_lbl = [label_q.filter(and_(
+                                     model.Label.study_id == citation_id,
+                                     model.Label.reviewer_id == CONSENSUS_USER)).one()]
+
+        else:
+            # then get the label that the current user gave
+            c.cur_lbl = label_q.filter(and_(
                                      model.Label.study_id == citation_id,
                                      model.Label.reviewer_id == current_user.id)).one()
-        c.assignment_id = c.cur_lbl.assignment_id
+                        
+        # pass the assignment id back to the client
+        c.assignment_id = assignment_id
  
         # finally, grab tags
         c.tag_types = self._get_tag_types_for_review(review_id)

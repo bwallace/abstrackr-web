@@ -33,8 +33,9 @@
                 <td>${c.citations_d[label.study_id].refman_id}</td>
                 <td>${c.citations_d[label.study_id].pmid_id}</td>
                 <td>
-                <a href="${url(controller='review', action='show_labeled_citation', review_id=label.review_id, citation_id=label.study_id)}">
-                ${c.citations_d[label.study_id].title}</a></td>
+               
+                <a href="${url(controller='review', action='show_labeled_citation', review_id=label.review_id, citation_id=label.study_id, assignment_id=label.assignment_id)}">${c.citations_d[label.study_id].title}</a></td>
+
                 <td>${label.label}</td>
                 <td>${label.first_labeled.month}/${label.first_labeled.day}/${label.first_labeled.year}</td>
                 <td>${label.label_last_updated.month}/${label.label_last_updated.day}/${label.label_last_updated.year}</td>
