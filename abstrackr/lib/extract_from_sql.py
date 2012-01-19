@@ -67,8 +67,13 @@ def write_out_labels_for_reviews(review_sets, out_path):
     out_stream.write("\n".join(out_str))
     out_stream.close()
 
-def to_disk(review_names, base_dir):
-    review_ids = get_ids_from_names(review_names)
+def to_disk(base_dir, review_names=None, review_ids=None):
+    if not (review_ids or review_names):
+        raise Exception, "you need to provide either the names or the ids of the reviews you want, dummy."
+    elif review_ids is None:
+        # get the ids from the names
+        review_ids = get_ids_from_names(review_names)
+
     for review_id in review_ids:
         citations_to_disk(review_id, base_dir)
     
@@ -121,6 +126,6 @@ def lbls_to_disk(review_ids, base_dir):
     fout.close()
 
 def write_review_to_disk(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
-    to_disk([review_id], base_dir)
+    to_disk(base_dir, review_ids=[review_id])
 
 
