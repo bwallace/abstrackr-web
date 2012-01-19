@@ -1180,6 +1180,10 @@ class ReviewController(BaseController):
         c.cur_citation = citation_q.filter(model.Citation.citation_id == citation_id).one()
         c.review_id = id
         c.assignment_id = assignment_id
+
+        # issue #41
+        assignment = self._get_assignment_from_id(assignment_id)
+        c.assignment_type = assignment.assignment_type
         c.cur_citation = self._mark_up_citation(id, c.cur_citation)
         
         current_user = request.environ.get('repoze.who.identity')['user']
