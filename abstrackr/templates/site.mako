@@ -21,7 +21,7 @@
         </p>
        
 	<div id="login-header">
-	 <a href="/">home</a>  || <a href="/account/my_account">my account</a> || <a href="/account/logout">sign out</a> 
+	 <a href="/">home</a>  || <a href="/account/my_account">my account</a> || <a href="/account/logout">sign out</a> || <a href="/help/">help</a> || <a href="/help/citing.html">citing abstrackr</a>
 	</div>
 	
 <!-- *** BEGIN page content *** -->
