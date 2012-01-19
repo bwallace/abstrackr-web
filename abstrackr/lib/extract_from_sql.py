@@ -86,6 +86,7 @@ def citations_to_disk(review_id, base_dir, \
         os.mkdir(base_dir)
 
     for field in fields:
+        print "(citations_to_disk) on field: %s" % field
         field_path = os.path.join(base_dir, field)
         if not os.path.exists(field_path):
             os.mkdir(field_path)
