@@ -1,0 +1,123 @@
+<html>
+<head>
+<LINK href="../stylesheet.css" rel="stylesheet" type="text/css">
+ <STYLE type="text/css" media="screen">
+#floating_link {
+     position: fixed;
+     left: 0;
+     top: 30px;
+     display: block;
+     width: 170px;
+     height: 20px;
+     text-indent: 0px;
+     border: 1px solid black;
+     background-color: white;
+     font-color: white;
+}
+</STYLE>
+</head>
+
+<body>
+
+<h1>abstrackr help</h1>
+<a id="floating_link" href="http://abstrackr.tuftscaes.org">&larr; go back to <b>abstrackr</b></a>
+
+<div class="content">
+<h1>Table of Contents</h1>
+<ul>
+<li> <a href="#big_pic">The Big Picture</a> 
+<li> <a href="#joining">Joining a Review</a>
+<li> <a href="#working">Getting to Work</a>
+<li> <a href="#screening">Screening</a>
+  <ul>
+  <li><a href="#basic_screening">Basic screening</a></li>
+  <li><a href="#labeled_terms">Labeling terms</a></li>
+  <li><a href="#tags">Tags</a></li>
+  </ul>
+</ul>
+
+<br/><br/>
+<h1><a name="big_pic">The Big Picture</a></h1>
+<p><b>abstrackr</b> is a web-application that makes citation-screening process of systematic reviews easier (or, we hope it does, anyway). It is a collaborative tool that facilitates screening of citations by multiple reviewers in tandem. Citations are imported and then screened by participants. The screening decisions (or, 'labels') can subsequently be exported. We'll now define some abstractions that are used within <b>abstrackr</b>, to help you understand how best to work with the system.</p>
+
+<p>There are two main types of things in <b>abstrackr</b>: <i>reviewers</i> and <i>reviews</i>. The former are people like yourself, and the latter (sometimes referred to as projects), are collections of citations to be screened by reviewers. Each reviews is lead by a special reviewer; the associated <i>project lead</i>. All other reviewers associated with a given projects are participants. </p>
+
+<p>The work-flow in <b>abstrackr</b> is centered around <i>assignments</i>, which are created by project leads. In the simplest case, the same assignment is tasked to all participants in a review (including the lead): this assignment is, essentially, to screen until all abstracts have been labeled. More advanced types of assignments exist, but we'll cover these later.</p>
+
+<h1><a name="joining">Joining a Review</a></h1>
+<p>To join a review in <b>abstrackr</b>, you'll need a join link (URL). This URL should have been sent to your e-mail, either by the <b>abstrackr</b> system or by your project lead. The URL will look like this: 
+
+<center>http://abstrackr.tuftscaes.org/join/IQT1KAI0LJ</center><br/>
+
+Where the last part of the URL will depend on the review. Simply follow this link in your web browser and you will be automatically joined to the corresponding review.</p>
+
+<h1><a name="working">Getting to Work</a></h1>
+ 
+ <center><img src="images/tabs.png" width=800/></center>
+
+ <p>The main screen with which you're greeted upon joining a review is shown above. There are two tabs: My Work and My Projects: for now, we'll focus on the former. The My Work tab shows your assignments. Outstanding (unfinished) assignments will be at the top of the page; any completed assignments will be displayed below these. If you are participating in multiple reviews, you may see multiple assignments from them; the 'review' column of the table specifies to which review the corresponding assignment belongs.</p>
+
+ <p>To get screening, you'll want to click the  <img height=25 src="images/screen.png" /> button in the actions column of the assignments table. You can also review the labels (screening decisions) you have given thus far to the abstracts comprising the corresponding assignment, via the <img height=25 src="images/review_labels.png" />.
+
+<h1><a name="screening">Screening</a></h1>
+<p>We now explain how to screen abstracts in <b>abstrackr</b>. You will likely spend the majority of your time in the system screening, so we will go over the functionality available here in detail. The screening view is shown below.</p>
+
+<center>
+<img src="images/screen_screen.png" /><br/>
+<b>Figure 1</b>. The main screening interface. The main functional components are circled and labeled (<b>A</b>, <b>B</b>, <b>C</b>): their functionality is described below.
+</center>
+
+<h2><a name="basic_screening">Screening abstracts</a></h2>
+<p>In <b>abstrackr</b> you screen an abstract by pushing a button that communicates the <i>label</i> you want to give it. The available labels for abstracts are: <b>relevant</b>, <b>borderline</b> and <b>irrelevant</b>, and correspond to the three buttons in the <b>A</b> panel of the above screen-shot, respectively. The first and last of these are likely self-explanatory: they correspond to accepting and rejecting the abstract. The <b>borderline</b> label, to which the button with the "?" in the screenshot corresponds, implies that you are uncertain about whether or not the abstract should be included or not. Abstracts labeled as maybe can be reviewed at a later time.</p>
+
+<p>Once you screen an article, the label you provided will be saved and <b>abstrackr</b> will immediately fetch a new abstract for you to screen from the database. You can review your labels at any time via the <img height=25 src="images/review_labels.png" /> button (located to the upper-right of the abstract), which will take you to the following screen
+
+ <center><img src="images/review_labels_screen.png" width=800/></center><br/>
+ 
+Here you can review all of the labels you've assigned to the abstracts comprising the associated assignment (thus far). You can re-label an abstract by clicking on its title. You will then be shown the corresponding abstract within the screening page (Figure 1). From here you can re-label the abstract however you'd like: the label will be updated. When you've finished, you can click the  <img height=25 src="images/ok.png" /> button from either the review labels page or from the re-labeling screening view: this will bring you back to normal screening mode.</p>
+
+<h2><a name="labeled_terms">Labeling terms</a></h2>
+<p>In addition to screening (labeling) abstracts, you may also wish to indicate that certain terms are indicative that the abstract containing them is more likely to be either relevant or irrelevant to your question (e.g., 'mouse', 'randomized control') than it would be if the corresponding term were not present. <b>abstrackr</b> can remember such terms and highlight them for you in abstracts as you screen. To label terms in the system, use panel <b>B</b> as follows. First, enter the term you would like to highlight in the text box. Next, press the button that corresponds to what you deem appropriate for said term.</p>
+
+<center>
+<img src="images/thumbs.png" />
+</center>
+
+<p>There are four options here. A term may be (strongly) associated with relevant articles, i.e. its presence in an abstract (greatly) increases the likelihood that said abstract ought to be included; or the reverse may be true, in which case its presence in abstracts (weakly or strongly) correlates with studies to be excluded from the review. These four options -- indicative of relevance, strongly indicative of relevance, indicative of irrelevance, strongly indicative of irrelevance -- are captured by the four `thumbed' buttons to the right of the term text-field in panel <b>B</b> (also shown above), respectively: one thumb up designates a term as indicative of inclusion, two thumbs as strongly indicative of inclusion, etc. Once a term is labeled, it will be highlighted in abstracts with a color corresponding to its label. You can review your terms via the <img height=25 src="images/review_terms.png" /> button, which will take you to a screen that includes this table:
+
+ <center><img src="images/review_terms_screen.png" width=800 /></center>
+
+
+From here, you can delete or re-label terms, using the respective buttons. As usual, you can get back to work via the <img height=25 src="images/ok.png" /> button.
+
+</p>
+
+
+
+<h2><a name="tags">Tags</a></h2>
+
+<p>Another form of annotation available in <b>abstrackr</b> is <i>tagging</i>. Tags are managed in panel <b>C</b> (Figure 1). They are intended to be used flexibly, and can be thought of as additional 'labels' that can be assigned to abstracts. Abstracts may have multiple tags. Tags can be exported with your labels, and in the future you will be able to review all abstracts with a given tag.</p>
+
+<p>As an example, suppose you want to tag certain abstracts as being randomized control trials (RCTs). To do so, click the <img height=25 src="images/tag_study.png" /> button. A window will pop-up, in which you may enter "RCT". This is shown below.
+
+<center>
+<img src="images/new_tag.png" />
+</center><br/>
+
+Click the 'tag' button. The tags panel will then be updated so that it appears like this:<br/>
+
+<center>
+<img src="images/tagged.png" />
+</center><br/>
+
+If you change your mind about the tag, click <img height=25 src="images/tag_study.png" /> again. You will then see<br/>
+
+<center>
+<img src="images/tagged_rct.png" />
+</center><br/>
+
+You can toggle this tag on/off by clicking it. When the tag is highlighted (yellow), this means that it applies to the current abstract, otherwise it does not. The same applies to new abstracts; when they first appear, they are by default 'untagged', so that all tags will be de-selected (i.e., not highlighted). You can toggle on all appropriate tags by clicking the <img height=25 src="images/tag_study.png" /> button, and then clicking on those that apply.</p>
+
+</div>
+</body>
+</html>
