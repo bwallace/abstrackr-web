@@ -67,7 +67,12 @@ def write_out_labels_for_reviews(review_sets, out_path):
     out_stream.write("\n".join(out_str))
     out_stream.close()
 
-def to_disk(base_dir, review_names=None, review_ids=None):
+def to_disk(base_dir, review_names=None, review_ids=None, fields=None):
+    ''' 
+    writes the citations (titles, abstracts, etc) and labels
+    (both feature and instance) over the given reviews to disk; 
+    base_dir tells the routine where to save the files.
+    '''
     if not (review_ids or review_names):
         raise Exception, "you need to provide either the names or the ids of the reviews you want, dummy."
     elif review_ids is None:
@@ -75,13 +80,13 @@ def to_disk(base_dir, review_names=None, review_ids=None):
         review_ids = get_ids_from_names(review_names)
 
     for review_id in review_ids:
-        citations_to_disk(review_id, base_dir)
+        citations_to_disk(review_id, base_dir, fields=fields)
     
     lbls_to_disk(review_ids, base_dir)
 
 
-def citations_to_disk(review_id, base_dir, \
-                fields=["title", "abstract", "keywords", "authors", "journal"]):
+def citations_to_disk(review_id, base_dir, fields=None):
+    fields = fields or ["title", "abstract", "keywords", "authors", "journal"]
     none_to_text= lambda x: "none" if x is None else x
 
     s = citations.select(citations.c.review_id==review_id)
@@ -125,7 +130,24 @@ def lbls_to_disk(review_ids, base_dir):
     pickle.dump(lbl_feature_d, fout)                     
     fout.close()
 
-def write_review_to_disk(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
-    to_disk(base_dir, review_ids=[review_id])
+def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
+    fields=["title", "abstract", "keywords"]
+
+    # write the abstracts to disk
+    to_disk(base_dir, review_ids=[review_id], fields=fields)
+
+    # now encode them
+    lbl_d = pickle.load(open(os.path.join(base_dir, "labels.pickle")))
+
+    # we encode the three main fields in separate spaces (multi-view)
+    for field in fields:
+        print "\n\n\n(write_review_to_disk) on field: %s..." % field
+        
+        dir_path = os.path.join(base_dir, field)
+        out_path = os.path.join(dir_path, "encoded")
+        out_f_name = "%s_encoded" % field
+        tfidf2.encode_docs(dir_path, out_path, out_f_name, \
+                    lbl_dict=lbl_d, clean_first=True, binary=True, \
+                    min_word_count=3, bi_grams_too=True)
 
 
