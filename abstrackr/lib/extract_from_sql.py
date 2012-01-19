@@ -120,4 +120,6 @@ def lbls_to_disk(review_ids, base_dir):
     fout.close()
 
 def write_review_to_disk(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
-    lbls_to_disk([review_id], base_dir)
+    to_disk([review_id], base_dir)
+
+
