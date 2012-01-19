@@ -5,7 +5,7 @@ from sqlalchemy.sql import and_, or_
 import os, pdb, pickle
 import threading
 
-engine = create_engine("mysql://root:homer@127.0.0.1:3306/abstrackr")
+engine = create_engine("mysql://root:xxxxx@127.0.0.1:3306/abstrackr")
 metadata = MetaData(bind=engine)
 
 ####
@@ -121,11 +121,3 @@ def lbls_to_disk(review_ids, base_dir):
 
 def write_review_to_disk(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
     lbls_to_disk([review_id], base_dir)
-
-<<<<<<< HEAD
-
-class ReviewExtractor(threading.Thread):
-    def Run(self):
-        pass
-=======
->>>>>>> 9036ca96dc093ba99f59d09f46a029bcb6fb5318
