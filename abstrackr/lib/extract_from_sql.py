@@ -5,6 +5,8 @@ from sqlalchemy.sql import and_, or_
 import os, pdb, pickle
 import threading
 
+import tfidf2 
+
 engine = create_engine("mysql://root:homer@127.0.0.1:3306/abstrackr")
 metadata = MetaData(bind=engine)
 
@@ -132,6 +134,8 @@ def lbls_to_disk(review_ids, base_dir):
 
 def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
     fields=["title", "abstract", "keywords"]
+    
+    base_dir = os.path.join(base_dir, str(review_id))
 
     # write the abstracts to disk
     to_disk(base_dir, review_ids=[review_id], fields=fields)
