@@ -3,7 +3,8 @@ from sqlalchemy import *
 from sqlalchemy.sql import select
 from sqlalchemy.sql import and_, or_
 import os, pdb, pickle
-import threading
+
+import datetime
 
 import tfidf2 
 
@@ -17,6 +18,10 @@ labels = Table("Labels", metadata, autoload=True)
 reviews = Table("Reviews", metadata, autoload=True)
 users = Table("user", metadata, autoload=True)
 labeled_features = Table("LabelFeatures", metadata, autoload=True)
+encoded_status = Table("EncodedStatuses", metadata, autoload=True)
+
+from abstrackr import model
+import tfidf2 
 
 def get_labels_from_names(review_names):
     r_ids = get_ids_from_names(review_names)
@@ -137,6 +142,8 @@ def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/d
     
     base_dir = os.path.join(base_dir, str(review_id))
 
+    base_dir = os.path.join(base_dir, str(review_id))
+
     # write the abstracts to disk
     to_disk(base_dir, review_ids=[review_id], fields=fields)
 
@@ -154,4 +161,29 @@ def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/d
                     lbl_dict=lbl_d, clean_first=True, binary=True, \
                     min_word_count=3, bi_grams_too=True)
 
+    # fetch the encoded status entry for this review, 
+    # ***which we assume exists!***
+    return base_dir
 
+def check_encoded_status_table():
+    '''
+    look at all the entries in the EncodedStatus table; for any reviews
+    that are present but not yet encoded, encode them.
+    '''
+
+    unencoded_review_ids = list(select([encoded_status.c.review_id], encoded_status.c.is_encoded==False).execute())
+    for unencoded_id in unencoded_review_ids:
+        unencoded_id = unencoded_id.review_id
+        print "encoding review %s.." % unencoded_id
+        base_dir = encode_review(unencoded_id)#, base_dir="C:/dev/abstrackr_web/encode_test")
+        print "done!"
+        # update the record
+        update = encoded_status.update(encoded_status.c.review_id==unencoded_id)
+        update.execute(is_encoded = True)
+        update.execute(labels_last_updated = datetime.datetime.now())
+        update.execute(base_path = base_dir)
+
+if __name__ == "__main__":
+    print "checking the EncodedStatus table for new reviews..."
+    check_encoded_status_table()
+    print "done."

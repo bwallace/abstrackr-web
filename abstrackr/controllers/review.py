@@ -40,6 +40,8 @@ COLOR_D = {1:POS_C, 2:STRONG_POS_C, -1:NEG_C, -2:STRONG_NEG_C}
 
 CONSENSUS_USER = 0
 
+import subprocess
+
 class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
@@ -73,6 +75,16 @@ class ReviewController(BaseController):
             new_review.initial_round_size = int(request.params['init_size'])
         
         model.Session.add(new_review)
+        model.Session.commit()
+
+        # place an entry in the EncodeStatus table
+        # for this review -- elsewhere we'll see that 
+        # there is an entry in the table that isn't encoded
+        # and do so.
+        encoded_status = model.EncodeStatus()
+        encoded_status.review_id = new_review.review_id
+        encoded_status.is_encoded = False
+        model.Session.add(encoded_status)
         model.Session.commit()
         
         # now parse the uploaded file; dispatch on type
