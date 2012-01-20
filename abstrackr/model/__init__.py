@@ -191,7 +191,7 @@ class Task(Base):
     # screening task -- i.e., they will continue screening
     # while abstracts remain in the Priority queue for this
     # review. The latter two are special cases; in which only n
-    # citations will be screened. in the 'initial' case, 
+    # citations will be screened.  
     task_type = sa.Column(types.Unicode(50))
     # both of the following are N/A for 'perpetual'
     num_assigned = sa.Column(types.Integer)
@@ -203,7 +203,49 @@ class FixedTask(Base):
     id = sa.Column(types.Integer, primary_key=True) 
     task_id = sa.Column(types.Integer)
     citation_id = sa.Column(types.Integer)
+ 
+ 
+class EncodeStatus(Base):
+    '''
+    This table contains one entry for each dataset, indicating
+    its encoded (i.e., for curious_snake/machine learning stuff)
+    status. That is, this table contains information regarding:
+        1) if the dataset has been encoded
+        2) when the labels of this encoded file were last updated
+        3) the path to the encoded file
+    '''
+    __tablename__ = "EncodedStatuses" # sticking with the pluralized convention here
+    id = sa.Column(types.Integer, primary_key=True)
+    review_id = sa.Column(types.Integer) # associated review
+    is_encoded = sa.Column(types.Boolean) # has it been encoded yet?
+    labels_last_updated = sa.Column(types.Date)
+    # the location of the base directory for the encoded review
+    base_path = sa.Column(types.Unicode(100)) 
+
+
+class PredictionsStatus(Base):
+    '''
+    Status of predictions (do they exist? last update, etc.)
+    '''
+    __tablename__ = "PredictionStatuses" 
+    id = sa.Column(types.Integer, primary_key=True)
+    review_id = sa.Column(types.Integer) # associated review
+    predictions_exist = sa.Column(types.Boolean) # has it been encoded yet?
+    predictions_last_made = sa.Column(types.DateTime())
+    train_set_size = sa.Column(types.Integer) # how many did we train on?
+    num_pos_train = sa.Column(types.Integer) # number of positive examples we trained on
     
+
+class Prediction(Base):
+    '''
+    Current inclusion/exclusion predictions for studies
+    '''
+    __tablename__ = "Predictions" 
+    id = sa.Column(types.Integer, primary_key=True)
+    study_id = sa.Column(types.Integer) # the (internal) study id
+    prediction = sa.Column(types.Boolean) # true = include; false = exclude
+    confidence = sa.Column(types.Float) # some scalar denoting confidence
+
 ####################################
 ## these tables for authentication #
 ####################################
