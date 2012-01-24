@@ -8,7 +8,7 @@ import datetime
 
 import tfidf2 
 
-engine = create_engine("mysql://root:homer@127.0.0.1:3306/abstrackr")
+engine = create_engine("mysql://root:xxxxx@127.0.0.1:3306/abstrackr")
 metadata = MetaData(bind=engine)
 
 ####
@@ -20,8 +20,6 @@ users = Table("user", metadata, autoload=True)
 labeled_features = Table("LabelFeatures", metadata, autoload=True)
 encoded_status = Table("EncodedStatuses", metadata, autoload=True)
 
-from abstrackr import model
-import tfidf2 
 
 def get_labels_from_names(review_names):
     r_ids = get_ids_from_names(review_names)
@@ -140,8 +138,6 @@ def lbls_to_disk(review_ids, base_dir):
 def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
     fields=["title", "abstract", "keywords"]
     
-    base_dir = os.path.join(base_dir, str(review_id))
-
     base_dir = os.path.join(base_dir, str(review_id))
 
     # write the abstracts to disk
