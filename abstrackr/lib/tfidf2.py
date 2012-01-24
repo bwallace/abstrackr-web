@@ -88,8 +88,8 @@ import copy
 
 
 
-
-stop_list_path="stop_list.txt"
+# for some reason it's making me give a full path here.. grrr.
+stop_list_path="/home/byron/abstrackr-web/abstrackr/lib/stop_list.txt"
 print "stop word list path is %s" % stop_list_path
 
 def build_stop_list(stop_list_path):
@@ -178,7 +178,7 @@ def encode_docs(dir_path, out_path, out_f_name, \
     '''
     
     #tfidf_to_file_for_lib_SVM(encoded_docs, lbl_dict.keys(), os.path.join(out_path, out_f_name))
-    if lbl_dict is not None:
+    if lbl_dict is not None and len(lbl_dict)>0:
         if not isinstance(lbl_dict.values()[0], str):
             print "\n\n\n*****labels are *not* strings, but they need to be!\n going to force this, MAKE SURE THIS IS SANE\n\n"
             lbl_dict = lbls_to_strs(lbl_dict)
