@@ -3,6 +3,7 @@ from sqlalchemy import *
 from sqlalchemy.sql import select
 from sqlalchemy.sql import and_, or_
 import os, pdb, pickle
+from make_predictions import make_predictions
 
 import datetime
 
@@ -18,7 +19,6 @@ users = Table("user", metadata, autoload=True)
 labeled_features = Table("LabelFeatures", metadata, autoload=True)
 encoded_status = Table("EncodedStatuses", metadata, autoload=True)
 
-from abstrackr import model
 import tfidf2 
 
 def get_labels_from_names(review_names):
@@ -113,6 +113,14 @@ def citations_to_disk(review_id, base_dir, fields=None):
             fout.write(none_to_text(citation[field]))
             fout.close()
 
+
+def get_lbl_d_for_review(review_id):
+    lbl_d = {}
+    s = labels.select(labels.c.review_id==review_id)
+    for lbl in s.execute():
+        lbl_d[lbl["study_id"]]=lbl["label"]  
+    return lbl_d
+
 def lbls_to_disk(review_ids, base_dir):
     lbl_d = {}
     s = labels.select(labels.c.review_id.in_(review_ids))
@@ -138,7 +146,7 @@ def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/d
     fields=["title", "abstract", "keywords"]
 
     base_dir = os.path.join(base_dir, str(review_id))
-
+    
     # write the abstracts to disk
     to_disk(base_dir, review_ids=[review_id], fields=fields)
 
@@ -160,6 +168,24 @@ def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/d
     # ***which we assume exists!***
     return base_dir
 
+def update_labels(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
+    new_lbls = get_lbl_d_for_review(review_id)
+    fields = ["title", "abstract", "keywords"]
+    for field in fields:
+        # relying on conventions here
+        dir_path = os.path.join(base_dir, str(review_id), field)
+        f_path = os.path.join(dir_path, "encoded")
+        out_f_name = "%s_encoded" % field
+        f_path = os.path.join(f_path, out_f_name)
+        print "updating file at %s" % f_path
+        # just overwrite the old file
+        tfidf2.update_labels(f_path, f_path, new_lbls)
+        print "done"
+    print "ok, all updated."
+    # update the database
+    update = encoded_status.update(encoded_status.c.review_id==review_id)
+    update.execute(labels_last_updated = datetime.datetime.now())
+
 def check_encoded_status_table():
     '''
     look at all the entries in the EncodedStatus table; for any reviews
@@ -178,7 +204,33 @@ def check_encoded_status_table():
         update.execute(labels_last_updated = datetime.datetime.now())
         update.execute(base_path = base_dir)
 
+
 if __name__ == "__main__":
     print "checking the EncodedStatus table for new reviews..."
     check_encoded_status_table()
+    print "done."
+
+    print "now checking to see if I should update labels..."
+    # for each review, get newest label; check this against
+    # the last_updated_field
+
+    encoded_reviews = list(select([encoded_status.c.review_id, encoded_status.c.labels_last_updated],\
+                                 encoded_status.c.is_encoded==True).execute())
+   
+    for encoded_review in encoded_reviews:
+        review_id, labels_last_updated = encoded_review
+        labels_for_review = select([labels.c.label_last_updated], \
+                    labels.c.review_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
+        if labels_for_review.rowcount > 0:
+            most_recent_label = labels_for_review.fetchone().label_last_updated
+            print "checking review %s.." % review_id
+            if most_recent_label > labels_last_updated:
+                # then there's been at least one new label, update encoded files!
+                print "updating labels for review %s..." % review_id
+                update_labels(review_id)#, base_dir="C:/dev/abstrackr_web/encode_test")
+
+                # now make predictions for updated reviews.
+                print "making predictions"
+                make_predictions(review_id)
+                
     print "done."
