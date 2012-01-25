@@ -87,10 +87,8 @@ except:
 import copy
 
 
-
 # for some reason it's making me give a full path here.. grrr.
 stop_list_path="/home/byron/abstrackr-web/abstrackr/lib/stop_list.txt"
-print "stop word list path is %s" % stop_list_path
 
 def build_stop_list(stop_list_path):
     exclude_words = []
@@ -122,8 +120,7 @@ def add_labels(new_path, lbl_dict):
 def update_labels(fpath, outpath, new_lbl_d, unlabel_if_not_in_dict=False, ignore_these=[]):
     ''' relabels the instances in fpath with new_lbl_d; writes to outpath. '''
     if not isinstance(new_lbl_d.keys()[0] , int):
-        print "your lbl_d keys (instance ids) are strings; they need to be ints!\nreturning False"
-        return False
+        new_lbl_d = lbls_to_strs(new_lbl_d)
         
     new_file = []
     lines = open(fpath).readlines()
@@ -215,6 +212,7 @@ def encode_docs(dir_path, out_path, out_f_name, \
         pos_ids = [str(x_id) for x_id in lbl_dict.keys() if lbl_dict[x_id] in ["1", "1.0", "0"]]
         neg_ids = [str(x_id) for x_id in lbl_dict.keys() if not lbl_dict[x_id] in ["1", "1.0"]]
      
+
     tfidf_to_file_for_lib_SVM_multi_label(encoded_docs, pos_ids, neg_ids,
                                                             None, os.path.join(out_path, out_f_name))
     print "done."
