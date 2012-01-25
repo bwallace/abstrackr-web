@@ -171,7 +171,8 @@ def insert_citation(review_id, ref_id, citation_d):
     pmid = citation_d['pmid']
     citation.pmid_id =  pmid if (pmid is not None and pmid != '') else 0
     # we truncate the citation if it's too long!
-    citation.title = citation_d['title'][:480]
+    citation.title = citation_d['title'][:480] if \
+                                citation_d['title'] is not None else "(no title found)"
     citation.abstract = citation_d['abstract'][:9980] if \
                                 citation_d['abstract'] is not None else None
     citation.authors = " and ".join(citation_d['authors'])

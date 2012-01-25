@@ -218,7 +218,7 @@ class EncodeStatus(Base):
     id = sa.Column(types.Integer, primary_key=True)
     review_id = sa.Column(types.Integer) # associated review
     is_encoded = sa.Column(types.Boolean) # has it been encoded yet?
-    labels_last_updated = sa.Column(types.Date)
+    labels_last_updated = sa.Column(types.DateTime())
     # the location of the base directory for the encoded review
     base_path = sa.Column(types.Unicode(100)) 
 
@@ -243,8 +243,9 @@ class Prediction(Base):
     __tablename__ = "Predictions" 
     id = sa.Column(types.Integer, primary_key=True)
     study_id = sa.Column(types.Integer) # the (internal) study id
+    review_id = sa.Column(types.Integer) # it makes life easier to have this around
     prediction = sa.Column(types.Boolean) # true = include; false = exclude
-    confidence = sa.Column(types.Float) # some scalar denoting confidence
+    num_yes_votes = sa.Column(types.Float) # number of ensemble members that voted yes
 
 ####################################
 ## these tables for authentication #
