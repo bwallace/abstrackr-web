@@ -85,6 +85,12 @@ class ReviewController(BaseController):
         encoded_status.review_id = new_review.review_id
         encoded_status.is_encoded = False
         model.Session.add(encoded_status)
+
+        # also in the PredictionStatus table
+        prediction_status = model.PredictionsStatus()
+        prediction_status.review_id = new_review.review_id
+        prediction_status.predictions_exist = False
+        model.Session.add(prediction_status)
         model.Session.commit()
         
         # now parse the uploaded file; dispatch on type
@@ -714,11 +720,32 @@ class ReviewController(BaseController):
             
         # ... and any assignments
         assignment_q = model.meta.Session.query(model.Assignment)     
-        assignments = assignment_q.filter(model.Assignment.review_id == review.review_id)
+        assignments = assignment_q.filter(model.Assignment.review_id == review.review_id).all()
         for assignment in assignments:
             model.Session.delete(assignment)
             model.Session.commit()
           
+        # and the encoded status/prediction entries
+        encoded_q = model.meta.Session.query(model.EncodeStatus)
+        encoded_entries = encoded_q.filter(model.EncodeStatus.review_id == review.review_id).all()
+        for encoded_entry in encoded_entries:
+            model.Session.delete(encoded_entry)
+            model.Session.commit()
+        
+        # predictions
+        prediction_q = model.meta.Session.query(model.Prediction)
+        predictions = prediction_q.filter(model.Prediction.review_id == review.review_id).all()
+        for pred in predictions:
+            model.Session.delete(pred)
+            model.Session.commit()
+
+        # and the prediction status objects
+        pred_status_q = model.meta.Session.query(model.PredictionsStatus)
+        pred_statuses = pred_status_q.filter(model.PredictionsStatus.review_id == review.review_id).all()
+        for pred_stat in pred_statuses:
+            model.Session.delete(pred_stat)
+            model.Session.commit()
+
         # finally, delete the review
         model.Session.delete(review)
         model.Session.commit()
