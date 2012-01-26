@@ -11,6 +11,7 @@ import random
 import string
 import smtplib
 
+
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 import logging
@@ -193,6 +194,13 @@ class ReviewController(BaseController):
         # now the initial (pilot) round size
         new_init_round_size = int(request.params['init_size']) # TODO verify
         self._set_initial_screen_size_for_review(review, new_init_round_size)
+
+        ###
+        # re-prioritization -- BETA
+        new_ordering = request.params['order']
+        review.sort_by = new_ordering
+        model.Session.commit()
+        self._re_prioritize(id, new_ordering)
 
         return self.edit_review(id, message="ok -- review updated.")
         #if init_round_size == cur_init_assignment.
@@ -926,6 +934,50 @@ class ReviewController(BaseController):
     
         return render("/reviews/participants.mako")
         
+
+    def _re_prioritize(self, review_id, sort_by_str):
+        citation_ids = [cit.citation_id for cit in self._get_citations_for_review(review_id)]
+        predictions_for_review = None
+        if self._do_predictions_exist_for_review(review_id):
+            predictions_for_review = self._get_predictions_for_review(review_id)
+        else:
+            # then we have to sort randomly, since we haven't any predictions
+            sort_by_str = "Random"
+
+        # we'll map citation ids to the newly decided priorities;
+        # these will depend on the sort_by_str
+        cit_id_to_new_priority = {}
+        if sort_by_str == "Random":
+            ordering = range(len(citation_ids))
+            # shuffle
+            random.shuffle(ordering)
+            cit_id_to_new_priority = dict(zip(citation_ids, ordering))
+        elif sort_by_str == "Most likely to be relevant":
+            # sort the citations by ascending likelihood of relevance
+            cits_to_preds = {}
+            # first insert entries for *all* citations, which will be random.
+            # this will take care of any citations without predictions -- 
+            # e.g., a review may have been merged (?) -- citations for which
+            # we have predictions will simply be overwritten, below
+            for citation_id in citation_ids:
+                cits_to_preds[citation_id] = random.randint(0,11)
+
+            for prediction in predictions_for_review:
+                cits_to_preds[prediction.study_id] = prediction.num_yes_votes
+            
+            # now we will sort by *descending* order; those with the most yes-votes first
+            sorted_cit_ids = sorted(cits_to_preds.iteritems(), key=itemgetter(1), reverse=True)
+            # now just assign priorities that reflect the ordering w.r.t. the predictions
+            for i, cit in enumerate(sorted_cit_ids):
+                cit_id_to_new_priority[cit[0]] = i
+            
+        priority_q = model.meta.Session.query(model.Priority)
+        priorities_for_review =  priority_q.filter(\
+                                    model.Priority.review_id == review_id).all() 
+        for priority_obj in priorities_for_review:
+            priority_obj.priority = cit_id_to_new_priority[priority_obj.citation_id]
+            model.Session.commit()
+
     @ActionProtector(not_anonymous())
     def show_review(self, id):
         review_q = model.meta.Session.query(model.Review)
@@ -1830,6 +1882,20 @@ class ReviewController(BaseController):
         review_q = model.meta.Session.query(model.Review)
         return review_q.filter(model.Review.review_id == review_id).one()
         
+    def _get_predictions_for_review(self, review_id):
+        prediction_q = model.meta.Session.query(model.Prediction)
+        predictions_for_review = prediction_q.filter(model.Prediction.review_id==review_id).all()
+        return predictions_for_review
+            
+    def _do_predictions_exist_for_review(self, review_id):
+        pred_status_q = model.meta.Session.query(model.PredictionsStatus)
+        pred_status_of_review = \
+            pred_status_q.filter(model.PredictionsStatus.review_id == review_id).all()
+        if len(pred_status_of_review) > 0 and pred_status_of_review[0].predictions_exist:
+            return True
+        return False
+
+
     def _get_citations_for_review(self, review_id):
         citation_q = model.meta.Session.query(model.Citation)
         citations_for_review = citation_q.filter(model.Citation.review_id == review_id).all()
