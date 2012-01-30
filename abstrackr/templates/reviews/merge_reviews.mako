@@ -1,9 +1,30 @@
 <%inherit file="../site.mako" />
 <%def name="title()">abstrackr: merge reviews</%def>
 <script language="JavaScript">
-    var cal = new CalendarPopup();
+    $(document).ready(function() { 
+        $( "#dialog" ).dialog({
+            height: 250,
+            width: 400,
+            modal: true,
+            autoOpen: false,   
+            show: "blind",
+        });
+
+        jQuery("#post").click(function(){
+            $("#dialog" ).dialog( "open" );
+        });
+  });
+
 </script>
 
+<div id="dialog" >
+  
+    <h2>merging your reviews. </h2>
+    This may take a while. Maybe get some coffee.<br/><br/>
+    <center>
+    <img src="../../loading.gif"></img>
+    </center>
+</div>
 
 <h1>merge reviews</h1>
 
@@ -29,6 +50,7 @@
 
     <tr><td><label>order abstracts by:</td> <td>${h.select("order", None, ["Random", "Most likely to be relevant", "Most ambiguous"])} </label></td></tr>
     
+    <tr><td><label>pilot round size:</td><td> ${h.text('init_size', '0')}</label></td></tr>
 
     <div class="actions">
 
