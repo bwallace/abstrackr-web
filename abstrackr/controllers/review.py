@@ -140,6 +140,9 @@ class ReviewController(BaseController):
         merged_review.project_description = request.params['description']
         merged_review.sort_by = request.params['order']
         screening_mode_str = request.params['screen_mode']
+        init_round_size = int(request.params['init_size']) # TODO verify
+        
+
         # TODO make the below dictionary a global!
         merged_review.screening_mode = \
            {"Single-screen":"single", "Double-screen":"double", "Advanced":"advanced"}[screening_mode_str]
@@ -162,6 +165,9 @@ class ReviewController(BaseController):
             for reviewer_id in review_participants:
                 self._assign_perpetual_task(reviewer_id, merged_review.review_id)
         
+        if init_round_size > 0:
+            self._set_initial_screen_size_for_review(merged_review, init_round_size)
+
         redirect(url(controller="account", action="my_projects"))
 
 
@@ -318,8 +324,6 @@ class ReviewController(BaseController):
         the old_review_id to the review object specified by the new_reviwe_id,
         setting the identifier on all of the following:
 
-               * assignments
-               * tasks
                * reviewers
                * citations
                * labledfeatures
@@ -329,6 +333,9 @@ class ReviewController(BaseController):
 
         there's a lot of boilerplate here that could probably be
         refactored to be made more concise.
+
+        Tasks and assignments are removed -- i.e., not carried over
+        to the merged target review.
 
         @TODO encodestatus and prediction entries will need also to be 
                     changed, eventually
@@ -349,7 +356,7 @@ class ReviewController(BaseController):
             model.Session.commit()
         
         ###
-        # NOTE: we *remove* all assignments -- resolving the
+        # NOTE: we *remove* all assignments and tasks (below) -- resolving the
         #   possible combinations of existing assignments proved
         #   too complicated -- it's assumed that new assignments
         #   will be added elsewhere.
@@ -367,7 +374,15 @@ class ReviewController(BaseController):
         tasks = tasks_q.filter(\
                     model.Task.review == old_review_id).all()
         for task in tasks:
-            task.review = new_review_id
+            #task.review = new_review_id
+            #model.Session.commit()
+            fixed_task_q = model.meta.Session.query(model.FixedTask)
+            associated_fixed_tasks = fixed_task_q.filter(\
+                                        model.FixedTask.task_id==task.id).all()
+            for fixed_task in associated_fixed_tasks:
+                model.Session.delete(fixed_task)
+
+            model.Session.delete(task)
             model.Session.commit()
 
         ###
@@ -1937,6 +1952,7 @@ class ReviewController(BaseController):
         
 
         cur_init_task = self._get_initial_task_for_review(review.review_id)
+
         if not cur_init_task:
             # if there isn't an initial task already, create one
             # here comprising 1 abstract
@@ -1944,6 +1960,7 @@ class ReviewController(BaseController):
             cur_init_task = self._get_initial_task_for_review(review.review_id)
             # now we need to assign the task to every participant
             participants = self._get_participants_for_review(review.review_id)
+
             for participant in participants:
                 self._assign_task(participant.id, cur_init_task, review.review_id)
             
