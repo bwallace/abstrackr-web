@@ -7,7 +7,7 @@ from make_predictions import make_predictions
 import tfidf2
 import datetime
 
-engine = create_engine("mysql://root:xxxxx@127.0.0.1:3306/abstrackr")
+engine = create_engine("mysql://root:homer@127.0.0.1:3306/abstrackr")
 metadata = MetaData(bind=engine)
 
 ####
@@ -18,6 +18,7 @@ reviews = Table("Reviews", metadata, autoload=True)
 users = Table("user", metadata, autoload=True)
 labeled_features = Table("LabelFeatures", metadata, autoload=True)
 encoded_status = Table("EncodedStatuses", metadata, autoload=True)
+prediction_status = Table("PredictionStatuses", metadata, autoload=True)
 
 def get_labels_from_names(review_names):
     r_ids = get_ids_from_names(review_names)
@@ -141,7 +142,7 @@ def lbls_to_disk(review_ids, base_dir):
     pickle.dump(lbl_feature_d, fout)                     
     fout.close()
 
-def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
+def encode_review(review_id, base_dir="/home/byron/abstrackr-web/abstrackr/lib/curious_snake/data"):
     fields=["title", "abstract", "keywords"]
     
     base_dir = os.path.join(base_dir, str(review_id))
@@ -167,7 +168,7 @@ def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/d
     # ***which we assume exists!***
     return base_dir
 
-def update_labels(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
+def update_labels(review_id, base_dir="/home/byron/abstrackr-web/abstrackr/lib/curious_snake/data"):
     new_lbls = get_lbl_d_for_review(review_id)
     fields = ["title", "abstract", "keywords"]
     for field in fields:
@@ -231,6 +232,12 @@ if __name__ == "__main__":
                 # now make predictions for updated reviews.
                 print "making predictions"
                 make_predictions(review_id)
-                
+            else:
+                pred_status = \
+                    select([prediction_status.c.review_id, prediction_status.c.predictions_exist],\
+                                prediction_status.c.review_id == review_id).execute().fetchone()
+
+                if pred_status is None or not pred_status.predictions_exist:
+                    make_predictions(review_id)		
     print "done."
 
