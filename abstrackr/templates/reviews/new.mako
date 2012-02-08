@@ -62,7 +62,7 @@
 <div id="dialog" >
   
     <h2>processing your abstracts. </h2>
-    This may take awhile -- please don't navigate away from this page.<br/><br/>
+    This may take a while -- please don't navigate away from this page.<br/><br/>
     <center>
     <img src="../../loading.gif"></img>
     </center>
@@ -70,7 +70,7 @@
 
 
 <div id="train-round-help" class="ui-dialog">
-In a <b>training round</b>, everyone screens the same abstracts. Conflicts can then be reviewed by the project lead. The number of abstracts to be screened can be specified here. If you set this, for example, to 100, then everyone will receive the same first 100 abstracts to screen. If you don't want a training round, just leave this be at 0.
+In a <b>pilot round</b>, everyone screens the same abstracts. Conflicts can then be reviewed by the project lead. The number of abstracts to be screened can be specified here. If you set this, for example, to 100, then everyone will receive the same first 100 abstracts to screen. If you don't want a training round, just leave this be at 0.
 </div>
 
 
@@ -115,10 +115,10 @@ You can import a few different file types into <b>abstrackr</b>.<br/>
 
     <tr><td><label>screening mode (<a href="#" id="screen-mode-link">what?</a>):</td> <td>${h.select("screen_mode", None, ["Single-screen", "Double-screen", "Advanced"])} </label></td></tr>
 
-    <tr><td><label>order abstracts by:</td> <td>${h.select("order", None, ["Random", "Most likely to be relevant", "Most ambiguous"])} </label></td></tr>
+    <tr><td><label>order abstracts by:</td> <td>${h.select("order", None, ["Most likely to be relevant", "Random", "Most ambiguous"])} </label></td></tr>
     
 
-    <tr><td><label>training round size (<a href="#" id="train-round-link">huh?</a>):</td><td> ${h.text('init_size', '0')}</label></td></tr>
+    <tr><td><label>pilot round size (<a href="#" id="train-round-link">huh?</a>):</td><td> ${h.text('init_size', '0')}</label></td></tr>
     <div class="actions">
     
 

@@ -96,7 +96,7 @@ In a <b>pilot round</b>, everyone screens the same abstracts. Conflicts can then
 
     <tr><td><label>screening mode (<a href="#" id="screen-mode-link">what?</a>):</td> <td>${h.select("screen_mode", None, ["Single-screen", "Double-screen", "Advanced"])} </label></td></tr>
 
-    <tr><td><label>order abstracts by:</td> <td>${h.select("order", None, ["Random", "Most likely to be relevant", "Most ambiguous"])} </label></td></tr>
+    <tr><td><label>order abstracts by:</td> <td>${h.select("order", None, ["Most likely to be relevant", "Random", "Most ambiguous"])} </label></td></tr>
     
      <tr><td><label>pilot round size (<a href="#" id="train-round-link">huh?</a>):</td><td> ${h.text('init_size', c.review.initial_round_size)}</label></td></tr>
     
