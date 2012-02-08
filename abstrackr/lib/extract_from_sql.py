@@ -1,13 +1,16 @@
+import os, pdb, pickle, random
+from operator import itemgetter
+import datetime
+
 import sqlalchemy
 from sqlalchemy import *
 from sqlalchemy.sql import select
 from sqlalchemy.sql import and_, or_
-import os, pdb, pickle
+
 from make_predictions import make_predictions
 import tfidf2
-import datetime
-
 engine = create_engine("mysql://root:homer@127.0.0.1:3306/abstrackr")
+
 metadata = MetaData(bind=engine)
 
 ####
@@ -19,6 +22,8 @@ users = Table("user", metadata, autoload=True)
 labeled_features = Table("LabelFeatures", metadata, autoload=True)
 encoded_status = Table("EncodedStatuses", metadata, autoload=True)
 prediction_status = Table("PredictionStatuses", metadata, autoload=True)
+predictions = Table("Predictions", metadata, autoload=True)
+priorities = Table("Priority", metadata, autoload=True)
 
 def get_labels_from_names(review_names):
     r_ids = get_ids_from_names(review_names)
@@ -31,8 +36,7 @@ def get_ids_from_names(review_names):
     return [review.review_id for review in s.execute()]
 
 def labels_for_review_ids(review_ids):
-    #s = labels.select(labels.c.review_id.in_(review_ids))
-    #  this selects labels and information about the corresponding
+    # this selects labels and information about the corresponding
     # labelers.
     s = select([labels, users, citations.c.abstract], \
                         and_(labels.c.reviewer_id == users.c.id,
@@ -192,18 +196,108 @@ def check_encoded_status_table():
     that are present but not yet encoded, encode them.
     '''
 
-    unencoded_review_ids = list(select([encoded_status.c.review_id], encoded_status.c.is_encoded==False).execute())
+    unencoded_review_ids = list(select([encoded_status.c.review_id], \
+                                    encoded_status.c.is_encoded == False).execute())
     for unencoded_id in unencoded_review_ids:
         unencoded_id = unencoded_id.review_id
         print "encoding review %s.." % unencoded_id
         base_dir = encode_review(unencoded_id)#, base_dir="C:/dev/abstrackr_web/encode_test")
         print "done!"
         # update the record
-        update = encoded_status.update(encoded_status.c.review_id==unencoded_id)
+        update = encoded_status.update(encoded_status.c.review_id == unencoded_id)
         update.execute(is_encoded = True)
         update.execute(labels_last_updated = datetime.datetime.now())
         update.execute(base_path = base_dir)
 
+
+def _get_citations_for_review(review_id):
+    citation_ids = list(select([citations.c.citation_id], \
+                                    citations.c.review_id == review_id).execute())
+    return citation_ids
+
+def _do_predictions_exist_for_review(review_id):
+    pred_status = \
+            select([prediction_status.c.review_id, prediction_status.c.predictions_exist],\
+                     prediction_status.c.review_id == review_id).execute().fetchone()
+              
+    if pred_status is None or not pred_status.predictions_exist:
+        return False
+    return True
+
+def _get_predictions_for_review(review_id):
+    '''
+    map citation ids to predictions (num_yes_votes)
+    '''
+    preds = list(select([predictions.c.study_id, predictions.c.num_yes_votes],\
+                    predictions.c.review_id == review_id).execute())
+      
+    preds_d = {}              
+    for study_id, yes_votes in preds:
+        preds_d[study_id] = yes_votes
+    return preds_d
+
+
+###
+# @TODO this is redundant with the corresponding method in review.py, but
+#       we need to be able to invoke this statically, hence its re-implementation
+###
+def _re_prioritize(review_id, sort_by_str):
+    citation_ids = [cit.citation_id for cit in _get_citations_for_review(review_id)]
+    predictions_for_review = None
+    if _do_predictions_exist_for_review(review_id):
+        # this will be a dictionary mapping citation ids to
+        # the number of yes votes for them
+        predictions_for_review = _get_predictions_for_review(review_id)
+    else:
+        # then we have to sort randomly, since we haven't any predictions
+        sort_by_str = "Random"
+
+    # we'll map citation ids to the newly decided priorities;
+    # these will depend on the sort_by_str
+    cit_id_to_new_priority = {}
+    if sort_by_str == "Random":
+        ordering = range(len(citation_ids))
+        # shuffle
+        random.shuffle(ordering)
+        cit_id_to_new_priority = dict(zip(citation_ids, ordering))
+    elif sort_by_str == "Most likely to be relevant":
+        # sort the citations by ascending likelihood of relevance
+        cits_to_preds = {}
+        # first insert entries for *all* citations, set this to 11
+        # to prioritize newly added citations (don't want to accidently
+        # de-prioritize highly relevant citations). this will take care 
+        # of any citations without predictions -- 
+        # e.g., a review may have been merged (?) -- citations for which
+        # we have predictions will simply be overwritten, below
+        for citation_id in citation_ids:
+            cits_to_preds[citation_id] = 11
+
+        for study_id, num_yes_votes in predictions_for_review.items():
+            cits_to_preds[study_id] = num_yes_votes
+        
+        # now we will sort by *descending* order; those with the most yes-votes first
+        sorted_cit_ids = sorted(cits_to_preds.iteritems(), key=itemgetter(1), reverse=True)
+
+        # now just assign priorities that reflect the ordering w.r.t. the predictions
+        for i, cit in enumerate(sorted_cit_ids):
+            cit_id_to_new_priority[cit[0]] = i
+
+    #####
+    #   TODO -- ambiguous case (i.e., uncertainty sampling)
+    ###
+
+    ####
+    # now update the priority table for the entries
+    # corresponding to this review to reflect
+    # the new priorities (above)
+    priority_ids_for_review = list(select([priorities.c.id, priorities.c.citation_id], \
+                                    priorities.c.review_id == review_id).execute())
+    for priority_id, citation_id in priority_ids_for_review:
+        priority_update = \
+            priorities.update(priorities.c.id == priority_id)
+       
+        priority_update.execute(priority = cit_id_to_new_priority[citation_id])
+        
 
 if __name__ == "__main__":
     print "checking the EncodedStatus table for new reviews..."
@@ -219,25 +313,36 @@ if __name__ == "__main__":
    
     for encoded_review in encoded_reviews:
         review_id, labels_last_updated = encoded_review
-        labels_for_review = select([labels.c.label_last_updated], \
+        sort_by_str = \
+            select([reviews.c.sort_by], reviews.c.review_id == review_id).execute()
+       
+        if sort_by_str.rowcount == 0:
+            print "I can't do anything for review %s -- it doesn't appear to have an entry" % review_id
+        else:
+            sort_by_str = sort_by_str.fetchone().sort_by
+            labels_for_review = select([labels.c.label_last_updated], \
                     labels.c.review_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
-        if labels_for_review.rowcount > 0:
-            most_recent_label = labels_for_review.fetchone().label_last_updated
-            print "checking review %s.." % review_id
-            if most_recent_label > labels_last_updated:
-                # then there's been at least one new label, update encoded files!
-                print "updating labels for review %s..." % review_id
-                update_labels(review_id)#, base_dir="C:/dev/abstrackr_web/encode_test")
+            if labels_for_review.rowcount > 0:
+                most_recent_label = labels_for_review.fetchone().label_last_updated
+                print "checking review %s.." % review_id
+                if most_recent_label > labels_last_updated:
+                    # then there's been at least one new label, update encoded files!
+                    print "updating labels for review %s..." % review_id
+                    update_labels(review_id)
+            
+                    # now make predictions for updated reviews.
+                    print "making predictions"
+                    make_predictions(review_id)
 
-                # now make predictions for updated reviews.
-                print "making predictions"
-                make_predictions(review_id)
-            else:
-                pred_status = \
-                    select([prediction_status.c.review_id, prediction_status.c.predictions_exist],\
-                                prediction_status.c.review_id == review_id).execute().fetchone()
+                    # now re-prioritize
+                    print "re-prioritizing..."
+                    _re_prioritize(review_id, sort_by_str)
+                else:
+                    # initial set of predictions
+                    if not _do_predictions_exist_for_review(review_id):
+                        make_predictions(review_id)
+                        print "ok, now re-prioritizing..."
+                        _re_prioritize(review_id, sort_by_str)
 
-                if pred_status is None or not pred_status.predictions_exist:
-                    make_predictions(review_id)		
     print "done."
 
