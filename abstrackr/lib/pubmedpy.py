@@ -50,6 +50,8 @@ from optparse import OptionParser
 import Bio
 from Bio import Entrez
 from Bio import Medline
+import EUtils
+from EUtils import ThinClient
 
 # home-grown
 import tfidf2 
@@ -88,22 +90,29 @@ def fetch_and_encode(article_ids, out_dir, binary_features=False,
 def fetch_articles(article_ids):
     print "fetching abstracts..."
     print article_ids
-    handle = Entrez.efetch(db="pubmed",id=article_ids,rettype="medline",retmode="text")
+    #handle = Entrez.efetch(db="pubmed",id=article_ids,rettype="medline",retmode="text")
+    
+    dbids = EUtils.DBIds("pubmed", [str(xid) for xid in article_ids])
+    client = ThinClient.ThinClient()
+
+    # fix for new NCBI API
+    handle = client.efetch_using_dbids(dbids=dbids, rettype='medline', retmode='text')
+    #handle = EUtils.efetch(db="pubmed",id=article_ids,rettype="medline",retmode="text")
     records = Medline.parse(handle)
     print "Done." 
     return records   
     
 def batch_fetch(article_ids, batch_size=20):
-  all_records = []
-  total = len(article_ids)
-  fetched_so_far = 0
-  while fetched_so_far < total:
+    all_records = []
+    total = len(article_ids)
+    fetched_so_far = 0
+    while fetched_so_far < total:
       records = fetch_articles(article_ids[fetched_so_far:fetched_so_far+batch_size])
       fetched_so_far += batch_size
       all_records.extend([r for r in records])
       print "fetched so far, total to fetch: %s, %s" % (fetched_so_far, total)
   
-  return all_records
+    return all_records
   
 
   
