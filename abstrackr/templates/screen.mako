@@ -309,7 +309,11 @@
     <center>
     <div id="progress"> 
     % if 'assignment' in dir(c):
-        you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)
+        % if c.assignment.num_assigned and c.assignment.num_assigned > 0:
+            you've screened <b>${c.assignment.done_so_far}</b> out of <b>${c.assignment.num_assigned}</b> so far (nice going!)
+        % else:
+            you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)
+        % endif
     % endif
     </div>
     </center>
