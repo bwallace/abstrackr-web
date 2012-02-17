@@ -29,28 +29,33 @@ jQuery(document).ready(function(){
 <div class="content">
 
 % if len(c.participating_reviewers)>0:
-	<h2>Participants</h2>
-	<table class="list_table">
-	<tr align="center"><th>person</th><th></th></tr>
-	%for participant in c.participating_reviewers:
-	       <tr>
-	       <td>${participant.fullname}</td>
-	       <td class="actions">
-	       <a href="/review/remove_from_review/${participant.id}/${c.review.review_id}")>
-	        remove from review</a>
-	       </tr>     
-	       
-	%endfor
-	<table>
+    <h2>Participants</h2>
+    <table class="list_table">
+    <tr align="center"><th>person</th><th></th></tr>
+    %for participant in c.participating_reviewers:
+           <tr>
+           <td>${participant.fullname}</td>
+           <td class="actions">
+           <a href="/review/remove_from_review/${participant.id}/${c.review.review_id}")>
+            remove from review</a>
+            
+            <a href="/review/transfer_admin/${c.review.review_id}/${participant.id}")>
+            set user as the project lead</a></td>
 
-	<br/>
+            </td>
+           </tr>     
+           
+    %endfor
+    </table>
+
+    <br/>
 % elif c.admin_msg == "":
-	<H2>Hrmm... You're the only person participating in this review. </h2><h2>But don't despair: you can invite people below! </H2>
-	<br/><br/>
+    <H2>Hrmm... You're the only person participating in this review. </h2><h2>But don't despair: you can invite people below! </H2>
+    <br/><br/>
 % endif
 
 % if c.admin_msg != "":
-	<H2>${c.admin_msg}</H2>
+    <H2>${c.admin_msg}</H2>
 % endif
 
 <div align="right">

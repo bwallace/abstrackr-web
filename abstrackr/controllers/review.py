@@ -781,6 +781,7 @@ class ReviewController(BaseController):
     def review_maybes(self, id):
         review_id = id
         maybe_ids = self._get_maybes(review_id)
+        # TODO rename method
         self._create_conflict_task_with_ids(review_id, maybe_ids)
          
         
@@ -901,6 +902,22 @@ class ReviewController(BaseController):
         c.admin_msg = admin_msg
         return render("/reviews/admin.mako")
             
+    def transfer_admin(self, review_id, user_id):
+        '''
+        sets the user specified as user_id as the lead of the
+        review specified by review_id
+        '''
+        current_user = request.environ.get('repoze.who.identity')['user']
+        # make sure we're actually the project lead
+        if not self._current_user_leads_review(review_id):
+            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname        
+        
+        review = self._get_review_from_id(review_id)
+        review.project_lead_id = user_id
+        model.Session.commit()
+
+        redirect(url(controller="account", action="my_projects"))
+
     @ActionProtector(not_anonymous())
     def assignments(self, id):
         # make sure we're actually the project lead (by the way, should probably
