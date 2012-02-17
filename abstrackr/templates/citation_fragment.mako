@@ -220,17 +220,17 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
             }
          });
 
-    <center>
-    <div id="progress"> 
-    % if 'assignment' in dir(c):
-        % if c.assignment.num_assigned and c.assignment.num_assigned > 0:
-            you've screened <b>${c.assignment.done_so_far}</b> out of <b>${c.assignment.num_assigned}</b> abstracts so far (nice going!)
+        
+        % if 'assignment' in dir(c):
+          % if c.assignment.num_assigned and c.assignment.num_assigned > 0:
+            $("#progress").html("you've screened <b>${c.assignment.done_so_far}</b> out of <b>${c.assignment.num_assigned}</b> so far (nice going!)");
+          % else:
+            $("#progress").html("you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)");
+          % endif
         % else:
-            you've screened <b>${c.assignment.done_so_far}</b> abstracts thus far (keep it up!)
+          $("#progress").html("");
         % endif
-    % endif
-    </div>
-    </center>
+
 
     }   
     
