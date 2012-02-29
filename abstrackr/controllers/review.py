@@ -615,13 +615,16 @@ class ReviewController(BaseController):
         return render("/reviews/export_fragment.mako")
 
     @ActionProtector(not_anonymous())
-    def export_labels(self, id, lbl_filter=None):
+    def export_labels(self, id, lbl_filter_f=None):
         # get fields
         review_q = model.meta.Session.query(model.Review)
         review = review_q.filter(model.Review.review_id == id).one()
 
         all_labelers = self._get_participants_for_review(review.review_id)
 
+        # default to exporting everything
+        if lbl_filter_f is None:
+            lbl_filter_f = lambda label: True
 
         ## some helpers
         none_to_str = lambda x: "" if x is None else x
@@ -631,55 +634,92 @@ class ReviewController(BaseController):
         for key,val in request.params.items():
             if key == "fields[]" and not val in ("", " ", "(enter new tag)"):
                 fields_to_export.append(str(val))
-        
-        labels = [",".join(fields_to_export)]
+    
        
         # map citation ids to dictionaries that, in turn, map
         # usernames to labels
         citation_to_lbls_dict = {}
+        # we filter the citations list  (potentially)
+        citations_to_export = []
+
         # for efficiency reasons, we keep track of whether we need
         # create a new empty dictionary for the current citation
         last_citation_id = None
         
+        labeler_names = ["consensus"] # always export the consensus
+        # first collect labels for all citations taht pass our
+        # filtering criteria
         for citation, label in model.meta.Session.query(\
             model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
-              filter(model.Label.review_id==id).all():   
+              filter(model.Label.review_id==id).order_by(model.Citation.citation_id).all():   
                 # the above gives you all labeled citations for this review
                 # i.e., citations that have at least one label
-                if last_citation_id != citation.citation_id:
-                    citation_to_lbls_dict[citation.citation_id] = {}
+                if lbl_filter_f(label):
+                    cur_citation_id = citation.citation_id
+                    if last_citation_id != cur_citation_id:
+                        citation_to_lbls_dict[citation.citation_id] = {}
+                        citations_to_export.append(citation)
 
-                last_citation_id = citation.citation_id
-                
-                cur_line = []
-                for field in fields_to_export:
-                    if field == "(internal) id":
-                        cur_line.append("%s" % citation.citation_id)
-                    elif field == "(source) id":
-                        cur_line.append("%s" % citation.refman_id)
-                    elif field == "pubmed id":
-                        cur_line.append("%s" % zero_to_none(citation.pmid_id))
-                    elif field == "label":
-                        cur_line.append("%s" % label.label)
-                    elif field == "labeler":
-                        user_name = self._get_username_from_id(label.reviewer_id)
-                        cur_line.append(user_name)
-                    elif field == "abstract":
-                        cur_line.append('"%s"' % none_to_str(citation.abstract).replace('"', "'"))
-                    elif field == "title":
-                        cur_line.append('"%s"' % citation.title.replace('"', "'"))
-                    elif field == "keywords":
-                        cur_line.append('"%s"' % citation.keywords.replace('"', "'"))
-                    elif field == "journal":
-                        cur_line.append('"%s"' % none_to_str(citation.journal))
-                    elif field == "authors":
-                        cur_line.append('"%s"' % "".join(citation.authors))
-                    elif field == "tags":
-                        cur_tags = self._get_tags_for_citation(citation.citation_id)
-                        cur_line.append('"%s"' % ",".join(cur_tags))
+                    # NOTE that we are assuming unique user names per-review
+                    labeler = self._get_username_from_id(label.reviewer_id)
+                    if not labeler in labeler_names:
+                        labeler_names.append(labeler)
 
+                    citation_to_lbls_dict[cur_citation_id][labeler] = label.label
+                    last_citation_id = cur_citation_id
+        
+        # we automatically export all labeler's labels
+        for labeler in labeler_names:
+            fields_to_export.append(labeler)
+        
+        labels = [",".join(fields_to_export)]
+        for citation in citations_to_export:
+            cur_line = []
+            for field in fields_to_export:
+                if field == "(internal) id":
+                    cur_line.append("%s" % citation.citation_id)
+                elif field == "(source) id":
+                    cur_line.append("%s" % citation.refman_id)
+                elif field == "pubmed id":
+                    cur_line.append("%s" % zero_to_none(citation.pmid_id))
+                elif field == "abstract":
+                    cur_line.append('"%s"' % none_to_str(citation.abstract).replace('"', "'"))
+                elif field == "title":
+                    cur_line.append('"%s"' % citation.title.replace('"', "'"))
+                elif field == "keywords":
+                    cur_line.append('"%s"' % citation.keywords.replace('"', "'"))
+                elif field == "journal":
+                    cur_line.append('"%s"' % none_to_str(citation.journal))
+                elif field == "authors":
+                    cur_line.append('"%s"' % "".join(citation.authors))
+                elif field == "tags":
+                    cur_tags = self._get_tags_for_citation(citation.citation_id)
+                    cur_line.append('"%s"' % ",".join(cur_tags))
+                elif field in labeler_names:
+                    cur_labeler = field
+                    cur_lbl = "o"
+                    cit_lbl_d = citation_to_lbls_dict[citation.citation_id]
+                    if cur_labeler in cit_lbl_d:
+                        cur_lbl = str(cit_lbl_d[cur_labeler])
+                    # create a consensus label automagically in cases where
+                    # there is unanimous agreement
+                    elif cur_labeler == "consensus":
+                        if len(set(cit_lbl_d.values()))==1:
+                            if len(cit_lbl_d) > 1:
+                                # if at least two people agree, set the 
+                                # consensus label to reflect this
+                                cur_lbl = str(cit_lbl_d.values()[0])
+                            else:
+                                # then only one person has labeled it --
+                                # consensus is kind of silly
+                                cur_lbl = "o"
+                        else:
+                            # no consensus!
+                            cur_lbl = "x"
+
+                    cur_line.append(cur_lbl)
                 
-                labels.append(",".join(cur_line))
+            labels.append(",".join(cur_line))
     
         
         fout = open(os.path.join(\
