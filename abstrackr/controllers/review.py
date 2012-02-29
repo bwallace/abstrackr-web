@@ -1256,6 +1256,7 @@ class ReviewController(BaseController):
             model.Session.add(new_label)
             model.Session.commit()
             assignment.done_so_far += 1
+
             model.Session.commit()
             
             ###
@@ -1322,7 +1323,7 @@ class ReviewController(BaseController):
       
     @ActionProtector(not_anonymous())
     def screen(self, review_id, assignment_id):
-
+        current_user = request.environ.get('repoze.who.identity')['user']
         assignment = self._get_assignment_from_id(assignment_id)
         if assignment is None:
             redirect(url(controller="review", action="screen", \
@@ -1359,7 +1360,9 @@ class ReviewController(BaseController):
             c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
         
         # now get tags for this citation
-        c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
+        # issue #34; only show tags that *this* user has provided
+        c.tags = self._get_tags_for_citation(c.cur_citation.citation_id, \
+                only_for_user_id=current_user.id)
         
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
@@ -1383,6 +1386,7 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def screen_next(self, review_id, assignment_id):
+        current_user = request.environ.get('repoze.who.identity')['user']
         assignment = self._get_assignment_from_id(assignment_id)
         review = self._get_review_from_id(review_id)
 
@@ -1410,11 +1414,12 @@ class ReviewController(BaseController):
             c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
          
         # now get tags for this citation
-        c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
+        c.tags = self._get_tags_for_citation(c.cur_citation.citation_id,\
+                            only_for_user_id=current_user.id)
         
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
-           
+
         model.meta.Session.commit()
         return render("/citation_fragment.mako")
      
@@ -1652,13 +1657,11 @@ class ReviewController(BaseController):
         # mark up the labeled terms 
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
 
-        # issue #36 -- making label reviewing more intuitive
-        #pdb.set_trace()       
+        # issue #36 -- making label reviewing more intuitive    
         assignment = self._get_assignment_from_id(assignment_id)
         c.assignment_type = assignment.assignment_type
         c.consensus_review = False
         label_q = model.meta.Session.query(model.Label)
-        #pdb.set_trace()
         if c.assignment_type == "conflict":
             # then the assumption is that we're reviewing the labels provided
             # by the 'consensus_user'
@@ -1681,8 +1684,9 @@ class ReviewController(BaseController):
         c.assignment_id = assignment_id
  
         # finally, grab tags
+        # issue #34; blinding screeners to others' tags
         c.tag_types = self._get_tag_types_for_review(review_id)
-        c.tags = self._get_tags_for_citation(citation_id)
+        c.tags = self._get_tags_for_citation(citation_id, only_for_user_id=current_user.id)
 
         return render("/screen.mako")
         
@@ -1826,9 +1830,20 @@ class ReviewController(BaseController):
                 model.TagTypes.text == text)).all()[0]
         return tag_type.id
 
-    def _get_tags_for_citation(self, citation_id, texts_only=True):
+    def _get_tags_for_citation(self, citation_id, texts_only=True, only_for_user_id=None):
+
         tag_q = model.meta.Session.query(model.Tags)
-        tags = tag_q.filter(model.Tags.citation_id == citation_id).all()
+        tags = None
+        if only_for_user_id:
+            # then filter on the study and the user
+            tags = tag_q.filter(and_(\
+                    model.Tags.citation_id == citation_id,\
+                    model.Tags.creator_id == only_for_user_id
+             )).all()
+        else:
+            # all tags for this citation, regardless of user
+            tags = tag_q.filter(model.Tags.citation_id == citation_id).all()
+
         if texts_only:
             return self._tag_ids_to_texts([tag.tag_id for tag in tags])
         return tags
