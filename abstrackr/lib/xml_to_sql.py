@@ -206,14 +206,25 @@ def xml_to_dict(fpath):
     tree = ElementTree(file=fpath)
     
     num_failed = 0
+    
     for record in tree.findall('.//record'):
-        pubmed_id = None
-        refmanid = None
+        pubmed_id, refmanid = None, None
+
+        refman_version = record.findtext('.//source-app')
+        path_str = None
+        ### here we check the RefMan version, and change
+        # the xml path accordingly. this fixes issue #7
+        if refman_version == 'Reference Manager 12.0':
+            path_str = './/rec-number/style'
+            journal_path_str = './/periodical/full-title/style'
+        elif refman_version == 'Reference Manager 11.0':
+            path_str = './/rec-number'
+            journal_path_str = './/periodical/abbr-1/style'
+
         try:
-            refmanid = eval(record.findtext('.//rec-number'))
+            refmanid = int(record.findtext(path_str))
         except:
-            print "failed to parse a refman document."
-            
+            print "failed to parse refman document"
 
         if refmanid is not None:
             # attempt to grab the pubmed id
@@ -224,10 +235,11 @@ def xml_to_dict(fpath):
                 for i in range(len(pubmed)):
                     if "UI" in pubmed[i]:
                         pubmed_str = pubmed[i+1].strip()
-                        pubmed_id = eval("".join([x for x in pubmed_str if x in string.digits]))
+                        pubmed_id = int("".join([x for x in pubmed_str if x in string.digits]))
             except Exception, ex:
                 print "problem getting pmid ..."
                 print ex
+                print("\n")
     
             ab_text = record.findtext('.//abstract/style')
             if ab_text is None:
@@ -237,19 +249,18 @@ def xml_to_dict(fpath):
     
             # Also grab keywords
             keywords = [keyword.text.strip().lower() for keyword in record.findall(".//keywords/keyword/style")]
-    
+
             # and authors
             authors = [author.text for author in record.findall(".//contributors/authors/author/style")]
-    
+
             # journal
-            journal = record.findtext(".//periodical/abbr-1/style")
-    
+            journal = record.findtext(journal_path_str)
+
             ref_ids_to_abs[refmanid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
                         "keywords":keywords, "pmid":pubmed_id, "authors":authors}
 
     
-    print "Finished. Returning %s title/abstract/keyword sets, %s of which have no abstracts." \
+    print "\nFinished. Returning %s title/abstract/keyword sets, %s of which have no abstracts.\n" \
                     % (len(ref_ids_to_abs.keys()), num_no_abs)
     return ref_ids_to_abs
-
 
