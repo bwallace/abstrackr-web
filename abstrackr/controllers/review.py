@@ -615,11 +615,15 @@ class ReviewController(BaseController):
         return render("/reviews/export_fragment.mako")
 
     @ActionProtector(not_anonymous())
-    def export_labels(self, id):
+    def export_labels(self, id, lbl_filter=None):
         # get fields
         review_q = model.meta.Session.query(model.Review)
         review = review_q.filter(model.Review.review_id == id).one()
-        
+
+        all_labelers = self._get_participants_for_review(review.review_id)
+
+
+        ## some helpers
         none_to_str = lambda x: "" if x is None else x
         zero_to_none = lambda x: "none" if x==0 else x
 
@@ -630,10 +634,23 @@ class ReviewController(BaseController):
         
         labels = [",".join(fields_to_export)]
        
-       
+        # map citation ids to dictionaries that, in turn, map
+        # usernames to labels
+        citation_to_lbls_dict = {}
+        # for efficiency reasons, we keep track of whether we need
+        # create a new empty dictionary for the current citation
+        last_citation_id = None
+        
         for citation, label in model.meta.Session.query(\
             model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
               filter(model.Label.review_id==id).all():   
+                # the above gives you all labeled citations for this review
+                # i.e., citations that have at least one label
+                if last_citation_id != citation.citation_id:
+                    citation_to_lbls_dict[citation.citation_id] = {}
+
+                last_citation_id = citation.citation_id
+                
                 cur_line = []
                 for field in fields_to_export:
                     if field == "(internal) id":
@@ -1620,7 +1637,8 @@ class ReviewController(BaseController):
    
         # TODO 'conflict' is a misnomer; this variety subsumes
         #           both 'conflict' and 'maybes' assignments
-        if c.assignment.assignment_type == "conflict":
+
+        if c.assignment is not None and c.assignment.assignment_type == "conflict":
             already_consensus_labeled = label_q.filter(\
                                           model.Label.assignment_id == c.assignment.id).all()
             already_labeled_by_me = already_consensus_labeled
