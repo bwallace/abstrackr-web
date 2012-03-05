@@ -42,7 +42,8 @@
 <li> <a href="#leading">Leading a Review</a></a>
   <ul>
     <li><a href="#creating_new">Starting a Review</a></li>
-
+    <li><a href="#conflicts">Reviewing Conflicts</a></li>
+    <li><a href="#export">Exporting your Screening Decisions</a></li>
   </ul>
 </li>
 </ul>
@@ -179,11 +180,45 @@ You can toggle this tag on/off by clicking it. When the tag is highlighted (yell
 </center>
 
 
-<h2><a name="conflicts">Reviewing Conflicting Decisions</a></h2>
+<h2><a name="conflicts">Reviewing Conflicting (and Borderline) Decisions</a></h2>
 
-<h2><a name="exporting_labels">Exporting Screening Decisions (Labels)</a></h2>
+<p>In cases in which the same set of abstracts has been screened by multiple reviewers, it is often useful to review any abstracts that have received conflicting labels, e.g., one person may have marked a given study as 'irrelevant', whereas another may have thought it 'relevant'. This may happen during the pilot round, for example.</p>
+
+<p>In <b>abstrackr</b>, the project lead can screen abstracts that have been given conflicting labels, and assign a 'consensus' label that resolves the conflict. To enter this mode for a review, first navigate to the 'my projects' tab. Then click the 'review conflicts' button (circled below) for the review of interest.</p>
 
 
+<center>
+<img src="images/conflicts.png" />
+</center>
+
+<p>This will bring you to a screening mode in which only conflict abstracts are shown. The respective labels (screening decisions) assigned to each of the abstracts by reviewers will be shown. The label assigned in this mode is recorded as the 'consensus' label when screening decisions are exported (see below), but a record is kept of the pre-existing decisions, too. </p>
+
+<p>An analogous mode is available for screening abstracts with a designation of 'maybe'. This mode is accessible by clicking the 'review maybes' button adjacent to the 'review conflicts' button.</p>
+
+
+<h2><a name="export">Exporting Screening Decisions (Labels)</a></h2>
+
+<p>Once you've finished screening abstracts for your projects, you'll no doubt want to export your labels. To do so, again navigate to the 'my projects' tab. Then click the 'export' button (circled below).
+</p>
+
+
+<center>
+<img src="images/export.png" />
+</center>
+
+<p>You'll see a pop-up (below) that allows you to (de-) select the fields you'd like exported for each abstract. Hopefully most of these are self-explanatory. The '(internal) id', '(source) id' and 'pubmed id' fields correspond to different index numbers for a given abstract. The pubmed id may or may not be present; the source id reflects the id with which an abstract was imported (e.g,. the RefMan id) -- these two ids may very well be the same. The internal id is a globally unique identifier used internally by the system. </p>
+
+<center>
+<img src="images/export_fields.png" />
+</center>
+
+<p>Once you select the fields to export, <b>abstrackr</b> will generate a spreadsheet for you. You will receive a link to download this spreadsheet when it's ready. This file can then be opened in Excel (or any program capable of handling tab-delimited data). Of course, in addition to the above fields, <b>abstrackr</b> will export the labels (screening decisions) given for each abstract. Currently, this is done as follows. Each abstract is a row in the spreadsheet. Each reviewer on the project gets a column in the spreadsheet. In addition, a 'consensus' column is included. For each of these, a '-1' stands for 'exclude', '1' for 'include', '0' for 'borderline' (i.e., 'maybe') and 'o' for missing. The spreadsheet looks like this:</p> 
+
+<center>
+<img src="images/exported_labels.png" />
+</center>
+
+<p>The rules for forming a consensus are as follows. If a consensus label was explicitly provided, e.g., in <a href="#conflicts">review conflicts</a> mode, then this label is used. Alternatively, if <b>at least two</b> reviewers have labeled an abstract and their is unanimous agreement, this is taken as the consensus label. If the labels conflict, however, the consensus label is 'x'. Finally, if only one reviewer has screened an abstract, the consensus label is considered missing, i.e., 'o'.</p>
 
 </div>
 </body>
