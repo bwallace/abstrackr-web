@@ -4,6 +4,20 @@
 <script language="javascript">
 
     $(document).ready(function() { 
+
+        // fix for issue #4
+        $('input:submit').attr('disabled',true);
+        
+
+        $('input:file').change(
+        function(){
+            if ($(this).val()) {
+                $('input:submit').attr('disabled',false);
+                $('#select-file').hide();
+            } 
+        });
+
+
         $( "#dialog" ).dialog({
             height: 250,
             width: 400,
@@ -36,8 +50,13 @@
             show: "blind",
         });
 
-        jQuery("#post").click(function(){
-            $("#dialog" ).dialog( "open" );
+
+
+        $("#post").click(function(){
+            if ($('input:file').val()){
+                $("#dialog" ).dialog( "open" );
+            }
+            
         });
 
         jQuery("#help-link").click(function(){
@@ -51,6 +70,7 @@
         jQuery("#screen-mode-link").click(function(){
             $("#screen-mode-help" ).dialog( "open" );
         });
+
 
     });
 
@@ -100,7 +120,7 @@ You can import a few different file types into <b>abstrackr</b>.<br/>
 
 <center><b>keywords</b> \t <b>authors</b> \t <b>journal</b></center>
 
-<p>Finally, you may also import XML files exported from the <b>Reference Manager</b> citation software.</p>
+<p>Finally, you may also import XML files exported from the <b>Reference Manager</b> (Versions 11 and 12 are supported) citation software.</p>
 </div>
 
 <div class="content">
@@ -119,18 +139,18 @@ You can import a few different file types into <b>abstrackr</b>.<br/>
     
 
     <tr><td><label>pilot round size (<a href="#" id="train-round-link">huh?</a>):</td><td> ${h.text('init_size', '0')}</label></td></tr>
-    <div class="actions">
     
-
-		
+    <div id='create' class="actions">
     <tr><td></td><td></td><td class="actions"> 
     <a href="${url(controller='account', action='welcome')}">Cancel</a></td>
-    <td class="actions">${h.submit('post', 'Create new review')}</td></tr>
+    <td id='submit-td' class="actions">${h.submit('post', 'Create new review')}</td></tr>
     </div>
   ${h.end_form()} 
 </table>
 
 </center>
+<div id="select-file" align='right'>before creating a review, you'll have to select a file to upload.</div>
+     
 
 
 </div>
