@@ -166,8 +166,16 @@ a:hover{
 
 
 
+.disabled-actions a:hover, .disabled-actions input:hover{
+   color: red;
+}
+
 .inline-actions a:hover, .actions a:hover, .actions input:hover, .sidebar input:hover{
     color: green;
+}
+
+.inline-actions a[disabled]:hover, .actions a[disabled]:hover, .actions input[disabled]:hover, .sidebar input[disabled]:hover{
+    color: red;
 }
 
 .small-actions a, .small-actions button{
