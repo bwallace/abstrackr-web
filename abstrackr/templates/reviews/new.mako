@@ -1,8 +1,23 @@
 <%inherit file="../site.mako" />
 <%def name="title()">new review</%def>
+
 <script language="javascript">
 
-    $(document).ready(function(){ 
+    $(document).ready(function() { 
+
+        // fix for issue #4
+        $('input:submit').attr('disabled',true);
+        
+
+        $('input:file').change(
+        function(){
+            if ($(this).val()) {
+                $('input:submit').attr('disabled',false);
+                $('#select-file').hide();
+            } 
+        });
+
+
         $( "#dialog" ).dialog({
             height: 250,
             width: 400,
@@ -35,8 +50,13 @@
             show: "blind",
         });
 
-        jQuery("#post").click(function(){
-            //$("#dialog" ).dialog( "open" );
+
+
+        $("#post").click(function(){
+            if ($('input:file').val()){
+                $("#dialog" ).dialog( "open" );
+            }
+            
         });
 
         jQuery("#help-link").click(function(){
@@ -50,41 +70,17 @@
         jQuery("#screen-mode-link").click(function(){
             $("#screen-mode-help" ).dialog( "open" );
         });
-        
-        /*$("input[type=submit]").mouseenter(function(){
-            $("input[type=submit]").css("background-color", "red");
-        });*/
-        
-        //$("input[type=submit]").attr("disabled", "disabled");
-        
-        //$("input[type=submit]").hide()
-        
-        $("input:file").change(function(){
-            if ($(this).val()){
-                //$("input:submit").attr("disabled",false);
-                $("input:submit").show();
-            }
-        });
-        
-        $("input[type=submit]").bind("click",function(event){
-            event.preventDefault();
-            if($("input:file").val())
-            {    
-                $("#new_project_form").submit(); 
-            }
-            else
-            {
-                alert("Please select a file to upload.");
-            }
-        });
-        
+
+
     });
-        
+
+    
+
+
 </script>
 
-
-
 <div id="dialog" >
+  
     <h2>processing your abstracts. </h2>
     This may take a while -- please don't navigate away from this page.<br/><br/>
     <center>
@@ -124,32 +120,37 @@ You can import a few different file types into <b>abstrackr</b>.<br/>
 
 <center><b>keywords</b> \t <b>authors</b> \t <b>journal</b></center>
 
-<p>Finally, you may also import XML files exported from the <b>Reference Manager</b> citation software.</p>
+<p>Finally, you may also import XML files exported from the <b>Reference Manager</b> (Versions 11 and 12 are supported) citation software.</p>
 </div>
 
 <div class="content">
-    <center>
-    <table class="form_table">
-     ${h.form(url(controller='review', action='create_review_handler'), multipart=True, id="new_project_form",  method='post')}
-        <tr><td><label>project name:</td><td> ${h.text('name')}</label></td></tr>
+<center>
+<table class="form_table">
+ ${h.form(url(controller='review', action='create_review_handler'), multipart=True, id="new_project_form",  method='post')}
+    <tr><td><label>project name:</td><td> ${h.text('name')}</label></td></tr>
 
-        <tr><td><label>project description:</td> <td>${h.textarea('description', rows="10", cols="40")}</label></td></tr>
+    <tr><td><label>project description:</td> <td>${h.textarea('description', rows="10", cols="40")}</label></td></tr>
 
-        <tr><td><label>upload file (<a href="#" id="help-link">what can I import?</a>):</label></td> <td>${h.file('db')} </td></tr>
+    <tr><td><label>upload file (<a href="#" id="help-link">what can I import?</a>):</label></td> <td>${h.file('db')} </td></tr>
 
-        <tr><td><label>screening mode (<a href="#" id="screen-mode-link">what?</a>):</td> <td>${h.select("screen_mode", None, ["Single-screen", "Double-screen", "Advanced"])} </label></td></tr>
+    <tr><td><label>screening mode (<a href="#" id="screen-mode-link">what?</a>):</td> <td>${h.select("screen_mode", None, ["Single-screen", "Double-screen", "Advanced"])} </label></td></tr>
 
-        <tr><td><label>order abstracts by:</td> <td>${h.select("order", None, ["Most likely to be relevant", "Random", "Most ambiguous"])} </label></td></tr>
-        
+    <tr><td><label>order abstracts by:</td> <td>${h.select("order", None, ["Most likely to be relevant", "Random", "Most ambiguous"])} </label></td></tr>
+    
 
-        <tr><td><label>pilot round size (<a href="#" id="train-round-link">huh?</a>):</td><td> ${h.text('init_size', '0')}</label></td></tr>
-        <div class="actions">
-            <tr><td></td><td></td><td class="actions"> 
-            <a href="${url(controller='account', action='welcome')}">Cancel</a></td>
-            <td class="actions">${h.submit('post', 'Create new review')}</td></tr>
-        </div>
-      ${h.end_form()} 
+    <tr><td><label>pilot round size (<a href="#" id="train-round-link">huh?</a>):</td><td> ${h.text('init_size', '0')}</label></td></tr>
+    
+    <div id='create' class="actions">
+    <tr><td></td><td></td><td class="actions"> 
+    <a href="${url(controller='account', action='welcome')}">Cancel</a></td>
+    <td id='submit-td' class="actions">${h.submit('post', 'Create new review')}</td></tr>
+    </div>
+  ${h.end_form()} 
+</table>
 
-    </table>
-    </center>
+</center>
+<div id="select-file" align='right'>before creating a review, you'll have to select a file to upload.</div>
+     
+
+
 </div>
