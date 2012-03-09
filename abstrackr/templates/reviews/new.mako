@@ -3,19 +3,38 @@
 
 <script language="javascript">
 
+var counter = 0;
+
     $(document).ready(function() { 
 
         // fix for issue #4
-        $('input:submit').attr('disabled',true);
-        
+        $("input:submit").attr("disabled",true);
 
-        $('input:file').change(
-        function(){
-            if ($(this).val()) {
-                $('input:submit').attr('disabled',false);
-                $('#select-file').hide();
-            } 
+        $("input:file").change(function() {
+            if ( $(this).val() && ($.trim($("#name").val()) != "") && ($("#name").val() != null) ) {
+                $("input:submit").attr("disabled",false);
+                $("#select-file").hide();
+            }
+            else
+            {
+                $("input:submit").attr("disabled","disabled");
+                $("#select-file").show();
+            }
         });
+        
+        $("#name").keyup(function() {
+            if ( ($.trim($(this).val()) != "") && ($(this).val() != null) && $("input:file").val() ) {
+                $("input:submit").attr("disabled",false);
+                $("#select-file").hide();
+            }
+            else
+            {
+                $("input:submit").attr("disabled","disabled");
+                $("#select-file").show();
+            }
+        });
+        
+        //Enable the 'Create New Review' button after the user enters a project name and a file to upload.
 
 
         $( "#dialog" ).dialog({
@@ -53,10 +72,7 @@
 
 
         $("#post").click(function(){
-            if ($('input:file').val()){
-                $("#dialog" ).dialog( "open" );
-            }
-            
+            $("#dialog").dialog( "open" );
         });
 
         jQuery("#help-link").click(function(){
@@ -84,7 +100,7 @@
     <h2>processing your abstracts. </h2>
     This may take a while -- please don't navigate away from this page.<br/><br/>
     <center>
-    <img src="../../loading.gif"></img>
+    <img src="/loading.gif"></img>
     </center>
 </div>
 
@@ -149,7 +165,7 @@ You can import a few different file types into <b>abstrackr</b>.<br/>
 </table>
 
 </center>
-<div id="select-file" align='right'>before creating a review, you'll have to select a file to upload.</div>
+<div id="select-file" align='right'>Before creating a review, you'll have to select a file to upload and make sure the file has a name.</div>
      
 
 
