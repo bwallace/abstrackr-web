@@ -62,8 +62,11 @@ def pubmed_ids_to_d(pmids):
     articles = pubmedpy.batch_fetch(pmids)
     print "ok."
 
+    articles = [article for article in articles if len(article)>=3]
+    
     pmids_d = {}
     none_to_str = lambda x: x if x is not None else ""
+    
     for article in articles:
         title_text = article.get("TI")
         ab_text = article.get("AB")    

@@ -1744,7 +1744,11 @@ class ReviewController(BaseController):
         # finally, grab tags
         # issue #34; blinding screeners to others' tags
         c.tag_types = self._get_tag_types_for_review(review_id)
-        c.tags = self._get_tags_for_citation(citation_id, only_for_user_id=current_user.id)
+        c.tags = None
+        if c.assignment_type == "conflict":
+            c.tags = self._get_tags_for_citation(citation_id)
+        else: 
+            c.tags = self._get_tags_for_citation(citation_id, only_for_user_id=current_user.id)
 
         return render("/screen.mako")
         
@@ -1844,6 +1848,13 @@ class ReviewController(BaseController):
         # been out for > 2 hours.
         filtered_ranked_priorities = []
         EXPIRE_TIME = 72000 # 72000 *seconds*: i.e., 2 hours
+        
+        #### Issa is complaining about speed-- and he's right
+        # previously, we were walking over all priority objects
+        # not once, but *twice*! once should be *worst case*
+        # we should break here once we find a sufficiently good
+        # good citation
+        already_labeled = self._get_already_labeled_ids(review_id)
         for priority in ranked_priorities:
             if priority.is_out and not priority.locked_by == me:
                 # currently locked by someone else; here we check
@@ -1853,15 +1864,11 @@ class ReviewController(BaseController):
                     priority.is_out = False
                     priority.locked_by = None
                     model.Session.commit()
-                    filtered_ranked_priorities.append(priority)
+                    return priority_obj
             elif not priority.is_out or priority.locked_by == me:
-                filtered_ranked_priorities.append(priority)
-                                    
-        best_that_i_havent_labeled = None
-        already_labeled = self._get_already_labeled_ids(review_id)
-        for priority_obj in filtered_ranked_priorities:
-             if priority_obj.citation_id not in already_labeled:
-                 return priority_obj
+                if priority_obj.citation_id not in already_labeled:
+                    return priority_obj
+                                
         
         # this person has already labeled everything -- nothing more to do!
         return None
