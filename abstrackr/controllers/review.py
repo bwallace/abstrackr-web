@@ -1864,10 +1864,10 @@ class ReviewController(BaseController):
                     priority.is_out = False
                     priority.locked_by = None
                     model.Session.commit()
-                    return priority_obj
+                    return priority
             elif not priority.is_out or priority.locked_by == me:
-                if priority_obj.citation_id not in already_labeled:
-                    return priority_obj
+                if priority.citation_id not in already_labeled:
+                    return priority
                                 
         
         # this person has already labeled everything -- nothing more to do!
