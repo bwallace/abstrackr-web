@@ -20,7 +20,7 @@ from repoze.what.plugins.pylonshq import ActionProtector
 from abstrackr.lib.base import BaseController, render
 import abstrackr.model as model
 from abstrackr.lib import xml_to_sql
-from sqlalchemy import or_, and_, desc
+from sqlalchemy import or_, and_, desc, func
 from abstrackr.lib.helpers import literal
 
 import pygooglechart
@@ -47,6 +47,7 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def create_new_review(self):
+        c.review_count = "%s" % model.meta.Session.query(func.count(model.Review.review_id)).scalar()
         return render("/reviews/new.mako")
     
     @ActionProtector(not_anonymous())
