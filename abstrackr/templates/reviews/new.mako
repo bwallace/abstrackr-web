@@ -3,8 +3,6 @@
 
 <script language="javascript">
 
-var counter = 0;
-
     $(document).ready(function() { 
 
         // fix for issue #4
