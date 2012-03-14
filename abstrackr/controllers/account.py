@@ -5,6 +5,7 @@ from abstrackr.lib.base import BaseController, render
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
 from pylons.controllers.util import redirect
+
 import turbomail
 import abstrackr.model as model
 import pdb
@@ -250,6 +251,7 @@ class AccountController(BaseController):
             if assignment.assignment_type == "initial":
                 reviews_with_initial_assignments.append(assignment.review_id)
         
+        #pdb.set_trace()
 
         # now remove other (non-initial) assignments for reviews
         # that have an initial assignment
