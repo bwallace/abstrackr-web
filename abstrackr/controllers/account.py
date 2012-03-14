@@ -307,8 +307,12 @@ class AccountController(BaseController):
         statuses_q = model.meta.Session.query(model.PredictionsStatus)
         c.statuses = {}
         for project_id in leading_project_ids:
-            c.statuses[project_id] = \
-                statuses_q.filter(model.PredictionsStatus.review_id==project_id).one().predictions_exist
+            predictions_for_review = statuses_q.filter(model.PredictionsStatus.review_id==project_id).all()
+            if len(predictions_for_review) > 0 and predictions_for_review[0].predictions_exist:
+                c.statuses[project_id] = True
+            else:
+                c.statuses[project_id] = False
+
         
         c.my_work = False
         c.my_projects = True
