@@ -277,13 +277,15 @@ def _re_prioritize(review_id, sort_by_str):
         
         # now we will sort by *descending* order; those with the most yes-votes first
         sorted_cit_ids = sorted(cits_to_preds.iteritems(), key=itemgetter(1), reverse=True)
+    
         # now just assign priorities that reflect the ordering w.r.t. the predictions
+        for i, cit in enumerate(sorted_cit_ids):
+            cit_id_to_new_priority[cit[0]] = i
+       
     #####
     #   TODO -- ambiguous case (i.e., uncertainty sampling)
     ###
 
-    for i, cit in enumerate(sorted_cit_ids):
-        cit_id_to_new_priority[cit[0]] = i
 
     ####
     # now update the priority table for the entries
@@ -292,8 +294,10 @@ def _re_prioritize(review_id, sort_by_str):
     priority_ids_for_review = list(select([priorities.c.id, priorities.c.citation_id], \
                                     priorities.c.review_id == review_id).execute())
     for priority_id, citation_id in priority_ids_for_review:
-        priority_update = \
-            priorities.update(priorities.c.id == priority_id)
+        if citation_id in cit_id_to_new_priority:
+            priority_update = \
+                priorities.update(priorities.c.id == priority_id)
+
         priority_update.execute(priority = cit_id_to_new_priority[citation_id])
 
 
@@ -311,30 +315,36 @@ if __name__ == "__main__":
    
     for encoded_review in encoded_reviews:
         review_id, labels_last_updated = encoded_review
+
         sort_by_str = \
-            select([reviews.c.sort_by], reviews.c.review_id == review_id).execute().fetchone()[0]
-        labels_for_review = select([labels.c.label_last_updated], \
-                    labels.c.review_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
-        if labels_for_review.rowcount > 0:
-            most_recent_label = labels_for_review.fetchone().label_last_updated
-            print "checking review %s.." % review_id
-            if most_recent_label > labels_last_updated:
-                # then there's been at least one new label, update encoded files!
-                print "updating labels for review %s..." % review_id
-                update_labels(review_id)#, base_dir="C:/dev/abstrackr_web/encode_test")
-            
-                # now make predictions for updated reviews.
-                print "making predictions"
-                make_predictions(review_id)
-                # now re-prioritize abstracts
+            select([reviews.c.sort_by], reviews.c.review_id == review_id).execute()
+        # uh-oh
+        if sort_by_str.rowcount == 0:
+            print "I can't do anything for review %s -- it doesn't appear to have an entry" % review_id
+        else:
+            sort_by_str = sort_by_str.fetchone().sort_by
+            labels_for_review = select([labels.c.label_last_updated], \
+                        labels.c.review_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
+            if labels_for_review.rowcount > 0:
+                most_recent_label = labels_for_review.fetchone().label_last_updated
+                print "checking review %s.." % review_id
+                if most_recent_label > labels_last_updated:
+                    # then there's been at least one new label, update encoded files!
+                    print "updating labels for review %s..." % review_id
+                    update_labels(review_id)#, base_dir="C:/dev/abstrackr_web/encode_test")
                 
-                print "re-prioritizing..."
-                _re_prioritize(review_id, sort_by_str)
-            else:
-                # initial set of predictions
-                if not _do_predictions_exist_for_review(review_id):
+                    # now make predictions for updated reviews.
+                    print "making predictions"
                     make_predictions(review_id)
-                    print "ok, now re-prioritizing..."
+                    # now re-prioritize abstracts
+                    
+                    print "re-prioritizing..."
                     _re_prioritize(review_id, sort_by_str)
+                else:
+                    # initial set of predictions
+                    if not _do_predictions_exist_for_review(review_id):
+                        make_predictions(review_id)
+                        print "ok, now re-prioritizing..."
+                        _re_prioritize(review_id, sort_by_str)
 
     print "done."

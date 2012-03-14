@@ -13,7 +13,7 @@ sys.path.append("curious_snake/learners/libsvm/python")
 
 import curious_snake # magic!
 
-engine = create_engine("mysql://root:xxxxx@127.0.0.1:3306/abstrackr")
+engine = create_engine("mysql://root:homer@127.0.0.1:3306/abstrackr")
 conn = engine.connect()
 metadata = MetaData(bind=engine)
 
@@ -21,8 +21,8 @@ encoded_status = Table("EncodedStatuses", metadata, autoload=True)
 prediction_status = Table("PredictionStatuses", metadata, autoload=True)
 predictions_table = Table("Predictions", metadata, autoload=True)
 
-base_dir="/home/byron/abstrackr-web/curious_snake/data"
-#base_dir="C:/dev/abstrackr_web/encode_test"
+#base_dir="/home/byron/abstrackr-web/curious_snake/data"
+base_dir="C:/dev/abstrackr_web/encode_test"
 fields=["title", "abstract", "keywords"]
 
 
@@ -49,6 +49,10 @@ def make_predictions(review_id):
         conn.execute(predictions_table.insert().values(study_id=study_id, review_id=review_id, \
                     prediction=pred_d["prediction"], num_yes_votes=pred_d["num_yes_votes"]))
     
+    
+    # delete any existing prediction status entries, should they exist
+    conn.execute(prediction_status.delete().where(prediction_status.c.review_id == review_id))
+
     # finally, update the prediction status
     conn.execute(prediction_status.insert().values(review_id=review_id, predictions_exist=True,\
          predictions_last_made=datetime.datetime.now(), train_set_size=train_size,\
