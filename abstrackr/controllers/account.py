@@ -7,6 +7,7 @@ from repoze.what.plugins.pylonshq import ActionProtector
 from pylons.controllers.util import redirect
 import abstrackr.controllers.controller_globals as controller_globals # shared querying routines
 from controller_globals import * 
+
 import turbomail
 import abstrackr.model as model
 import pdb
@@ -308,8 +309,12 @@ class AccountController(BaseController):
         c.statuses = {}
         c.conflicts = {}
         for project_id in leading_project_ids:
-            c.statuses[project_id] = \
-                statuses_q.filter(model.PredictionsStatus.review_id==project_id).one().predictions_exist
+            predictions_for_review = statuses_q.filter(model.PredictionsStatus.review_id==project_id).all()
+            if len(predictions_for_review) > 0 and predictions_for_review[0].predictions_exist:
+                c.statuses[project_id] = True
+            else:
+                c.statuses[project_id] = False
+
         
             c.conflicts[project_id] = \
                 len(controller_globals._get_conflicts(project_id)) > 0 # conflicting labels for this review?

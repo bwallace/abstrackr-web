@@ -14,6 +14,8 @@ import smtplib
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
+import abstrackr.controllers.controller_globals as controller_globals
+from controller_globals import * # shared variables
 import logging
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
@@ -39,8 +41,6 @@ POS_C = "#4CC417"
 STRONG_POS_C = "#347235"
 COLOR_D = {1:POS_C, 2:STRONG_POS_C, -1:NEG_C, -2:STRONG_NEG_C}
 
-CONSENSUS_USER = 0
-
 import subprocess
 
 class ReviewController(BaseController):
@@ -50,12 +50,14 @@ class ReviewController(BaseController):
         c.review_count = "%s" % model.meta.Session.query(func.count(model.Review.review_id)).scalar()
         return render("/reviews/new.mako")
     
-    
+    @ActionProtector(not_anonymous())
     def predictions_about_remaining_citations(self, id):
+        if not self._current_user_leads_review(id):
+            return "yeah, I don't think so."
+        
         predictions_q = model.meta.Session.query(model.Prediction)
         c.predictions_for_review =  predictions_q.filter(model.Prediction.review_id == id).all()
-        c.probably_included = len([x for x in c.predictions_for_review if x.num_yes_votes > 5]) 
-                                # Example of 'List Comprehension' - one of the best features of python
+        c.probably_included = len([x for x in c.predictions_for_review if x.num_yes_votes > 5])
         
         c.frequencies = [] # This is the list of frequencies of the number of 'yes' votes.
         for i in xrange(12):
@@ -63,13 +65,11 @@ class ReviewController(BaseController):
         
         c.review_being_predicted = self._get_review_from_id(id).name
         
-        
         return render("/reviews/remaining_reviews.mako")
     
     
     @ActionProtector(not_anonymous())
     def create_review_handler(self):
-        
         # first upload the xml file
         xml_file = request.POST['db']
 
@@ -724,7 +724,7 @@ class ReviewController(BaseController):
                     elif cur_labeler == "consensus":
                         if len(set(cit_lbl_d.values()))==1:
                             if len(cit_lbl_d) > 1:
-                                # if at least two people agree, set the 
+                                # if at least two people agree (and none disagree), set the 
                                 # consensus label to reflect this
                                 cur_lbl = str(cit_lbl_d.values()[0])
                             else:
@@ -866,10 +866,10 @@ class ReviewController(BaseController):
         the basic idea here is to find all of the conflicting ids, then
         shove these into a FixedTask type task (i.e., a task with an 
         enumerated set of ids to be labeled). This task is then assigned
-        to the project lead (assuemd to be the current user).
+        to the project lead (assumed to be the current user).
         '''
         review_id = id
-        conflicting_ids = self._get_conflicts(review_id)
+        conflicting_ids = controller_globals._get_conflicts(review_id)
         self._create_conflict_task_with_ids(review_id, conflicting_ids)
 
     def _create_conflict_task_with_ids(self, review_id, study_ids):
@@ -906,7 +906,7 @@ class ReviewController(BaseController):
         conflict_a.task_id = conflict_task.id
         conflict_a.date_assigned = datetime.datetime.now()
         conflict_a.assignment_type = conflict_task.task_type
-        conflict_a.num_assigned = conflict_task.num_assigned 
+        conflict_a.num_assigned = conflict_task.num_assigned
         conflict_a.done_so_far = 0
         model.Session.add(conflict_a)
         model.Session.commit()
@@ -917,40 +917,12 @@ class ReviewController(BaseController):
     def _get_labels_for_citation(self, citation_id):
         return model.meta.Session.query(model.Label).\
             filter(model.Label.study_id==citation_id).all()
-        
-    def _get_conflicts(self, review_id):
-        citation_ids_to_labels = \
-            self._get_labels_dict_for_review(review_id)
-
-        # now figure out which citations have conflicting labels
-        citation_ids_to_conflicting_labels = {}
-        
-        for citation_id in [c_id for c_id in citation_ids_to_labels.keys() if citation_ids_to_labels[c_id]>1]:
-            if len(set([label.label for label in citation_ids_to_labels[citation_id]])) > 1 and\
-                    not CONSENSUS_USER in [label.reviewer_id for label in citation_ids_to_labels[citation_id]]:
-                citation_ids_to_conflicting_labels[citation_id] = citation_ids_to_labels[citation_id]
-        
-        return citation_ids_to_conflicting_labels
-         
-    def _get_all_citations_for_review(self, review_id):
-        return model.meta.Session.query(model.Citation, model.Label).\
-                  filter(model.Citation.citation_id==model.Label.study_id).\
-                  filter(model.Label.review_id==review_id).all()
-
-    def _get_labels_dict_for_review(self, review_id):
-        citation_ids_to_labels = {}
-        for citation, label in self._get_all_citations_for_review(review_id):
-            if citation.citation_id in citation_ids_to_labels.keys():
-                citation_ids_to_labels[citation.citation_id].append(label)
-            else:
-                citation_ids_to_labels[citation.citation_id] = [label]
-
-        return citation_ids_to_labels
+   
 
     def _get_maybes(self, review_id):
         citation_ids_to_labels = \
-            self._get_labels_dict_for_review(review_id)
-
+            controller_globals._get_labels_dict_for_review(review_id)
+   
         # which have 'maybe' labels?
         citation_ids_to_maybe_labels = {}
         for citation_id, labels_for_citation in citation_ids_to_labels.items():
@@ -961,12 +933,11 @@ class ReviewController(BaseController):
          
     @ActionProtector(not_anonymous())
     def admin(self, id, admin_msg=""):
+        current_user = request.environ.get('repoze.who.identity')['user']
         # make sure we're actually the project lead
         if not self._current_user_leads_review(id):
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname        
             
-            
-        current_user = request.environ.get('repoze.who.identity')['user']
         c.participating_reviewers = self._get_participants_for_review(id)
         # eliminate our the lead themselves from this list
         c.participating_reviewers = [reviewer for reviewer in c.participating_reviewers if \
