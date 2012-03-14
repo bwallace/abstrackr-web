@@ -60,9 +60,15 @@
                             $('#selectable').selectable();
                       });
                       ">
-
                       export<img src = "../../export_sm.png"></a></td>
                     
+                    % if c.statuses[review.review_id]:
+                        <td class="inline-actions"><a href="${url(controller='review', action='predictions_about_remaining_citations', id=review.review_id)}">estimated remaining work 
+                                    <img src = "../../Robot-icon.png"></a></td>
+                    % else:
+                        <td class="inline-actions"><i>no predictions yet</i></td>
+                    % endif
+                        
             <td class="inline-actions"><a href="${url(controller='review', action='review_conflicts', id=review.review_id)}">
                       review conflicts<img src = "../../conflicts_sm.png"></a></td>
             

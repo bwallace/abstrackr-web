@@ -20,7 +20,7 @@ from repoze.what.plugins.pylonshq import ActionProtector
 from abstrackr.lib.base import BaseController, render
 import abstrackr.model as model
 from abstrackr.lib import xml_to_sql
-from sqlalchemy import or_, and_, desc
+from sqlalchemy import or_, and_, desc, func
 from abstrackr.lib.helpers import literal
 
 import pygooglechart
@@ -47,7 +47,25 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def create_new_review(self):
+        c.review_count = "%s" % model.meta.Session.query(func.count(model.Review.review_id)).scalar()
         return render("/reviews/new.mako")
+    
+    
+    def predictions_about_remaining_citations(self, id):
+        predictions_q = model.meta.Session.query(model.Prediction)
+        c.predictions_for_review =  predictions_q.filter(model.Prediction.review_id == id).all()
+        c.probably_included = len([x for x in c.predictions_for_review if x.num_yes_votes > 5]) 
+                                # Example of 'List Comprehension' - one of the best features of python
+        
+        c.frequencies = [] # This is the list of frequencies of the number of 'yes' votes.
+        for i in xrange(12):
+            c.frequencies.append( len([x for x in c.predictions_for_review if x.num_yes_votes==i]) )
+        
+        c.review_being_predicted = self._get_review_from_id(id).name
+        
+        
+        return render("/reviews/remaining_reviews.mako")
+    
     
     @ActionProtector(not_anonymous())
     def create_review_handler(self):
@@ -210,7 +228,7 @@ class ReviewController(BaseController):
 
         return self.edit_review(id, message="ok -- review updated.")
         #if init_round_size == cur_init_assignment.
-
+        
 
     def _update_num_labels_in_priority_queue(self, review_id):
         '''

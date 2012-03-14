@@ -3,12 +3,21 @@
 
 <script language="javascript">
 
-var counter = 0;
-
     $(document).ready(function() { 
 
         // fix for issue #4
         $("input:submit").attr("disabled",true);
+        
+        /*$("#name").focus(function(){
+            $(this).val("");
+        });*/
+        
+        /*$("#name").click(function(){
+            if ($(this).val() == ""){
+                var defVal = $(this)[0].defaultValue;
+                $(this).val(defVal);
+            }
+        });*/
 
         $("input:file").change(function() {
             if ( $(this).val() && ($.trim($("#name").val()) != "") && ($("#name").val() != null) ) {
@@ -143,7 +152,7 @@ You can import a few different file types into <b>abstrackr</b>.<br/>
 <center>
 <table class="form_table">
  ${h.form(url(controller='review', action='create_review_handler'), multipart=True, id="new_project_form",  method='post')}
-    <tr><td><label>project name:</td><td> ${h.text('name')}</label></td></tr>
+    <tr><td><label>project name:</td><td> ${h.text('name', "Review " + c.review_count)}</label></td></tr>
 
     <tr><td><label>project description:</td> <td>${h.textarea('description', rows="10", cols="40")}</label></td></tr>
 
@@ -165,7 +174,7 @@ You can import a few different file types into <b>abstrackr</b>.<br/>
 </table>
 
 </center>
-<div id="select-file" align='right'>Before creating a review, you'll have to select a file to upload and make sure the file has a name.</div>
+<div id="select-file" align='right'>Before creating a review, you'll have to select a file to upload and make sure the project has a name.</div>
      
 
 
