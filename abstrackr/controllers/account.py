@@ -5,6 +5,8 @@ from abstrackr.lib.base import BaseController, render
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
 from pylons.controllers.util import redirect
+import abstrackr.controllers.controller_globals as controller_globals # shared querying routines
+from controller_globals import * 
 
 import turbomail
 import abstrackr.model as model
@@ -251,7 +253,6 @@ class AccountController(BaseController):
             if assignment.assignment_type == "initial":
                 reviews_with_initial_assignments.append(assignment.review_id)
         
-        #pdb.set_trace()
 
         # now remove other (non-initial) assignments for reviews
         # that have an initial assignment
@@ -306,6 +307,7 @@ class AccountController(BaseController):
         
         statuses_q = model.meta.Session.query(model.PredictionsStatus)
         c.statuses = {}
+        c.conflicts = {}
         for project_id in leading_project_ids:
             predictions_for_review = statuses_q.filter(model.PredictionsStatus.review_id==project_id).all()
             if len(predictions_for_review) > 0 and predictions_for_review[0].predictions_exist:
@@ -314,8 +316,12 @@ class AccountController(BaseController):
                 c.statuses[project_id] = False
 
         
+            c.conflicts[project_id] = \
+                len(controller_globals._get_conflicts(project_id)) > 0 # conflicting labels for this review?
+                
         c.my_work = False
         c.my_projects = True
+                
         
         return render('/accounts/dashboard.mako')
         
