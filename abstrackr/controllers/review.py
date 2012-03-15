@@ -850,12 +850,22 @@ class ReviewController(BaseController):
         
         redirect(url(controller="account", action="my_projects"))
        
-    
+    def get_conflict_button_fragment(self, id):
+        #pdb.set_trace()
+        if (controller_globals._does_a_conflict_exist(id)):
+            c.display_the_button = True
+        else:
+            c.display_the_button = False
+        c.review_id = id
+        return render("/reviews/conflict_button.mako")
+            #This template will determine whether the conflicts button is shown or the text is shown.
+            #The template itself is then called by dashboard.mako using the load function.
+
 
     @ActionProtector(not_anonymous())
     def review_maybes(self, id):
         review_id = id
-        maybe_ids = self._get_maybes(review_id)
+        maybe_ids = controller_globals._get_maybes(review_id)
         # TODO rename method
         self._create_conflict_task_with_ids(review_id, maybe_ids)
          
@@ -912,25 +922,13 @@ class ReviewController(BaseController):
         model.Session.commit()
         
         redirect(url(controller="review", action="screen", \
-                        review_id=review_id, assignment_id=conflict_a.id)) 
+                        review_id=review_id, assignment_id=conflict_a.id))
     
     def _get_labels_for_citation(self, citation_id):
         return model.meta.Session.query(model.Label).\
             filter(model.Label.study_id==citation_id).all()
    
 
-    def _get_maybes(self, review_id):
-        citation_ids_to_labels = \
-            controller_globals._get_labels_dict_for_review(review_id)
-   
-        # which have 'maybe' labels?
-        citation_ids_to_maybe_labels = {}
-        for citation_id, labels_for_citation in citation_ids_to_labels.items():
-            if 0 in [label.label for label in labels_for_citation]:
-                citation_ids_to_maybe_labels[citation_id] = labels_for_citation
-
-        return citation_ids_to_maybe_labels
-         
     @ActionProtector(not_anonymous())
     def admin(self, id, admin_msg=""):
         current_user = request.environ.get('repoze.who.identity')['user']

@@ -27,7 +27,7 @@ class AccountController(BaseController):
         """
         This is where the login form should be rendered.
         Without the login counter, we won't be able to tell if the user has
-        tried to log in with wrong credentials
+        tried to log in with wrong credentials.
         """
         identity = request.environ.get('repoze.who.identity')
         came_from = str(request.GET.get('came_from', '')) or \
@@ -307,21 +307,32 @@ class AccountController(BaseController):
         
         statuses_q = model.meta.Session.query(model.PredictionsStatus)
         c.statuses = {}
-        c.conflicts = {}
+        #c.conflicts = {}
+        c.do_we_have_a_maybe = {}
         for project_id in leading_project_ids:
+            
             predictions_for_review = statuses_q.filter(model.PredictionsStatus.review_id==project_id).all()
             if len(predictions_for_review) > 0 and predictions_for_review[0].predictions_exist:
                 c.statuses[project_id] = True
             else:
                 c.statuses[project_id] = False
+            
+            #c.statuses[project_id] = False
+            
+            import time
+            start_time = time.time()
+            #c.conflicts[project_id] = controller_globals._does_a_conflict_exist(project_id)
+            end_time = time.time() 
+            elapsed = end_time-start_time
+            #pdb.set_trace()
+            #len(controller_globals._get_conflicts(project_id)) > 0 
+                                        # conflicting labels for this review?
 
-        
-            c.conflicts[project_id] = \
-                len(controller_globals._get_conflicts(project_id)) > 0 # conflicting labels for this review?
-                
+            c.do_we_have_a_maybe[project_id] = False#= len(controller_globals._get_maybes(project_id)) > 0
+                                        # Do we have maybes for this project?
+            
         c.my_work = False
         c.my_projects = True
-                
         
         return render('/accounts/dashboard.mako')
         
