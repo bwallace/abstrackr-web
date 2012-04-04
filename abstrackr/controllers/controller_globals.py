@@ -1,12 +1,31 @@
 ''''''
-# collection of helper routines, primarily for querying the database.
+# collection of helper routines, primarily for querying the database
 ''''''
 
 CONSENSUS_USER = 0
 
 from abstrackr.lib.base import BaseController, render
 import abstrackr.model as model
+import pdb
 
+def _does_a_conflict_exist(review_id):
+    # these will be orderd by citation
+
+    citation_query_obj = _get_all_citations_for_review(review_id, return_query_obj=True)
+    labels_for_cur_citation, last_citation = [], None
+    
+    for citation, label in citation_query_obj:
+        if last_citation is not None and last_citation != citation.citation_id:
+            labels_for_cur_citation = [label.label]
+        else:
+            labels_for_cur_citation.append(label.label)
+            # note that this isn't expensive because the set 
+            # cardinality <= ~10
+            if len(set(labels_for_cur_citation)) > 1:
+                return True
+        last_citation = citation.citation_id
+        
+    return False
 
 def _get_conflicts(review_id):
     citation_ids_to_labels = \
@@ -21,47 +40,36 @@ def _get_conflicts(review_id):
             citation_ids_to_conflicting_labels[citation_id] = citation_ids_to_labels[citation_id]
     
     return citation_ids_to_conflicting_labels
-    
- 
 
-def _get_labels_dict_for_review(review_id, get_names=False, lbl_filter_f=None):
+
+def _get_labels_dict_for_review(review_id):
     citation_ids_to_labels = {}
     for citation, label in _get_all_citations_for_review(review_id):
-        if get_names:
-            if lbl_filter_f is None:
-                lbl_filter_f = lambda x: True
-                
-            labeler_names = ["consensus"] # always export the consensus
-            # first collect labels for all citations taht pass our
-            # filtering criteria
-            for citation, label in model.meta.Session.query(\
-                model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
-                filter(model.Label.review_id==id).order_by(model.Citation.citation_id).all():
-                # the above gives you all labeled citations for this review
-                # i.e., citations that have at least one label
-                if lbl_filter_f(label):
-                    cur_citation_id = citation.citation_id
-                    if last_citation_id != cur_citation_id:
-                        citation_ids_to_lbls[citation.citation_id] = {}
-                        citations_to_export.append(citation)
-
-                    # NOTE that we are assuming unique user names per-review
-                    labeler = self._get_username_from_id(label.reviewer_id)
-                    if not labeler in labeler_names:
-                        labeler_names.append(labeler)
-
-                    citation_to_lbls_dict[cur_citation_id][labeler] = label.label
-                    last_citation_id = cur_citation_id
-        else:
             if citation.citation_id in citation_ids_to_labels.keys():
                 citation_ids_to_labels[citation.citation_id].append(label)
             else:
                 citation_ids_to_labels[citation.citation_id] = [label]
 
     return citation_ids_to_labels
-        
-  
-def _get_all_citations_for_review(review_id):
-    return model.meta.Session.query(model.Citation, model.Label).\
+
+
+def _get_maybes(review_id):
+    citation_ids_to_labels = _get_labels_dict_for_review(review_id)
+
+    # which have 'maybe' labels?
+    citation_ids_to_maybe_labels = {}
+    for citation_id, labels_for_citation in citation_ids_to_labels.items():
+        if 0 in [label.label for label in labels_for_citation]:
+            citation_ids_to_maybe_labels[citation_id] = labels_for_citation
+
+    return citation_ids_to_maybe_labels
+
+
+def _get_all_citations_for_review(review_id, return_query_obj=False):
+    citation_query_obj = model.meta.Session.query(model.Citation, model.Label).\
             filter(model.Citation.citation_id==model.Label.study_id).\
-            filter(model.Label.review_id==review_id).all()
+            filter(model.Label.review_id==review_id).order_by(model.Citation.citation_id)
+    if return_query_obj:
+        return citation_query_obj
+    # this can be expensive!
+    return citation_query_obj.all()
