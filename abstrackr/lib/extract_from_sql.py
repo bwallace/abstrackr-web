@@ -322,8 +322,10 @@ if __name__ == "__main__":
             sort_by_str = sort_by_str.fetchone().sort_by
             labels_for_review = select([labels.c.label_last_updated], \
                     labels.c.review_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
+           
             if labels_for_review.rowcount > 0:
                 most_recent_label = labels_for_review.fetchone().label_last_updated
+                print "the most recent label for review %s is dated: %s" % (review_id, most_recent_label)
                 print "checking review %s.." % review_id
                 if most_recent_label > labels_last_updated:
                     # then there's been at least one new label, update encoded files!
