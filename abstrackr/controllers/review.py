@@ -1172,7 +1172,40 @@ class ReviewController(BaseController):
         redirect(url(controller="review", action="assignments", 
                             id=review_id)) 
         
+     
+
+    @ActionProtector(not_anonymous())
+    def add_notes(self, study_id):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        self._add_notes(study_id, request.params, current_user)
+
+
+    def _add_notes(self, citation_id, notes, current_user):
+        existing_note = self._get_notes_for_citation(citation_id, current_user.id)
+        if existing_note is None:
+            # create a new note, then
+            existing_note = model.Note()
+            model.Session.add(existing_note)
+
+        char_limit = 999
+        existing_note.general = notes["general_notes"][:char_limit]
+        existing_note.population = notes["population_notes"][:char_limit]
+        existing_note.ic = notes["ic_notes"][:char_limit]
+        existing_note.outcome = notes["outcome_notes"][:char_limit]
+        existing_note.creator_id = current_user.id
+        existing_note.citation_id = citation_id
         
+        model.Session.commit()
+
+    def _get_notes_for_citation(self, citation_id, user_id):
+        notes_q = model.meta.Session.query(model.Note)
+        notes = notes_q.filter(and_(\
+                model.Note.citation_id == citation_id,
+                model.Note.creator_id == user_id)).all()
+        if len(notes) > 0:
+            return notes[0]
+        return None
+
     @ActionProtector(not_anonymous())
     def tag_citation(self, review_id, study_id):
         current_user = request.environ.get('repoze.who.identity')['user']
@@ -1410,7 +1443,11 @@ class ReviewController(BaseController):
         
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
-     
+        
+        # now get any associated notes
+        notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
+        c.notes = notes
+
         model.meta.Session.commit()
         return render("/screen.mako")
           
@@ -1464,6 +1501,10 @@ class ReviewController(BaseController):
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
 
+        # now get any associated notes
+        notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
+        c.notes = notes
+        
         model.meta.Session.commit()
         return render("/citation_fragment.mako")
      
