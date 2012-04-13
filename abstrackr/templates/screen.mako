@@ -49,11 +49,9 @@
    <form>
    
     <b>general notes</b><br/> 
-    <center>
     <textarea id="general_notes" name="general_notes" rows="4" cols="40" /> 
     </textarea><br />
-    </center>
-
+    
     <br>population notes</b><br/>
     <textarea id="pop_notes" name="pop_notes" rows="1" cols="40" /></textarea><br />
     </br>

@@ -657,6 +657,10 @@ class ReviewController(BaseController):
         # map citation ids to dictionaries that, in turn, map
         # usernames to labels
         citation_to_lbls_dict = {}
+
+        # likewise, for notes
+        citation_to_notes_dict = {}
+
         # we filter the citations list  (potentially)
         citations_to_export = []
 
@@ -665,7 +669,7 @@ class ReviewController(BaseController):
         last_citation_id = None
         
         labeler_names = ["consensus"] # always export the consensus
-        # first collect labels for all citations taht pass our
+        # first collect labels for all citations that pass our
         # filtering criteria
         for citation, label in model.meta.Session.query(\
             model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
@@ -676,6 +680,7 @@ class ReviewController(BaseController):
                     cur_citation_id = citation.citation_id
                     if last_citation_id != cur_citation_id:
                         citation_to_lbls_dict[citation.citation_id] = {}
+                        citation_to_notes_dict[cur_citation_id] = {}
                         citations_to_export.append(citation)
 
                     # NOTE that we are assuming unique user names per-review
@@ -686,10 +691,27 @@ class ReviewController(BaseController):
                     citation_to_lbls_dict[cur_citation_id][labeler] = label.label
                     last_citation_id = cur_citation_id
         
+                    # note that this will only contain entries for reviews that have 
+                    # been labeled! i.e., notes made on unlabeled citations are not
+                    # reflected here.
+                    citation_to_notes_dict[cur_citation_id][labeler] = \
+                            self._get_notes_for_citation(cur_citation_id, label.reviewer_id)
+
+
         # we automatically export all labeler's labels
         for labeler in labeler_names:
             fields_to_export.append(labeler)
         
+        # finally, export notes (if asked)
+        notes_fields = ["general", "population", "intervention/comparator", "outcome"]
+        if "notes" in  fields_to_export:
+            fields_to_export.remove("notes")
+            # we append all labelers notes
+            for labeler in labeler_names:
+                if labeler != "consensus":
+                    for notes_field in notes_fields:
+                        fields_to_export.append("%s notes (%s)" % (notes_field, labeler))
+
         labels = [",".join(fields_to_export)]
         for citation in citations_to_export:
             cur_line = []
@@ -736,7 +758,37 @@ class ReviewController(BaseController):
                             cur_lbl = "x"
 
                     cur_line.append(cur_lbl)
-                
+                elif "notes" in field:
+                    # notes field
+                    # this is kind of hacky -- we first parse out the labeler
+                    # name from the column header string assembled above and 
+                    # then get a user id from this. 
+                    get_labeler_name_from_str = lambda x: x.split("(")[1].split(")")[0]
+                    cur_labeler = get_labeler_name_from_str(field)
+                    # @TODO not sure what we should do in consensus case...
+                    if cur_labeler == "consensus":
+                        cur_line.append("")
+                    else:
+                        cur_note = None
+                        cur_notes_d = citation_to_notes_dict[citation.citation_id]
+                        
+                        if cur_labeler in cur_notes_d:                  
+                            cur_note = cur_notes_d[cur_labeler]
+
+                        if cur_note is None:
+                            cur_line.append("")
+                        else:
+                            notes_field = field
+                            if "general" in notes_field:
+                                cur_line.append(cur_note.general)
+                            elif "population" in notes_field:
+                                cur_line.append(cur_note.population)
+                            elif "outcome" in notes_field:
+                                cur_line.append(cur_note.outcome)
+                            else:
+                                # intervention/comparator
+                                cur_line.append(cur_note.ic)
+
             labels.append(",".join(cur_line))
     
         
@@ -1197,6 +1249,7 @@ class ReviewController(BaseController):
         
         model.Session.commit()
 
+
     def _get_notes_for_citation(self, citation_id, user_id):
         notes_q = model.meta.Session.query(model.Note)
         notes = notes_q.filter(and_(\
@@ -1504,7 +1557,7 @@ class ReviewController(BaseController):
         # now get any associated notes
         notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
         c.notes = notes
-        
+
         model.meta.Session.commit()
         return render("/citation_fragment.mako")
      
@@ -1769,14 +1822,21 @@ class ReviewController(BaseController):
         # pass the assignment id back to the client
         c.assignment_id = assignment_id
  
-        # finally, grab tags
+        # grab the tags for this study
         # issue #34; blinding screeners to others' tags
         c.tag_types = self._get_tag_types_for_review(review_id)
         c.tags = None
+        # ... unless we're in review conflicts mode, in which case
+        # we show all tags
         if c.assignment_type == "conflict":
             c.tags = self._get_tags_for_citation(citation_id)
         else: 
             c.tags = self._get_tags_for_citation(citation_id, only_for_user_id=current_user.id)
+
+        # also grab the notes 
+        # @TODO what should we show for notes in the case of conflict mode,
+        #   i.e., if multiple users have made notes..??
+        c.notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
 
         return render("/screen.mako")
         
