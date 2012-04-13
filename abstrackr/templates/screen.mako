@@ -322,8 +322,8 @@
                $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", {tags: tags},
                   function(){
                     $("#tags").fadeOut('slow', function() {
-                      $("#tags").load("${'/review/update_tags/%s' % c.review_id}", function() {
-                        $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
+                      $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}", function() {
+                        //$("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
                         $("#tags").fadeIn('slow');
                       });
                     });
