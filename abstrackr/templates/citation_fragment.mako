@@ -35,6 +35,20 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 
 <script type="text/javascript">  
 
+    function populate_notes(){
+      % if "notes" in dir(c) and c.notes is not None:
+          $("#pop_notes").val('${c.notes.population}'); 
+          $("textarea#general_notes").val('${c.notes.general}');
+          $("textarea#ic_notes").val('${c.notes.ic}');
+          $("textarea#outcome_notes").val('${c.notes.outcome}');
+      % else:
+        $("#pop_notes").val(''); 
+        $("textarea#general_notes").val('');
+        $("textarea#ic_notes").val('');
+        $("textarea#outcome_notes").val('');
+      % endif
+    }
+
     function setup_submit(){
       $("#selectable").selectable();     
       $("#submit_btn").unbind();
@@ -54,8 +68,8 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
          $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", {tags: tags},
             function(){
               $("#tags").fadeOut('slow', function() {
-                $("#tags").load("${'/review/update_tags/%s' % c.review_id}", function() {
-                  $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
+                $("#tags").load("${'/review/update_tags/%s' %  c.cur_citation.citation_id}", function() {
+                  //$("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
                   $("#tags").fadeIn('slow');
                 });
               });
@@ -67,14 +81,52 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
          $( "#dialog" ).dialog( "close" );
       });
 
+
+
+      /** adding note-taking functionality **/
+      $("#save_notes_btn").unbind();
+      $("#save_notes_btn").click(function()
+      {
+        // something like
+         var general_notes = $("#general_notes").val();
+         var pop_notes =  $("#pop_notes").val();
+         var ic_notes = $("#ic_notes").val();
+         var outcome_notes = $("#outcome_notes").val();
+
+
+         $.post("${'/review/add_notes/%s' % c.cur_citation.citation_id}",
+                    {"general_notes": general_notes, "population_notes":pop_notes, "ic_notes":ic_notes,
+                    "outcome_notes":outcome_notes}, function() {
+                        $("#notes-status").html("<font color='green'>notes added.</font>");
+                        $( "#notes-dialog" ).dialog( "close" );
+                        $("#notes-status").html("");
+
+                    });
+
+
+         
+      });
+      /** end **/
+
+
       $("#tag_btn").click(function()
       {
          $("#dialog" ).dialog( "open" );
       });
 
+      $("#close_btn").unbind();
       $("#close_btn").click(function (e)
       {
+         // I actually don't know where 'close_btn' is defined...
+         // we close them both here.
          $("#dialog" ).dialog( "close" );
+         $("#notes-dialog" ).dialog( "close" );
+      });
+
+      $("#notes_btn").unbind();
+      $("#notes_btn").click(function()
+      {
+         $("#notes-dialog" ).dialog("open");
       });
 
       $("#new_tag").val(' ');
@@ -105,8 +157,8 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
         $("#dialog").load(
             "${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}",
             function() {
-              //$("#selectable").selectable();     
               setup_submit();
+              populate_notes();
             }
         );
 

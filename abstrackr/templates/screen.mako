@@ -45,6 +45,35 @@
 </div>
 
 
+<div id="notes-dialog" >
+   <form>
+   
+    <b>general notes</b><br/> 
+    <textarea id="general_notes" name="general_notes" rows="4" cols="40" /> 
+    </textarea><br />
+    
+    <br>population notes</b><br/>
+    <textarea id="pop_notes" name="pop_notes" rows="1" cols="40" /></textarea><br />
+    </br>
+   
+    <br>intervention/comparator notes</b><br/>
+    <textarea id="ic_notes" name="ic_notes" rows="1" cols="40" /> 
+    </textarea><br />
+    </br>
+
+    <br>outcome notes</b><br/>
+    <textarea id="outcome_notes" name="outcome_notes" rows="1" cols="40" /> </textarea><br />
+    </br>
+
+   <br/>
+    </ul>
+    <div id="notes-status"></div>
+   <div class="actions" style="text-align: right;">
+      <input id="save_notes_btn" type="button" value="save notes" />
+   </div>
+   </form>
+</div>
+
 <div class="actions">
   % if c.cur_lbl is not None and c.assignment_type != "conflict":
       % if c.assignment_id is not None:
@@ -61,7 +90,7 @@
 <div class="container">
 
   <div id="tags_container" class="sidebar">
-    <h2>tags</h2><br/>
+    <h2>tags &amp; notes</h2><br/>
     <center>
     <div id="tags" class="tags">
     <ul>
@@ -75,17 +104,21 @@
     % endif
     </div>
     <br/>
-    <input type="button" id="tag_btn" value="tag study..." />
+    <input type="button" style="width: 120px" id="tag_btn" value="tag study..." />
     <br/><br/>
 
     
-    <input type="button" id="edit_tags_btn" value="edit tags..." 
+    <input type="button" style="width: 120px" id="edit_tags_btn" value="edit tags..." 
                 onclick="parent.location='/review/edit_tags/${c.review_id}/${c.assignment_id}'"> 
    
+    <br/><br/>
+    <input type="button" style="width: 120px" id="notes_btn" value="notes..." />
+
     </center>
   </div>
 
  
+
 
   <div id="citation-holder" style='float: right; width: 85%;'>
 
@@ -133,6 +166,17 @@
                 autoOpen: false,
                 show: "blind",
               });
+
+              $( "#notes-dialog" ).dialog({
+                height: 300,
+                width: 400,
+                modal: true,
+                autoOpen: false,
+                position: [0,0],
+                show: "blind",
+                hide: {effect: "fadeOut", duration:2000}
+              });
+
 
 
               function markup_current(){
@@ -239,9 +283,24 @@
                       markup_current();
                   }
                }); 
+
+              populate_notes();
               setup_submit();
           }
 
+          function populate_notes(){
+            % if "notes" in dir(c) and c.notes is not None:
+              $("#pop_notes").val('${c.notes.population}'); 
+              $("textarea#general_notes").val('${c.notes.general}');
+              $("textarea#ic_notes").val('${c.notes.ic}');
+              $("textarea#outcome_notes").val('${c.notes.outcome}');
+            % else:
+              $("#pop_notes").val(''); 
+              $("textarea#general_notes").val('');
+              $("textarea#ic_notes").val('');
+              $("textarea#outcome_notes").val('');
+            % endif
+          }
 
           function setup_submit(){
             $("#selectable").selectable();
@@ -263,8 +322,8 @@
                $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", {tags: tags},
                   function(){
                     $("#tags").fadeOut('slow', function() {
-                      $("#tags").load("${'/review/update_tags/%s' % c.review_id}", function() {
-                        $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
+                      $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}", function() {
+                        //$("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
                         $("#tags").fadeIn('slow');
                       });
                     });
@@ -277,17 +336,53 @@
                $( "#dialog" ).dialog( "close" );
             });
 
+
+
+            /** adding note-taking functionality **/
+            $("#save_notes_btn").unbind();
+            $("#save_notes_btn").click(function()
+            {
+              // something like
+               var general_notes = $("#general_notes").val();
+               var pop_notes =  $("#pop_notes").val();
+               var ic_notes = $("#ic_notes").val();
+               var outcome_notes = $("#outcome_notes").val();
+
+
+               $.post("${'/review/add_notes/%s' % c.cur_citation.citation_id}",
+                          {"general_notes": general_notes, "population_notes":pop_notes, "ic_notes":ic_notes,
+                          "outcome_notes":outcome_notes}, function() {
+                              $("#notes-status").html("<font color='green'>notes added.</font>");
+                              $( "#notes-dialog" ).dialog( "close" );
+                              $("#notes-status").html("");
+
+                          });
+
+
+               
+            });
+            /** end **/
+
+            $("#tag_btn").unbind();
             $("#tag_btn").click(function()
             {
-               
                $("#dialog" ).dialog( "open" );
             });
 
+            $("#close_btn").unbind();
             $("#close_btn").click(function (e)
             {
+               // I actually don't know where 'close_btn' is defined...
+               // we close them both here.
                $("#dialog" ).dialog( "close" );
+               $("#notes-dialog" ).dialog( "close" );
             });
 
+            $("#notes_btn").unbind();
+            $("#notes_btn").click(function()
+            {
+               $("#notes-dialog" ).dialog("open");
+            });
             
       
           }

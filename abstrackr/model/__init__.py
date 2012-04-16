@@ -115,6 +115,17 @@ class Tags(Base):
     citation_id = sa.Column(types.Integer) 
 
 
+class Note(Base):
+    ''' Stores notes; both structured and unstructured '''
+    __tablename__ = "Notes"
+    id = sa.Column(types.Integer, primary_key=True)
+    creator_id = sa.Column(types.Integer)
+    citation_id = sa.Column(types.Integer) 
+    general = sa.Column(types.Unicode(1000))
+    population = sa.Column(types.Unicode(1000))
+    ic = sa.Column(types.Unicode(1000)) # intervention/comparator
+    outcome = sa.Column(types.Unicode(1000))
+
 class LabeledFeature(Base):
     ''' Stores labeled features, i.e., terms '''
     __tablename__ = "LabelFeatures"

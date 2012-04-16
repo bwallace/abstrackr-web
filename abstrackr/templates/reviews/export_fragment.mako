@@ -30,7 +30,7 @@ select the fields you'd like to export:<br/>
  	<li class="ui-selected">${field}</li>
 % endfor
 
-% for field in ["keywords", "abstract", "title", "journal", "authors", "tags"]:
+% for field in ["keywords", "abstract", "title", "journal", "authors", "tags", "notes"]:
 	<li class="ui-selectee">${field}</li>
 % endfor
 </ul>
