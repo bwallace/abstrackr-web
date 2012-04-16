@@ -18,6 +18,8 @@
             show: "blind",
         });
         
+        
+        
     });
 </script>
 
@@ -51,8 +53,6 @@
             <td class="inline-actions"><a href="${url(controller='review', action='admin', id=review.review_id)}">admin 
                          <img src = "../../admin_sm.png"></a></td> 
             <td class="inline-actions">
-
-
             <a href="#" onclick="javascript:    
                       $('#export').load('${url(controller="review", action="get_fields", review_id=review.review_id)}', 
                         function() {
@@ -60,15 +60,27 @@
                             $('#selectable').selectable();
                       });
                       ">
-
                       export<img src = "../../export_sm.png"></a></td>
                     
-            <td class="inline-actions"><a href="${url(controller='review', action='review_conflicts', id=review.review_id)}">
-                      review conflicts<img src = "../../conflicts_sm.png"></a></td>
+            % if c.statuses[review.review_id]:
+                <td class="inline-actions"><a href="${url(controller='review', action='predictions_about_remaining_citations', id=review.review_id)}">predictions
+                            <img src = "../../Robot-icon.png"></a></td>
+            % else:
+                <td class="inline-actions"><i>no predictions yet</i></td>
+            % endif
             
-            <td class="inline-actions"><a href="${url(controller='review', action='review_maybes', id=review.review_id)}">
-                      review maybes<img src = "../../maybe_sm.png"></a></td>
-
+            <td id="conflict_button_${review.review_id}">Loading...</td>
+            <script language="javascript">
+                $("#conflict_button_${review.review_id}").load("/review/get_conflict_button_fragment/${review.review_id}");
+            </script>
+            
+            % if c.do_we_have_a_maybe:
+                <td class="inline-actions"><a href="${url(controller='review', action='review_maybes', id=review.review_id)}">
+                    maybes<img src = "../../maybe_sm.png"></a></td>
+            % else:
+                <td class="inline-actions"><i>no conflicts yet</i></td>
+            % endif
+            
             <td class="inline-actions">
                 <a href="#" onclick="javascript:jConfirm('are you sure you want to delete this review? all labels will be lost!', 
                      'delete review?', function(r) {

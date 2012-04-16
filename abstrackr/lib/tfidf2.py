@@ -86,7 +86,6 @@ except:
 
 import copy
 
-
 # for some reason it's making me give a full path here.. grrr.
 stop_list_path="/home/byron/abstrackr-web/abstrackr/lib/stop_list.txt"
 

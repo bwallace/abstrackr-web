@@ -293,9 +293,10 @@ def _re_prioritize(review_id, sort_by_str):
     priority_ids_for_review = list(select([priorities.c.id, priorities.c.citation_id], \
                                     priorities.c.review_id == review_id).execute())
     for priority_id, citation_id in priority_ids_for_review:
-        priority_update = \
-            priorities.update(priorities.c.id == priority_id)
-       
+        if citation_id in cit_id_to_new_priority:
+            priority_update = \
+                priorities.update(priorities.c.id == priority_id)
+
         priority_update.execute(priority = cit_id_to_new_priority[citation_id])
         
 
@@ -313,9 +314,10 @@ if __name__ == "__main__":
    
     for encoded_review in encoded_reviews:
         review_id, labels_last_updated = encoded_review
+
         sort_by_str = \
             select([reviews.c.sort_by], reviews.c.review_id == review_id).execute()
-       
+
         if sort_by_str.rowcount == 0:
             print "I can't do anything for review %s -- it doesn't appear to have an entry" % review_id
         else:
@@ -324,9 +326,9 @@ if __name__ == "__main__":
                     labels.c.review_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
            
             if labels_for_review.rowcount > 0:
+                print "checking review %s..." % review_id
                 most_recent_label = labels_for_review.fetchone().label_last_updated
                 print "the most recent label for review %s is dated: %s" % (review_id, most_recent_label)
-                print "checking review %s.." % review_id
                 if most_recent_label > labels_last_updated:
                     # then there's been at least one new label, update encoded files!
                     print "updating labels for review %s..." % review_id

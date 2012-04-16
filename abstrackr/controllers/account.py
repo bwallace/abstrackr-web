@@ -5,6 +5,9 @@ from abstrackr.lib.base import BaseController, render
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
 from pylons.controllers.util import redirect
+import abstrackr.controllers.controller_globals as controller_globals # shared querying routines
+from controller_globals import * 
+
 import turbomail
 import abstrackr.model as model
 import pdb
@@ -24,7 +27,7 @@ class AccountController(BaseController):
         """
         This is where the login form should be rendered.
         Without the login counter, we won't be able to tell if the user has
-        tried to log in with wrong credentials
+        tried to log in with wrong credentials.
         """
         identity = request.environ.get('repoze.who.identity')
         came_from = str(request.GET.get('came_from', '')) or \
@@ -290,18 +293,44 @@ class AccountController(BaseController):
         c.person = person
         
         project_q = model.meta.Session.query(model.Review)       
-        c.leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()
+        c.leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()     
         leading_project_ids = [proj.review_id for proj in c.leading_projects]
-        
+         
         # pull the reviews that this person is participating in
         junction_q = model.meta.Session.query(model.ReviewerProject)
         participating_project_ids = \
             [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
         c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids and \
                                                 not p.review_id in leading_project_ids]
-                
+        
         c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects)
         
+        statuses_q = model.meta.Session.query(model.PredictionsStatus)
+        c.statuses = {}
+        #c.conflicts = {}
+        c.do_we_have_a_maybe = {}
+        for project_id in leading_project_ids:
+            
+            predictions_for_review = statuses_q.filter(model.PredictionsStatus.review_id==project_id).all()
+            if len(predictions_for_review) > 0 and predictions_for_review[0].predictions_exist:
+                c.statuses[project_id] = True
+            else:
+                c.statuses[project_id] = False
+            
+            #c.statuses[project_id] = False
+            
+            import time
+            start_time = time.time()
+            #c.conflicts[project_id] = controller_globals._does_a_conflict_exist(project_id)
+            end_time = time.time() 
+            elapsed = end_time-start_time
+            #pdb.set_trace()
+            #len(controller_globals._get_conflicts(project_id)) > 0 
+                                        # conflicting labels for this review?
+
+            c.do_we_have_a_maybe[project_id] = False#= len(controller_globals._get_maybes(project_id)) > 0
+                                        # Do we have maybes for this project?
+            
         c.my_work = False
         c.my_projects = True
         
