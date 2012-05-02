@@ -178,7 +178,7 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
         
         function label_cur_citation(lbl_str){
             $("#citation").fadeOut('fast', function() {
-                  if (!(we_are_reviewing_a_label())){
+                  if (!(we_are_reviewing_a_label()) && is_perpetual_assignment()){
                     // try to load the next citation
                     // this call will in turn call get_next_citation
                     // once loading is complete
@@ -186,15 +186,21 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                   }
 
                   $.post("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/" + lbl_str, function(data){
-                    if (we_are_reviewing_a_label()){
-                      // in the case that we are re-labeling a citation, 
-                      // this the label method will return the citation fragment.
-                      //alert(data);
-                      $('#citation').html(data);
-                      $('#citation').fadeIn();
-                      setup_js();
-                      still_loading = false;
-                    }
+                      if (we_are_reviewing_a_label()){
+                        // in the case that we are re-labeling a citation, 
+                        // this the label method will return the citation fragment.
+                        $('#citation').html(data);
+                        $('#citation').fadeIn();
+                        setup_js();
+                        still_loading = false;
+                      } 
+                      else if (!(is_perpetual_assignment())) {
+                        load_next_citation();
+                      }
+                      else {
+                        //alert(data);
+                        $('#progress').html(data);
+                      }
                   });
             });      
         }
@@ -269,7 +275,7 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
             }
          });
 
-        
+
         % if 'assignment' in dir(c):
           % if c.assignment.num_assigned and c.assignment.num_assigned > 0:
             $("#progress").html("you've screened <b>${c.assignment.done_so_far}</b> out of <b>${c.assignment.num_assigned}</b> so far (nice going!)");

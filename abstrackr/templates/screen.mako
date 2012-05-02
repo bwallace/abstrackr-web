@@ -212,6 +212,10 @@
             return "${'assignment' not in dir(c)}" == "True";
           }
 
+          function is_perpetual_assignment(){
+            return "${c.assignment.assignment_type}" == "perpetual";
+          }
+
           function setup_js(){
               
               $( "#dialog" ).dialog({
@@ -245,7 +249,7 @@
 
               function label_cur_citation(lbl_str){
                   $("#citation").fadeOut('fast', function() {
-                        if (!(we_are_reviewing_a_label())){
+                        if (!(we_are_reviewing_a_label()) && is_perpetual_assignment()){
                           // try to load the next citation
                           // this call will in turn call get_next_citation
                           // once loading is complete
@@ -253,15 +257,21 @@
                         }
 
                         $.post("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/" + lbl_str, function(data){
-                          if (we_are_reviewing_a_label()){
-                            // in the case that we are re-labeling a citation, 
-                            // this the label method will return the citation fragment.
-                            //alert(data);
-                            $('#citation').html(data);
-                            $('#citation').fadeIn();
-                            setup_js();
-                            still_loading = false;
-                          }
+                            if (we_are_reviewing_a_label()){
+                              // in the case that we are re-labeling a citation, 
+                              // this the label method will return the citation fragment.
+                              $('#citation').html(data);
+                              $('#citation').fadeIn();
+                              setup_js();
+                              still_loading = false;
+                            } 
+                            else if (!(is_perpetual_assignment())) {
+                              load_next_citation();
+                            }
+                            else {
+                              //alert(data);
+                              $('#progress').html(data);
+                            }
                         });
                   });      
               }
@@ -373,7 +383,6 @@
                   function(){
                     $("#tags").fadeOut('slow', function() {
                       $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}", function() {
-                        //$("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
                         $("#tags").fadeIn('slow');
                       });
                     });
