@@ -158,6 +158,60 @@
 
 
       <script type="text/javascript">    
+
+          var still_loading = false;
+          var waiting_for_citation = false;
+
+          function get_next_citation()
+          {
+              still_loading = true;
+              $('#hidden_div').load( "${'/next_citation/%s/%s' % (c.review_id, c.assignment_id)}", function() {
+                  still_loading = false;
+                  // were we waiting for this guy? if so, load
+                  // him in now
+                  if (waiting_for_citation){
+                    load_next_citation();
+                  }
+              });
+          }
+
+          function load_next_citation(){
+            // pull in the next citation from the hidden_div iff
+            // it has finished downloading. otherwise hide buttons,
+            // show waiting screen and flip 'waiting_for_citation'
+            // boolean to true
+            if (still_loading) {
+              $("#wait").text("hold on to your horses..")
+              $('#buttons').hide();
+              waiting_for_citation = true;
+            } else{
+              // then the next citation has been downloaded
+              // into the hidden_div
+              $('#citation').html( $('#hidden_div').html() );
+
+              // this is the key logic piece; we the setup_js method
+              // is defined with respect to the currently hidden
+              // citation that we just loaded into the #citation div
+              // hence when it is called it will attach calls to the
+              // buttons that label the (now currently) displayed
+              // citation that we fadein in the next line.
+              setup_js();
+              
+              $('#citation').fadeIn();
+              $("#wait").text("")
+              $('#buttons').show();
+              waiting_for_citation = false;
+
+
+              // once the citation 
+              get_next_citation();
+            }
+          }
+
+          function we_are_reviewing_a_label(){
+            return "${'assignment' not in dir(c)}" == "True";
+          }
+
           function setup_js(){
               
               $( "#dialog" ).dialog({
@@ -177,8 +231,6 @@
                 hide: {effect: "fadeOut", duration:2000}
               });
 
-
-
               function markup_current(){
                   // reload the current citation, with markup
                   $("#wait").text("marking up the current citation..")
@@ -190,46 +242,44 @@
                   });
               }
           
-          
+
+              function label_cur_citation(lbl_str){
+                  $("#citation").fadeOut('fast', function() {
+                        if (!(we_are_reviewing_a_label())){
+                          // try to load the next citation
+                          // this call will in turn call get_next_citation
+                          // once loading is complete
+                          load_next_citation();
+                        }
+
+                        $.post("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/" + lbl_str, function(data){
+                          if (we_are_reviewing_a_label()){
+                            // in the case that we are re-labeling a citation, 
+                            // this the label method will return the citation fragment.
+                            //alert(data);
+                            $('#citation').html(data);
+                            $('#citation').fadeIn();
+                            setup_js();
+                            still_loading = false;
+                          }
+                        });
+                  });      
+              }
+
+
               $("#accept").click(function() {
-                  $('#buttons').hide();
-                  $("#wait").text("hold on to your horses..")
-                  $("#citation").fadeOut('slow', function() {
-                      $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/1", function() {
-                           $("#citation").fadeIn('slow');
-                           $("#wait").text("");
-                           $('#buttons').show();
-                           setup_js();
-                      });
-                  });
-               });   
+                label_cur_citation("1");
+              });
                      
+
               $("#maybe").click(function() {
-                  $('#buttons').hide();
-                  $("#wait").text("hold on to your horses..")
-                  $("#citation").fadeOut('slow', function() {
-                      $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/0", function() {
-                           $("#citation").fadeIn('slow');
-                           $("#wait").text("");
-                           $('#buttons').show();
-                           setup_js();
-                      });
-                  });
-               });   
+                label_cur_citation("0");
+              });
               
                
               $("#reject").click(function() {
-                  $('#buttons').hide();
-                  $("#wait").text("hold on to your horses..")
-                  $("#citation").fadeOut('slow', function() {
-                      $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/-1", function() {
-                           $("#citation").fadeIn('slow');
-                           $("#wait").text("");
-                           $('#buttons').show();
-                           setup_js();
-                      });
-                  });
-               });  
+                label_cur_citation("-1");
+              });
                
               $("#pos_lbl_term").click(function() {
                   // call out to the controller to label the term
@@ -361,7 +411,7 @@
 
                
             });
-            /** end **/
+            /** end notes functionality **/
 
             $("#tag_btn").unbind();
             $("#tag_btn").click(function()
@@ -387,13 +437,21 @@
       
           }
 
-
           $(document).ready(function() { 
               setup_js();
+              // we don't queue the next citation if we're reviewing
+              // labels!
+              if (!(we_are_reviewing_a_label())) {
+                get_next_citation(); // fetch the *next* citation
+              }
+              $("#hidden_div").hide();
+
           });
           
       </script>
     </div>
+
+    <div id="hidden_div" class="content"></div>
 
     <center>
     <div id="wait"></div>
@@ -423,14 +481,14 @@
     <a href="#" id="accept"><img src = "/accept.png"/></a> 
     <a href="#" id="maybe"><img src = "/maybe.png"/></a> 
     <a href="#" id="reject"><img src = "/reject.png"/></a> 
-  </div>
+    </div>
 
 
 
+  <div id="label_terms" class="summary_heading">
   <table>
   <tr>
   <td>
-  <div id="label_terms" class="summary_heading">
   <label>term: ${h.text('term')}</label> 
   </td>
   <td width="10"></td>
@@ -448,6 +506,7 @@
   <a href="#" id="double_neg_lbl_term"><img src = "/two_thumbs_down.png"/ border="2" alt="strongly indicative of irrelevance"></a>
   </td>
   </tr>
+  </table>
   </div>
 
   <div id="label_msg"></div>

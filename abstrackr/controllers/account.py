@@ -240,7 +240,7 @@ class AccountController(BaseController):
         # if there's an initial assignment, we'll only show that.
         assignment_types = [assignment.assignment_type for assignment in \
                                                     c.outstanding_assignments]
-                                
+                       
         #####
         # for any review that has an initial assignment, we will show
         # *only* that assignment, thereby forcining participants to 
@@ -256,10 +256,11 @@ class AccountController(BaseController):
 
         # now remove other (non-initial) assignments for reviews
         # that have an initial assignment
-        filtered_assigments = [assignment for assignment in c.outstanding_assignments if \
+        filtered_assignments = [assignment for assignment in c.outstanding_assignments if \
                                 assignment.review_id not in reviews_with_initial_assignments or \
                                 assignment.assignment_type == "initial"]
-        c.outstanding_assignments = filtered_assigments
+
+        c.outstanding_assignments = filtered_assignments
                            
         c.finished_assignments = [a for a in all_assignments if a.done]   
         
@@ -307,7 +308,7 @@ class AccountController(BaseController):
         
         statuses_q = model.meta.Session.query(model.PredictionsStatus)
         c.statuses = {}
-        #c.conflicts = {}
+
         c.do_we_have_a_maybe = {}
         for project_id in leading_project_ids:
             
@@ -316,21 +317,9 @@ class AccountController(BaseController):
                 c.statuses[project_id] = True
             else:
                 c.statuses[project_id] = False
-            
-            #c.statuses[project_id] = False
-            
-            import time
-            start_time = time.time()
-            #c.conflicts[project_id] = controller_globals._does_a_conflict_exist(project_id)
-            end_time = time.time() 
-            elapsed = end_time-start_time
-            #pdb.set_trace()
-            #len(controller_globals._get_conflicts(project_id)) > 0 
-                                        # conflicting labels for this review?
 
-            c.do_we_have_a_maybe[project_id] = False#= len(controller_globals._get_maybes(project_id)) > 0
-                                        # Do we have maybes for this project?
-            
+            c.do_we_have_a_maybe[project_id] = False
+
         c.my_work = False
         c.my_projects = True
         

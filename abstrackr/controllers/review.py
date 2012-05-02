@@ -10,7 +10,8 @@ import csv
 import random
 import string
 import smtplib
-
+import time
+import copy
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -24,6 +25,7 @@ import abstrackr.model as model
 from abstrackr.lib import xml_to_sql
 from sqlalchemy import or_, and_, desc, func
 from abstrackr.lib.helpers import literal
+from sqlalchemy.sql import select
 
 import pygooglechart
 from pygooglechart import PieChart3D, StackedHorizontalBarChart, StackedVerticalBarChart
@@ -243,10 +245,13 @@ class ReviewController(BaseController):
 
         # pull out associated priority entries
         priority_q = model.meta.Session.query(model.Priority)
+
+
         ranked_priorities =  priority_q.filter(\
                                     model.Priority.review_id == review_id).\
                                     order_by(model.Priority.priority).all() 
-                                    
+
+
         for priority_obj in ranked_priorities:
             num_lbls = len(self._get_labels_for_citation(priority_obj.citation_id))
             priority_obj.num_times_labeled = num_lbls
@@ -903,15 +908,14 @@ class ReviewController(BaseController):
         redirect(url(controller="account", action="my_projects"))
        
     def get_conflict_button_fragment(self, id):
-        #pdb.set_trace()
         if (controller_globals._does_a_conflict_exist(id)):
             c.display_the_button = True
         else:
             c.display_the_button = False
         c.review_id = id
+        # this template will determine whether the conflicts 
+        # button is shown or the text is shown.
         return render("/reviews/conflict_button.mako")
-            #This template will determine whether the conflicts button is shown or the text is shown.
-            #The template itself is then called by dashboard.mako using the load function.
 
 
     @ActionProtector(not_anonymous())
@@ -1297,7 +1301,6 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def add_tag(self, review_id, tag):
-
         current_user = request.environ.get('repoze.who.identity')['user']
 
         # make sure there isn't already an identical tag
@@ -1334,13 +1337,12 @@ class ReviewController(BaseController):
                         model.Label.review_id == review_id, 
                         model.Label.study_id == study_id, 
                         model.Label.reviewer_id == CONSENSUS_USER)).all()
-            c.consensus_review = True
+            #c.consensus_review = True
         else:
             existing_label = label_q.filter(and_(
                         model.Label.review_id == review_id, 
                         model.Label.study_id == study_id, 
                         model.Label.reviewer_id == current_user.id)).all()
-        
 
         if len(existing_label) > 0:
             # then this person has already labeled this example
@@ -1352,6 +1354,9 @@ class ReviewController(BaseController):
             model.Session.add(existing_label)
             model.Session.commit()
             
+            if existing_label.reviewer_id == CONSENSUS_USER:
+                c.consensus_review = True
+
             # if we are re-labelng, return the same abstract, reflecting the new
             # label. we put the single consensus label in a singleton list for the
             # client in the case that this is a 'conflict' assignment.
@@ -1379,6 +1384,7 @@ class ReviewController(BaseController):
                 # the 0th reviewer can be thought of as God
                 # i.e., omniscient -- this is taken to be the
                 # group consensus user
+                print "oh and I'm labeling citation %s as the CONSENSUS_USER" % study_id
                 new_label.reviewer_id = CONSENSUS_USER
             else:
                 new_label.reviewer_id = current_user.id
@@ -1386,13 +1392,19 @@ class ReviewController(BaseController):
             model.Session.add(new_label)
             model.Session.commit()
             assignment.done_so_far += 1
-
             model.Session.commit()
-            
+
+     
             ###
             # for finite assignments, we need to check if we're through.
             if assignment.assignment_type != "perpetual":
-                if assignment.done_so_far >= assignment.num_assigned:
+                # in the case of conflict (and 'review maybe') assignments,
+                # we don't do fancy cacheing and hence just return the next
+                # citation here. may want to implement this in the future.
+                if  assignment.assignment_type == "conflict":
+                    c.consensus_review = False
+                    return self.get_next_citation_fragment(review_id, assignment_id)
+                elif assignment.done_so_far >= assignment.num_assigned:
                     assignment.done = True
                     model.Session.commit()
             else:
@@ -1425,8 +1437,6 @@ class ReviewController(BaseController):
                         assignment.done = True
                         model.Session.commit()
                     
-                    
-            return self.screen_next(review_id, assignment_id)
         
     @ActionProtector(not_anonymous())
     def markup_citation(self, id, assignment_id, citation_id):
@@ -1487,7 +1497,7 @@ class ReviewController(BaseController):
         c.cur_lbl = None
         if assignment.assignment_type == "conflict":
             c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
-            c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
+            c.reviewer_ids_to_names_d = self._labels_to_reviewer_name_d(c.cur_lbl)
         
         # now get tags for this citation
         # issue #34; only show tags that *this* user has provided
@@ -1519,7 +1529,7 @@ class ReviewController(BaseController):
         return render("/tag_dialog_fragment.mako")
 
     @ActionProtector(not_anonymous())
-    def screen_next(self, review_id, assignment_id):
+    def get_next_citation_fragment(self, review_id, assignment_id):
         current_user = request.environ.get('repoze.who.identity')['user']
         assignment = self._get_assignment_from_id(assignment_id)
         review = self._get_review_from_id(review_id)
@@ -1530,11 +1540,13 @@ class ReviewController(BaseController):
         c.assignment_type = assignment.assignment_type
         c.assignment = assignment 
 
-        c.cur_citation = self._get_next_citation(assignment, review)
-  
+        # in the case of getting the next citation for cacheing, we
+        # respect the user's locks
+        c.cur_citation = self._get_next_citation(assignment, review, 
+                                        ignore_my_own_locks=False)
+
         # but wait -- are we finished?
         if assignment.done or c.cur_citation is None:
-            
             assignment.done = True
             model.meta.Session.commit()
             return render("/assignment_complete.mako")
@@ -1542,24 +1554,29 @@ class ReviewController(BaseController):
         # mark up the labeled terms 
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
 
+        if c.cur_citation is not None:
+            print "\n this is the next citation: \n %s \n" % c.cur_citation.title
+
         c.cur_lbl = None
         if assignment.assignment_type == "conflict":
             c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
             c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
-         
+        
         # now get tags for this citation
         c.tags = self._get_tags_for_citation(c.cur_citation.citation_id,\
                             only_for_user_id=current_user.id)
         
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
-
+        
         # now get any associated notes
         notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
         c.notes = notes
 
         model.meta.Session.commit()
+        
         return render("/citation_fragment.mako")
+        
      
         
     def _labels_to_reviewer_name_d(self, labels):
@@ -1569,9 +1586,16 @@ class ReviewController(BaseController):
                 self._get_username_from_id(label.reviewer_id)
         return reviewer_ids_to_names_d 
         
-    def _get_next_citation(self, assignment, review):
+    def _get_next_citation(self, assignment, review, ignore_my_own_locks=True):
         next_id = None
         
+        if not ignore_my_own_locks:
+            # then we're fetching the *next* citation, so we
+            # we may futz with the assignment object a bit (see
+            # below). we copy it here to avoid modifying it.
+            c.assignment = copy.deepcopy(assignment)
+
+
         # if the current assignment is a 'fixed' assignment (i.e.,
         # comprises a finite set of ids to be screened -- an initial round,
         # or conflicting round, e.g.) then we pull from the FixedAssignments table
@@ -1588,21 +1612,25 @@ class ReviewController(BaseController):
                 # by convention. in the case that we're reviewing conflicts
                 # we use this special user.
                 reviewer_id = 0
+
             already_labeled = \
                 self._get_already_labeled_ids(review.review_id, reviewer_id=reviewer_id)
 
+            
             eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
             next_id = None
-     
-            if len(eligible_pool) > 0:
-                next_id = eligible_pool[0]
-        else:
-            
-            priority = self._get_next_priority(review)
+            # here we handle the case of fetching the *next* citation, i.e.,
+            # for cacheing the next example. we assume that if ignore_my_own_locks
+            # is False, then we are grabbing the *next* eligible citation in line
+            # and return this, rather than the first available citation
+            offset = 0 if ignore_my_own_locks else 1
 
-            if priority is None:
-                next_id = None
-            else:
+            if len(eligible_pool) > offset:
+                next_id = eligible_pool[offset]
+
+        else:
+            priority = self._get_next_priority(review, ignore_my_own_locks=ignore_my_own_locks)
+            if priority is not None:
                 # 8/29/11 -- remedy for issue wherein antiquated
                 # (deployed) code was not popping priority items
                 # after a sufficient number of labels were acquired
@@ -1616,8 +1644,7 @@ class ReviewController(BaseController):
                 while (priority.num_times_labeled >= num_times_to_label):
                     model.Session.delete(priority)
                     model.Session.commit()
-                    priority = self._get_next_priority(review)
-
+                    priority = self._get_next_priority(review, ignore_my_own_locks=ignore_my_own_locks)
 
                 next_id = priority.citation_id
                 ## 'check out' / lock the citation
@@ -1626,6 +1653,14 @@ class ReviewController(BaseController):
                 priority.time_requested = datetime.datetime.now()
                 model.Session.commit()
  
+        # we want to increment the 'num done so far' field in the
+        # case that we're queueing up the *next* citation to label, because
+        # when this is shown, one additional study will have been labeled.
+        # we again assume that if we're *not* ignoring our own locks
+        # then we are fetching the *next* citation in line
+        if not ignore_my_own_locks:
+            c.assignment.done_so_far += 1
+
         return None if next_id is None else self._get_citation_from_id(next_id)
       
     @ActionProtector(not_anonymous())
@@ -1912,25 +1947,31 @@ class ReviewController(BaseController):
             return True
         return False     
         
-    def _get_next_priority(self, review):
+    def _get_next_priority(self, review, ignore_my_own_locks=True):
         '''
         returns citation ids to be screened for the specified
-        review, ordered by their priority (int he priority table).
+        review, ordered by their priority (in the priority table).
         this is effectively how AL is implemented in our case --
         we assume the table has been sorted/ordered by some
         other process.
         
-        Note: this will not return ids for instances that are 
-        currently being labeled.
+        this will not return ids for instances that are 
+        currently being labeled, with the exception that 
+        if ignore_my_own_locks is True, then citations currently
+        locked by the current user *will* be returned; if this is
+        False, these locks will be respected.
         '''
         review_id = review.review_id
         priority_q = model.meta.Session.query(model.Priority)
         me = request.environ.get('repoze.who.identity')['user'].id
     
+        
         ranked_priorities =  priority_q.filter(\
                                     model.Priority.review_id == review_id).\
-                                    order_by(model.Priority.priority).all() 
+                                    order_by(model.Priority.priority)#.all() 
         
+
+
         # now filter the priorities, excluding those that are locked
         # note that we also will remove locks here if a citation has
         # been out for > 2 hours.
@@ -1942,25 +1983,49 @@ class ReviewController(BaseController):
         # not once, but *twice*! once should be *worst case*
         # we should break here once we find a sufficiently good
         # good citation
+        
+        t0 = time.time()
         already_labeled = self._get_already_labeled_ids(review_id)
+        print "\n\nquery time: %s" % (time.time() - t0)
+
+        ###
+        # this is what kills you -- sometimes as many as 5 seconds pass!!!
+        t0 = time.time()
+        count = 0
+        num_priorities_locked_by_me = 0
         for priority in ranked_priorities:
-            if priority.is_out and not priority.locked_by == me:
-                # currently locked by someone else; here we check
-                # if the lock should be 'expired'
-                time_locked = (datetime.datetime.now()-priority.time_requested).seconds
-                if time_locked > EXPIRE_TIME:
-                    priority.is_out = False
-                    priority.locked_by = None
-                    model.Session.commit()
-                    return priority
-            elif not priority.is_out or priority.locked_by == me:
-                if priority.citation_id not in already_labeled:
-                    return priority
-                                
-        
-        # this person has already labeled everything -- nothing more to do!
+            print "\n\n on priority: %s " % count
+            print "priority is_out? %s" % priority.is_out
+            print "locked by me? %s" % (priority.locked_by==me)
+            print "ignore_my_own_locks? %s" % ignore_my_own_locks
+            print "priority in already_labeled? %s" % (priority.citation_id in already_labeled)
+            count += 1
+            if priority.is_out:
+                if priority.locked_by != me:
+                    # currently locked by someone else; here we check
+                    # if the lock should be 'expired'
+                    time_locked = (datetime.datetime.now()-priority.time_requested).seconds
+                    if time_locked > EXPIRE_TIME:
+                        priority.is_out = False
+                        priority.locked_by = None
+                        model.Session.commit()
+                        return priority
+                elif ignore_my_own_locks or num_priorities_locked_by_me >= 2:
+                    # then *the current user* has a lock on this priority
+                    # we ignore this (and return the priority object anyway)
+                    # iff ignore_my_own_locks is true; otherwise, we refuse
+                    # to return this. this should be set to false, for example,
+                    # when fetching the next citation to cache
+                    if priority.citation_id not in already_labeled:
+                        return priority
+                else:
+                    num_priorities_locked_by_me += 1
+            elif priority.citation_id not in already_labeled:
+                return priority
+
+
+        # this person has nothing more to do!
         return None
-        
     
     def _get_initial_task_for_review(self, review_id):
         task_q = model.meta.Session.query(model.Task)
@@ -2057,6 +2122,8 @@ class ReviewController(BaseController):
         already_labeled_ids = [label.study_id for label in label_q.filter(and_(\
                                                     model.Label.review_id == review_id,\
                                                     model.Label.reviewer_id == reviewer_id)).all()]
+
+
         return already_labeled_ids 
         
     def _get_participants_for_review(self, review_id):

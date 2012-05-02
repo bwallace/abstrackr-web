@@ -18,9 +18,10 @@ def _does_a_conflict_exist(review_id):
         if last_citation is not None and last_citation != citation.citation_id:
             labels_for_cur_citation = [label.label]
         else:
+
             labels_for_cur_citation.append(label.label)
             # note that this isn't expensive because the set 
-            # cardinality <= ~10
+            # cardinality likely <= ~10
             if len(set(labels_for_cur_citation)) > 1:
                 return True
         last_citation = citation.citation_id

@@ -42,10 +42,10 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
           $("textarea#ic_notes").val('${c.notes.ic}');
           $("textarea#outcome_notes").val('${c.notes.outcome}');
       % else:
-        $("#pop_notes").val(''); 
-        $("textarea#general_notes").val('');
-        $("textarea#ic_notes").val('');
-        $("textarea#outcome_notes").val('');
+          $("#pop_notes").val(''); 
+          $("textarea#general_notes").val('');
+          $("textarea#ic_notes").val('');
+          $("textarea#outcome_notes").val('');
       % endif
     }
 
@@ -100,13 +100,10 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                         $("#notes-status").html("<font color='green'>notes added.</font>");
                         $( "#notes-dialog" ).dialog( "close" );
                         $("#notes-status").html("");
-
                     });
-
-
          
       });
-      /** end **/
+      /** end notes functionality **/
 
 
       $("#tag_btn").click(function()
@@ -134,7 +131,7 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
     } 
 
     function setup_js(){
-        
+      
         $("#dialog").dialog({
           height: 300,
           modal: true,
@@ -178,45 +175,45 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
             });
         }
     
-        $("#accept").click(function() {
-            $('#buttons').hide();
-            $("#wait").text("hold on to your horses..")
-            $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/1", function() {
-                     $("#citation").fadeIn('slow');
-                     $("#wait").text("");
-                     $('#buttons').show();
-                     setup_js();
-                });
-            });
-         });    
-               
-        $("#maybe").click(function() {
-            $('#buttons').hide();
-            $("#wait").text("hold on to your horses..")
-            $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/0", function() {
-                     $("#citation").fadeIn('slow');
-                     $("#wait").text("");
-                     $('#buttons').show();
-                     setup_js();
-                });
-            });
-         });   
         
-        $("#reject").click(function() {
-            $('#buttons').hide();
-            $("#wait").text("hold on to your horses..")
-            $("#citation").fadeOut('slow', function() {
-                $("#citation").load("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/-1", function() {
-                     $("#citation").fadeIn('slow');
-                     $("#wait").text("");
-                     $('#buttons').show();
-                     setup_js();
-                });
-            });
-         });  
+        function label_cur_citation(lbl_str){
+            $("#citation").fadeOut('fast', function() {
+                  if (!(we_are_reviewing_a_label())){
+                    // try to load the next citation
+                    // this call will in turn call get_next_citation
+                    // once loading is complete
+                    load_next_citation();
+                  }
+
+                  $.post("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/" + lbl_str, function(data){
+                    if (we_are_reviewing_a_label()){
+                      // in the case that we are re-labeling a citation, 
+                      // this the label method will return the citation fragment.
+                      //alert(data);
+                      $('#citation').html(data);
+                      $('#citation').fadeIn();
+                      setup_js();
+                      still_loading = false;
+                    }
+                  });
+            });      
+        }
+
+
+        $("#accept").click(function() {
+          label_cur_citation("1");
+        });
+               
+
+        $("#maybe").click(function() {
+          label_cur_citation("0");
+        });
+        
          
+        $("#reject").click(function() {
+          label_cur_citation("-1");
+        });
+
         $("#pos_lbl_term").click(function() {
             // call out to the controller to label the term
             var term_str = $("input#term").val()

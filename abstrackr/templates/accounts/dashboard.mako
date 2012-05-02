@@ -69,7 +69,7 @@
                 <td class="inline-actions"><i>no predictions yet</i></td>
             % endif
             
-            <td id="conflict_button_${review.review_id}">Loading...</td>
+            <td id="conflict_button_${review.review_id}">loading...</td>
             <script language="javascript">
                 $("#conflict_button_${review.review_id}").load("/review/get_conflict_button_fragment/${review.review_id}");
             </script>
@@ -78,7 +78,7 @@
                 <td class="inline-actions"><a href="${url(controller='review', action='review_maybes', id=review.review_id)}">
                     maybes<img src = "../../maybe_sm.png"></a></td>
             % else:
-                <td class="inline-actions"><i>no conflicts yet</i></td>
+                <td class="inline-actions"><i>no maybes yet</i></td>
             % endif
             
             <td class="inline-actions">
