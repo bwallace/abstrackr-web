@@ -213,7 +213,11 @@
           }
 
           function is_perpetual_assignment(){
-            return "${c.assignment.assignment_type}" == "perpetual";
+            % if not 'assignment' in dir(c):
+              return false;
+            % else:
+              return "${c.assignment.assignment_type}" == "perpetual";
+            % endif
           }
 
           function setup_js(){
