@@ -13,6 +13,8 @@ import smtplib
 import time
 import copy
 
+import numpy as np # we only use this for plotting...
+
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 import abstrackr.controllers.controller_globals as controller_globals
@@ -57,14 +59,39 @@ class ReviewController(BaseController):
         if not self._current_user_leads_review(id):
             return "yeah, I don't think so."
         
+
         predictions_q = model.meta.Session.query(model.Prediction)
-        c.predictions_for_review =  predictions_q.filter(model.Prediction.review_id == id).all()
+        c.predictions_for_review = predictions_q.filter(model.Prediction.review_id == id).all()
         c.probably_included = len([x for x in c.predictions_for_review if x.num_yes_votes > 5])
         
-        c.frequencies = [] # This is the list of frequencies of the number of 'yes' votes.
-        for i in xrange(12):
-            c.frequencies.append( len([x for x in c.predictions_for_review if x.num_yes_votes==i]) )
-        
+        has_prob_estimates = not any([pred.predicted_probability is None for pred in c.predictions_for_review])
+        num_bins = 20
+        if has_prob_estimates:
+            prob_estimates = [pred.predicted_probability for pred in c.predictions_for_review]
+            histo = numpy.histogram(prob_estimates, range=(0.0, 1.0))[0].tolist()
+            # e.g., '11,9,9,10,14,13,13,6,3,12'
+            prob_counts_str = ",".join([str(count) for count in histo])
+            c.prob_plot_url = \
+                    ''' 
+                    http://chart.apis.google.com/chart
+                       ?chxl=0:|.1|.2|.3|.4|.5|.6|.7|.8|.9|1.0
+                       &chxp=0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1
+                       &chxr=0,0,1
+                       &chxt=x
+                       &chbh=a
+                       &chs=300x225
+                       &cht=bvg
+                       &chco=A2C180
+                       &chds=0,20
+                       &chd=t:%s
+                       &chtt=Vertical+bar+chart
+                    ''' % prob_counts_str 
+        else:
+            # this will be phased out
+            c.frequencies = [] # This is the list of frequencies of the number of 'yes' votes.
+            for i in xrange(12):
+                c.frequencies.append( len([x for x in c.predictions_for_review if x.num_yes_votes==i]) )
+            
         c.review_being_predicted = self._get_review_from_id(id).name
         
         return render("/reviews/remaining_reviews.mako")
