@@ -1,38 +1,49 @@
 <%inherit file="../site.mako" />
 <%def name="title()">Predictions for Remaining Citations</%def>
 
-    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-    <script type="text/javascript">
-      google.load("visualization", "1", {packages:["corechart"]});
-      google.setOnLoadCallback(drawChart);
-      function drawChart() {
-        var data = new google.visualization.DataTable();
-        data.addColumn('string', 'Number of Votes');
-        data.addColumn('number', 'predicted # of relevant citations');
-        data.addRows([
-          ['0', ${c.frequencies[0]}],
-          ['1', ${c.frequencies[1]}],
-          ['2', ${c.frequencies[2]}],
-          ['3', ${c.frequencies[3]}],
-          ['4', ${c.frequencies[4]}],
-          ['5', ${c.frequencies[5]}],
-          ['6', ${c.frequencies[6]}],
-          ['7', ${c.frequencies[7]}],
-          ['8', ${c.frequencies[8]}],
-          ['9', ${c.frequencies[9]}],
-          ['10', ${c.frequencies[10]}],
-          ['11', ${c.frequencies[11]}]
-        ]);
 
-        var options = {
-          title: 'predictions for the remaining (unscreened) citations in the review',
-          hAxis: {title: 'likelihood of being relevant (11=most likely)', titleTextStyle: {color: 'red'}}
-        };
+    % if 'prob_plot_url' in dir(c):
+      <center>
+        <img src= "${c.prob_plot_url}">
+      </center>
+    % else:
+      <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+      <script type="text/javascript">
+          // we will phase this code out eventually in favor of always showing
+          // probability estimates
+          google.load("visualization", "1", {packages:["corechart"]});
+          google.setOnLoadCallback(drawChart);
 
-        var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
-        chart.draw(data, options);
-      }
-    </script>
+          function drawChart() {
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Number of Votes');
+            data.addColumn('number', 'predicted # of relevant citations');
+            data.addRows([
+              ['0', ${c.frequencies[0]}],
+              ['1', ${c.frequencies[1]}],
+              ['2', ${c.frequencies[2]}],
+              ['3', ${c.frequencies[3]}],
+              ['4', ${c.frequencies[4]}],
+              ['5', ${c.frequencies[5]}],
+              ['6', ${c.frequencies[6]}],
+              ['7', ${c.frequencies[7]}],
+              ['8', ${c.frequencies[8]}],
+              ['9', ${c.frequencies[9]}],
+              ['10', ${c.frequencies[10]}],
+              ['11', ${c.frequencies[11]}]
+            ]);
+
+            var options = {
+              title: 'predictions for the remaining (unscreened) citations in the review',
+              hAxis: {title: 'likelihood of being relevant (11=most likely)', titleTextStyle: {color: 'red'}}
+            };
+
+            var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+            chart.draw(data, options);
+          }
+      </script>
+      % endif
+
 
   <body>
   
