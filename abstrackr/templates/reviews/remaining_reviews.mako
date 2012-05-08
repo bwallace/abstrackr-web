@@ -1,12 +1,7 @@
 <%inherit file="../site.mako" />
 <%def name="title()">Predictions for Remaining Citations</%def>
-
-
-    % if 'prob_plot_url' in dir(c):
-      <center>
-        <img src= "${c.prob_plot_url}">
-      </center>
-    % else:
+    
+    % if 'prob_plot_url' not in dir(c):
       <script type="text/javascript" src="https://www.google.com/jsapi"></script>
       <script type="text/javascript">
           // we will phase this code out eventually in favor of always showing
@@ -42,16 +37,22 @@
             chart.draw(data, options);
           }
       </script>
-      % endif
-
+    % endif
 
   <body>
   
   <div class="content">
-    Review Name: ${c.review_being_predicted}<br />
-    ${len(c.predictions_for_review)} citations have not been screened yet.<br />
-    ${c.probably_included} citations are probably relevant.<br /><br />
 
-    <center><div id="chart_div" style="width: 1000px; height: 700px;"></div></center>
+    <h2>${c.review_being_predicted}</h2>
+    ${len(c.predictions_for_review)} citations have not been screened yet.<br />
+    ${c.probably_included} citations are probably relevant.<br /><br /><br/>
+    <br/><br/>
+    <center><div id="chart_div" style="width: 1000px; height: 550px;">
+    % if 'prob_plot_url' in dir(c):
+      <center>
+        <img src= "${c.prob_plot_url}">
+      </center>
+    % endif
+    </div></center>
   </div>
   </body>

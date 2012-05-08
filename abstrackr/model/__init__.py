@@ -257,7 +257,8 @@ class Prediction(Base):
     review_id = sa.Column(types.Integer) # it makes life easier to have this around
     prediction = sa.Column(types.Boolean) # true = include; false = exclude
     num_yes_votes = sa.Column(types.Float) # number of ensemble members that voted yes
-
+    predicted_probability = sa.Column(types.Float) # predicted probability
+    
 ####################################
 ## these tables for authentication #
 ####################################

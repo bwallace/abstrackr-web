@@ -74,3 +74,25 @@ def _get_all_citations_for_review(review_id, return_query_obj=False):
         return citation_query_obj
     # this can be expensive!
     return citation_query_obj.all()
+
+def _get_bin(prob, upper_bounds):
+    for bucket_index, upper_bound in enumerate(upper_bounds):
+        if prob < upper_bound:
+            return bucket_index
+    return bucket_index
+
+def _prob_histogram(probs):
+    buckets = [.1*x for x in range(1,11,1)]
+    counts = [0]*10
+
+    for prob in probs:
+        counts[_get_bin(prob, buckets)] += 1
+
+    # normalize
+    z = float(sum(counts))
+    if z == 0:
+        # this should never happen... but just in case
+        z = 1.0
+
+    counts = [count/z for count in counts]
+    return counts

@@ -18,7 +18,9 @@ import numpy as np # we only use this for plotting...
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 import abstrackr.controllers.controller_globals as controller_globals
+import controller_globals
 from controller_globals import * # shared variables
+from controller_globals import _prob_histogram
 import logging
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
@@ -54,6 +56,7 @@ class ReviewController(BaseController):
         c.review_count = "%s" % model.meta.Session.query(func.count(model.Review.review_id)).scalar()
         return render("/reviews/new.mako")
     
+
     @ActionProtector(not_anonymous())
     def predictions_about_remaining_citations(self, id):
         if not self._current_user_leads_review(id):
@@ -68,30 +71,36 @@ class ReviewController(BaseController):
         num_bins = 20
         if has_prob_estimates:
             prob_estimates = [pred.predicted_probability for pred in c.predictions_for_review]
-            histo = numpy.histogram(prob_estimates, range=(0.0, 1.0))[0].tolist()
+            histo = _prob_histogram(prob_estimates)
             # e.g., '11,9,9,10,14,13,13,6,3,12'
             prob_counts_str = ",".join([str(count) for count in histo])
+            # not sure if we want to show this... it's different than our classification threshold,
+            # which in general is much more cautious
+            c.probably_included = len([x for x in prob_estimates if x>=.5])
+            num_preds = len(prob_estimates)
             c.prob_plot_url = \
-                    ''' 
-                    http://chart.apis.google.com/chart
-                       ?chxl=0:|.1|.2|.3|.4|.5|.6|.7|.8|.9|1.0
-                       &chxp=0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1
-                       &chxr=0,0,1
-                       &chxt=x
+                    '''http://chart.apis.google.com/chart
+                       ?chxl=0:|0|%s|%s|1:|.1|.2|.3|.4|.5|.6|.7|.8|.9|1.0
+                       &chxp=0,0,0.5,1|1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1
+                       &chxr=0,0,1|1,0,1
+                       &chxt=y,x
+                       &chxs=0,0A0808|1,0A0808
                        &chbh=a
-                       &chs=300x225
+                       &chs=700x420
                        &cht=bvg
-                       &chco=A2C180
-                       &chds=0,20
+                       &chco=C2BDDD
+                       &chds=0,1
                        &chd=t:%s
-                       &chtt=Vertical+bar+chart
-                    ''' % prob_counts_str 
+                       &chtt=Probabilities+of+remaining+studies+being+relevant''' % \
+                            (int(float(num_preds)/2.0), num_preds, prob_counts_str)
+            c.prob_plot_url = c.prob_plot_url.replace(" ", "").replace("\n", "")
         else:
             # this will be phased out
             c.frequencies = [] # This is the list of frequencies of the number of 'yes' votes.
             for i in xrange(12):
                 c.frequencies.append( len([x for x in c.predictions_for_review if x.num_yes_votes==i]) )
             
+        #pdb.set_trace()
         c.review_being_predicted = self._get_review_from_id(id).name
         
         return render("/reviews/remaining_reviews.mako")
