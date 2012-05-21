@@ -300,6 +300,7 @@ class ReviewController(BaseController):
         '''
         review = self._get_review_from_id(review_id)
         previous_screening_mode = review.screening_mode
+
         if previous_screening_mode == new_screening_mode:
             # nothing to do here
             return None
@@ -341,8 +342,10 @@ class ReviewController(BaseController):
             for reviewer in participating_reviewers:
                 self._assign_perpetual_task(reviewer.id, review_id)
             
-            
-    
+        # also update the  
+        review.screening_mode = new_screening_mode
+        model.Session.commit()
+
     def _delete_perpetual_assignments_for_review(self, review_id):
         assignment_q = model.meta.Session.query(model.Assignment)     
         perpetual_assignments = \
@@ -2258,6 +2261,7 @@ class ReviewController(BaseController):
 
         --- warning -- this is typically an 'expensive' routine
         '''
+        #pdb.set_trace()
         if n == review.initial_round_size:
             # nothing to do
             return None
@@ -2350,6 +2354,12 @@ class ReviewController(BaseController):
             assignment.done = (assignment.done_so_far >= n)
             assignment.num_assigned = n
             model.Session.commit()
+
+
+        # update the initial task object, too
+        initial_task = self._get_initial_task_for_review(review.review_id)
+        initial_task.num_assigned = n
+        model.Session.commit()
 
         # finally, update the initial round size field
         # onthe review object
