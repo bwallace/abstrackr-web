@@ -2047,8 +2047,13 @@ class ReviewController(BaseController):
         # good citation
         
         t0 = time.time()
-        already_labeled = self._get_already_labeled_ids(review_id)
+        # 5/23/11 -- this was previously retrieving *all* labeled
+        # citations for the review, i.e., reviewer_id was not
+        # being passed in. This caused issues with double-screening.
+        already_labeled_by_me = \
+            self._get_already_labeled_ids(review_id, reviewer_id=me)
         print "\n\nquery time: %s" % (time.time() - t0)
+
 
         ###
         # this is what kills you -- sometimes as many as 5 seconds pass!!!
@@ -2061,31 +2066,33 @@ class ReviewController(BaseController):
             print "priority is_out? %s" % priority.is_out
             print "locked by me? %s" % (priority.locked_by==me)
             print "ignore_my_own_locks? %s" % ignore_my_own_locks
-            print "priority in already_labeled? %s" % (priority.citation_id in already_labeled)
-            count += 1
-            if priority.is_out:
-                if priority.locked_by != me:
-                    # currently locked by someone else; here we check
-                    # if the lock should be 'expired'
-                    time_locked = (datetime.datetime.now()-priority.time_requested).seconds
-                    if time_locked > EXPIRE_TIME:
-                        priority.is_out = False
-                        priority.locked_by = None
-                        model.Session.commit()
-                        return priority
-                elif ignore_my_own_locks:
-                    # then *the current user* has a lock on this priority
-                    # we ignore this (and return the priority object anyway)
-                    # iff ignore_my_own_locks is true; otherwise, we refuse
-                    # to return this. this should be set to false, for example,
-                    # when fetching the next citation to cache
-                    if priority.citation_id not in already_labeled:
-                        return priority
-            elif priority.citation_id not in already_labeled:
-                print "(regular) returning priority with citation_id %s" % \
-                                         priority.citation_id
-                return priority
-
+            if priority.citation_id not in already_labeled_by_me:
+                if priority.is_out:
+                    # priority is out for screening
+                    if priority.locked_by != me:
+                        # currently locked by someone else; here we check
+                        # if the lock should be 'expired'
+                        time_locked = (datetime.datetime.now()-priority.time_requested).seconds
+                        if time_locked > EXPIRE_TIME:
+                            priority.is_out = False
+                            priority.locked_by = None
+                            model.Session.commit()
+                            return priority
+                    elif ignore_my_own_locks:
+                        # then *the current user* has a lock on this priority
+                        # we ignore this (and return the priority object anyway)
+                        # iff ignore_my_own_locks is true; otherwise, we refuse
+                        # to return this. this should be set to false, for example,
+                        # when fetching the next citation to cache
+                        if priority.citation_id not in already_labeled_by_me:
+                            return priority
+                else:
+                    # priority is not locked and we haven't screened the associated
+                    # citation
+                    print "(regular) returning priority with citation_id %s" % \
+                                             priority.citation_id
+                    return priority
+            count+=1
 
         # this person has nothing more to do!
         return None
