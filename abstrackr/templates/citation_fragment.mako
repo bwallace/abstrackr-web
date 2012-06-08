@@ -1,9 +1,21 @@
-
 <h2>${c.cur_citation.marked_up_title}</h2>
-${c.cur_citation.authors}<br/><br/>
+
+% if c.show_journal==True:
+    <i>Journal: ${c.cur_citation.journal}</i><br /><br />
+% endif
+
+% if c.show_authors==True:
+    Authors: ${c.cur_citation.authors}<br/><br/>
+% endif
+
 ${c.cur_citation.marked_up_abstract}<br/><br/>
-<b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
+
+% if c.show_keywords==True:
+    <b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
+% endif
+
 <b>ID:</b> ${c.cur_citation.citation_id}<br/><br/>
+
 
 <%def name="write_label(label)">
     % if label == 1:

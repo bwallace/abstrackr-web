@@ -52,6 +52,8 @@
     
     <tr><td><label>pilot round size:</td><td> ${h.text('init_size', '0')}</label></td></tr>
 
+    <tr><td><label>tag visibility (<a href="#" id="tag-visibility-link">what?</a>):</td> <td>${h.select("tag_visibility", None, ["Private", "Public"])} </label></td></tr>
+
     <div class="actions">
 
     <tr></tr>

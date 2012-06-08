@@ -1,12 +1,32 @@
-''''''
-# collection of helper routines, primarily for querying the database
-''''''
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # ##
+#                                                                      #
+#  collection of helper routines, primarily for querying the database  #
+#                                                                      #
+# # # # # # # # # # # # # # # # # # # # # # # # #  # # # # # # # # # # #
+
+
 
 CONSENSUS_USER = 0
 
 from abstrackr.lib.base import BaseController, render
 import abstrackr.model as model
 import pdb
+
+
+# This method facilitates access to User attributes that are NOT auth.User attributes.
+def _get_user_from_email(email):
+    '''
+    If a user with the provided email exists in the database, their
+    object is returned; otherwise this method returns False. 
+    '''
+    user_q = model.meta.Session.query(model.User)
+    try:
+        return user_q.filter(model.User.email == email).one()
+    except:
+        # (naively, I guess) assuming that this implies that we've
+        # no user with the provided email.
+        return False
+
 
 def _does_a_conflict_exist(review_id):
     # these will be orderd by citation
@@ -27,6 +47,7 @@ def _does_a_conflict_exist(review_id):
         last_citation = citation.citation_id
         
     return False
+
 
 def _get_conflicts(review_id):
     citation_ids_to_labels = \
@@ -75,11 +96,13 @@ def _get_all_citations_for_review(review_id, return_query_obj=False):
     # this can be expensive!
     return citation_query_obj.all()
 
+
 def _get_bin(prob, upper_bounds):
     for bucket_index, upper_bound in enumerate(upper_bounds):
         if prob < upper_bound:
             return bucket_index
     return bucket_index
+
 
 def _prob_histogram(probs):
     buckets = [.1*x for x in range(1,11,1)]

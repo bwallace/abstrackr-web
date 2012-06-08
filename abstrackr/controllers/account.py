@@ -6,7 +6,7 @@ from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
 from pylons.controllers.util import redirect
 import abstrackr.controllers.controller_globals as controller_globals # shared querying routines
-from controller_globals import * 
+from controller_globals import *
 
 import turbomail
 import abstrackr.model as model
@@ -54,7 +54,7 @@ class AccountController(BaseController):
         
     def reset_password(self):
         user_email = request.params['email']
-        user_for_email = self._get_user_from_email(user_email)
+        user_for_email = controller_globals._get_user_from_email(user_email)
         if user_for_email:
             token = self.gen_token_to_reset_pwd(user_for_email)
             message = """
@@ -89,7 +89,7 @@ class AccountController(BaseController):
                 Hrmm... It looks like you're trying to reset your password, but I can't match the provided token. 
                 Please go back to the email that was sent to you and make sure you've copied the URL correctly. 
                 """
-        user = self._get_user_from_email(matches[0].user_email)
+        user = controller_globals._get_user_from_email(matches[0].user_email)
         for match in matches:
             model.Session.delete(match)
         user._set_password(token)
@@ -134,6 +134,7 @@ class AccountController(BaseController):
     def my_account(self):
         c.current_user = request.environ.get('repoze.who.identity')['user']
         c.account_msg = ""
+        c.account_msg_citation_settings = ""
         return render("/accounts/account.mako")
 
     def change_password(self):
@@ -144,6 +145,8 @@ class AccountController(BaseController):
             c.account_msg = "ok, your password has been changed."
         else:
             c.account_msg = "whoops -- the passwords didn't match! try again."
+
+        c.account_msg_citation_settings = ""
 
         return render("/accounts/account.mako")
       
@@ -166,6 +169,13 @@ class AccountController(BaseController):
         new_user.experience = request.params['experience']
         new_user._set_password(request.params['password'])
         new_user.email = request.params['email']
+        
+        # These are for citation settings, 
+        # initialized to True to make everything in the citation visible by default.
+        new_user.show_journal = True
+        new_user.show_authors = True
+        new_user.show_keywords = True
+
         model.Session.add(new_user)
         model.Session.commit()
         
@@ -204,34 +214,51 @@ class AccountController(BaseController):
             redirect(url(controller="review", action="join", review_code=request.params['then_join']))
         else:
             redirect(url(controller="account", action="login"))
-        
 
-    def _get_user_from_email(self, email):
-        '''
-        If a user with the provided email exists in the database, their
-        object is returned; otherwise this method returns False. 
-        '''
-        user_q = model.meta.Session.query(model.User)
-        try:
-            return user_q.filter(model.User.email == email).one()
-        except:
-            # (naively, I guess) assuming that this implies that we've
-            # no user with the provided email.
-            return False
-        
-        
+
+ 
     '''
     The following methods are protected, i.e., the user must be logged in.
     '''
     @ActionProtector(not_anonymous())
     def welcome(self):
         redirect(url(controller="account", action="my_work"))
+
+    @ActionProtector(not_anonymous())
+    def back_to_projects(self):
+        redirect(url(controller="account", action="my_projects"))
         
+    
     @ActionProtector(not_anonymous())
     def my_work(self):
+    
         person = request.environ.get('repoze.who.identity')['user']
         c.person = person
+
+        user = controller_globals._get_user_from_email(person.email)
+        # Need the above line because the first line of this function gives
+        #   a model.auth.User object
+        # as opposed to
+        #   a model.User object (which is what I need)
+
         
+        # If somehow the user's citation settings variables don't get initialized yet,
+        # then the following 3 if-else blocks should take care of it in order to avoid
+        # any errors due to the values of the variables being null:
+        
+        c.show_journal = user.show_journal if not user.show_journal is None else True
+
+        if (user.show_authors==True or user.show_authors==False):
+            c.show_authors = user.show_authors
+        else:
+            user.show_authors = True
+
+        if (user.show_keywords==True or user.show_keywords==False):
+            c.show_keywords = user.show_keywords
+        else:
+            user.show_keywords = True
+
+
         # pull all assignments for this person
         assignment_q = model.meta.Session.query(model.Assignment)
         all_assignments = assignment_q.filter(model.Assignment.reviewer_id == person.id).all()
@@ -264,7 +291,6 @@ class AccountController(BaseController):
                            
         c.finished_assignments = [a for a in all_assignments if a.done]   
         
-        
 
         project_q = model.meta.Session.query(model.Review)   
         junction_q = model.meta.Session.query(model.ReviewerProject)
@@ -288,10 +314,36 @@ class AccountController(BaseController):
 
         return render('/reviews/merge_reviews.mako')
 
+    
     @ActionProtector(not_anonymous())
     def my_projects(self):
         person = request.environ.get('repoze.who.identity')['user']
         c.person = person
+
+        user = controller_globals._get_user_from_email(person.email)
+        # Need the above line because the first line of this function gives
+        #   a model.auth.User object
+        # as opposed to
+        #   a model.User object (which is what I need)
+        
+        # If somehow the user's citation settings variables don't get initialized yet,
+        # then the following 3 if-else blocks should take care of it in order to avoid
+        # any errors due to the values of the variables being null:
+        
+        if (user.show_journal==True or user.show_journal==False):
+            c.show_journal = user.show_journal
+        else:
+            user.show_journal = True
+
+        if (user.show_authors==True or user.show_authors==False):
+            c.show_authors = user.show_authors
+        else:
+            user.show_authors = True
+
+        if (user.show_keywords==True or user.show_keywords==False):
+            c.show_keywords = user.show_keywords
+        else:
+            user.show_keywords = True
         
         project_q = model.meta.Session.query(model.Review)       
         c.leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()     
@@ -325,6 +377,7 @@ class AccountController(BaseController):
         
         return render('/accounts/dashboard.mako')
         
+    
     def _get_projects_person_leads(self, person):
         project_q = model.meta.Session.query(model.Review)       
         leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()
@@ -345,3 +398,32 @@ class AccountController(BaseController):
     @ActionProtector(has_permission('admin'))
     def test_admin_access(self):
         return 'You are inside admin section'
+
+
+    # This is what gets executed when the user attempts to customize the 'citation settings'.
+    @ActionProtector(not_anonymous())
+    def customize_citations(self):
+
+        # Obtain the parameters.
+        show_journal_str = request.params['toggle_journal']
+        show_authors_str = request.params['toggle_authors']
+        show_keywords_str = request.params['toggle_keywords']
+
+        # Obtain the User object (as opposed to the auth.User object).
+        cur_user = controller_globals._get_user_from_email(request.environ.get('repoze.who.identity')['user'].email)
+
+        # Make changes to the booleans of the user object.
+        cur_user.show_journal = {"Show":True, "Hide":False}[show_journal_str]
+        cur_user.show_authors = {"Show":True, "Hide":False}[show_authors_str]
+        cur_user.show_keywords = {"Show":True, "Hide":False}[show_keywords_str]
+
+        # Add the changes to the database.
+        model.Session.commit()
+
+        # These messages appear in their designated separate locations, 
+        #   i.e. on the top left corner of the div that corresponds to this function.
+        # This is more appropriate than having a general message on some part of the screen.
+        c.account_msg = ""
+        c.account_msg_citation_settings = "Citation Settings changes have been applied."
+
+        return render("/accounts/account.mako")

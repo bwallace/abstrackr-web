@@ -31,6 +31,11 @@ class Review(Base):
     
     # `single', `double', or `advanced'
     screening_mode = sa.Column(types.Unicode(50))
+
+    # True (i.e. tags are private)
+    #  or 
+    # False (i.e. tags are public)
+    tag_privacy = sa.Column(types.Boolean)
     
     # the number of labels to be procured for each abstract
     num_labels_thus_far = sa.Column(types.Integer)
@@ -291,7 +296,14 @@ class User(Base):
     password = sa.Column(types.Unicode(80))
     fullname = sa.Column(types.Unicode(255))
     # num systematic reviews they've been involved with
-    experience = sa.Column(types.Integer) 
+    experience = sa.Column(types.Integer)
+
+    # -> Global settings that determine which fields pertaining to the citation 
+    #    appear on the content section of the page during screening
+    # -> Set to 'True' by default
+    show_journal = sa.Column(types.Boolean)
+    show_authors = sa.Column(types.Boolean)
+    show_keywords = sa.Column(types.Boolean)
     
     def _set_password(self, password):
         """Hash password on the fly."""

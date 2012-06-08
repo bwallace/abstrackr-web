@@ -19,7 +19,7 @@ from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 import abstrackr.controllers.controller_globals as controller_globals
 import controller_globals
-from controller_globals import * # shared variables
+from controller_globals import * # shared variables/functions
 from controller_globals import _prob_histogram
 import logging
 from repoze.what.predicates import not_anonymous, has_permission
@@ -124,12 +124,16 @@ class ReviewController(BaseController):
         new_review.project_description = request.params['description']
         new_review.sort_by = request.params['order']
         screening_mode_str = request.params['screen_mode']
+        tag_privacy_str = request.params['tag_visibility']
 
         new_review.screening_mode = \
                  {"Single-screen":"single", "Double-screen":"double", "Advanced":"advanced"}[screening_mode_str]
         
         if 'init_size' in request.params.keys():
             new_review.initial_round_size = int(request.params['init_size'])
+
+        new_review.tag_privacy = {"Private":True, "Public":False}[tag_privacy_str]
+        # This should be changed to boolean type, AKA tinyint(1) in the mysql database.
         
         model.Session.add(new_review)
         model.Session.commit()
@@ -197,12 +201,14 @@ class ReviewController(BaseController):
         merged_review.sort_by = request.params['order']
         screening_mode_str = request.params['screen_mode']
         init_round_size = int(request.params['init_size']) # TODO verify
+        tag_privacy_str = request.params['tag_visibility']
         
 
         # TODO make the below dictionary a global!
         merged_review.screening_mode = \
            {"Single-screen":"single", "Double-screen":"double", "Advanced":"advanced"}[screening_mode_str]
         
+        merged_review.tag_privacy = {"Private":True, "Public":False}[tag_privacy_str]
 
         model.Session.add(merged_review)
         model.Session.commit()
@@ -210,6 +216,9 @@ class ReviewController(BaseController):
         # now merge the reviews
         for review_id in reviews_to_merge:
             self._move_review(review_id, merged_review.review_id)
+
+        # Eliminate duplicate citations:
+        self.de_duplicate_citations(merged_review.review_id, True)
         
         if merged_review.screening_mode in (u"single", u"double"):
             self._create_perpetual_task_for_review(merged_review.review_id)
@@ -253,6 +262,12 @@ class ReviewController(BaseController):
         self._change_review_screening_mode(id, new_screening_mode)
 
         ####
+        # check the tag visibility
+        tag_privacy_str = request.params['tag_visibility']
+        new_tag_privacy = {"Private":True, "Public":False}[tag_privacy_str]
+        self._change_tag_privacy(id, new_tag_privacy)
+
+        ####
         # now the initial (pilot) round size
         new_init_round_size = int(request.params['init_size']) # TODO verify
         self._set_initial_screen_size_for_review(review, new_init_round_size)
@@ -266,7 +281,221 @@ class ReviewController(BaseController):
 
         return self.edit_review(id, message="ok -- review updated.")
         #if init_round_size == cur_init_assignment.
+
+
+    @ActionProtector(not_anonymous())
+    def render_add_citations(self, id, message=None):
+        if not self._current_user_leads_review(id):
+            return "yeah, I don't think so."
+        c.review = self._get_review_from_id(id)
+        if message is not None:
+            c.msg = message
+ 
+        return render("/reviews/add_citations.mako")
+
+
+    @ActionProtector(not_anonymous())
+    def add_citations(self, id):
+
+        # Obtain the review from the review id:
+        cur_review = self._get_review_from_id(id)
+
+        # Make sure assignments are opened up, 
+        #   in case one or more of the added citations are actually NEW citations:
+        assignments = model.meta.Session.query(model.Assignment).filter(model.Assignment.review_id==id).all()
+        for each_assignment in assignments:
+            if each_assignment.done:
+                each_assignment.done = False
+
+        # Get the file from the user and upload it:
+        xml_file = request.POST['db']
+        local_file_path = "." + os.path.join(permanent_store, xml_file.filename.lstrip(os.sep))
+        local_file = open(local_file_path, 'w') 
+        shutil.copyfileobj(xml_file.file, local_file)
+        xml_file.file.close()
+        local_file.close()
+
+        # Extract the citations and add them to the database:
+        num_articles = None
+        if xml_file.filename.endswith(".xml"):
+            print "parsing uploaded xml..."
+            num_articles = xml_to_sql.xml_to_sql(local_file_path, cur_review)
+            self.de_duplicate_citations(id, False)
+        elif xml_to_sql.looks_like_tsv(local_file_path):
+            num_articles = xml_to_sql.tsv_to_sql(local_file_path, cur_review)
+            self.de_duplicate_citations(id, False)
+        else:
+            print "assuming this is a list of pubmed ids"
+            num_articles = xml_to_sql.pmid_list_to_sql(local_file_path, cur_review)
+            self.de_duplicate_citations(id, True)
+        print "done."
+
+        # Reset the encoded status of the review to 'false':
+        encoded_status = model.EncodeStatus()
+        encoded_status.review_id = cur_review.review_id
+        encoded_status.is_encoded = False
+        model.Session.add(encoded_status)
+        model.Session.commit()
+
+        # Reset the prediction status of the review to 'false':
+        prediction_status = model.PredictionsStatus()
+        prediction_status.review_id = cur_review.review_id
+        prediction_status.predictions_exist = False
+        model.Session.add(prediction_status)
+        model.Session.commit()
+
+        return self.render_add_citations(id, message="The review has been updated with the new citations.")
+
+
+
+    @ActionProtector(not_anonymous())
+    def de_duplicate_citations(self, id, is_pubmed):
         
+        # Obtain all citations:
+        citations = model.meta.Session.query(model.Citation).filter(model.Citation.review_id==id).all()
+
+        # This is what we iterate through to collapse the duplicate citations:
+        list_of_duplicates = []
+
+        # This list contains the ids of all citations we have gone over.
+        # Since we do not want duplicate elements in list_of_duplicates,
+        #   we keep track of which citations we have gone over, and
+        #   we do that by storing their ids in the following list.
+        citation_ids = []
+
+        # Iterate through the citations:
+        for citation in citations:
+            
+            # Doing this will also prevent the duplicates from being checked,
+            #   which increases the speed.
+            if citation.citation_id not in citation_ids:
+            
+                # If the file is a list of pubmed ids, check for duplicate pubmed ids:
+                if is_pubmed:
+                    # Grab the duplicates:
+                    duplicates = self._get_duplicate_citations(str(citation.pmid_id), id, True)
+                    # Add the citation ids so we don't have to go through the remaining of the duplicates:
+                    for each in duplicates:
+                        citation_ids.append(each.citation_id)
+                    # IFF there exist duplicate citations, append them to list_of_duplicates:
+                    if len(duplicates) > 1:
+                        # Each and every element of this list is a list of duplicate citations:
+                        list_of_duplicates.append(duplicates)
+
+                # If the file is NOT a list of pmids, check for duplicate titles:
+                else:
+                    duplicates = self._get_duplicate_citations(citation.title, id, False)
+                    for each in duplicates:
+                        citation_ids.append(each.citation_id)
+                    if len(duplicates) > 1:
+                        list_of_duplicates.append(duplicates)
+
+        #   a. Merge all of the labels by making the labels of any given set of duplicate citations
+        #      point to only one of those citations.
+        #   b. Delete all 'non-surviving' duplicate citations.
+        self._collapse_duplicate_citations(list_of_duplicates)
+
+
+    def _get_duplicate_citations(self, string, id, is_pubmed):
+        # The type-casting of pmids to 'string' and then back to 'int' is necessary
+        # in order to make pmids and titles be passed into this function using a single parameter.
+        
+        if is_pubmed:
+            # Filter the citations by the pubmed ID as well as the review ID:
+            return model.meta.Session.query(model.Citation).\
+                    filter( and_(model.Citation.pmid_id==int(string), model.Citation.review_id==id) ).all()
+        else:
+            return model.meta.Session.query(model.Citation).\
+                    filter( and_(model.Citation.title==string, model.Citation.review_id==id) ).all()
+
+
+    def _collapse_duplicate_citations(self, list_of_duplicates):
+        for each_collection_of_duplicates in list_of_duplicates:
+            counter = 0  # This will ensure the first of the duplicates is considered the survivor.
+            surviving_citation_id = None  # This id belongs to the lucky survivor of the duplicate citations.
+            
+            for each_duplicate_citation in each_collection_of_duplicates:
+                
+                if counter==0:
+                    surviving_citation_id = each_duplicate_citation.citation_id
+                
+                else:
+                    # Take care of all affected entries in all tables that have citation_id (or study_id) as a field:
+                    
+                    # Priority table:
+                    self._change_pointers_or_delete_entries('priority', each_duplicate_citation.citation_id, surviving_citation_id)
+                    
+                    # Tags table:
+                    self._change_pointers_or_delete_entries('tags', each_duplicate_citation.citation_id, surviving_citation_id)
+                    
+                    # Notes table:
+                    self._change_pointers_or_delete_entries('notes', each_duplicate_citation.citation_id, surviving_citation_id)
+                    
+                    # Label table:
+                    self._change_pointers_or_delete_entries('labels', each_duplicate_citation.citation_id, surviving_citation_id)
+                    
+                    # FixedTask table:
+                    self._change_pointers_or_delete_entries('fixedtasks', each_duplicate_citation.citation_id, surviving_citation_id)
+                    
+                    # Prediction table:
+                    self._change_pointers_or_delete_entries('predictions', each_duplicate_citation.citation_id, surviving_citation_id)
+
+                    # In case of the citation table, our task is slightly different - we will be deleting entries here:
+                    self._delete_citation(each_duplicate_citation.citation_id)
+
+                counter = counter + 1
+        model.Session.commit()
+
+
+    def _change_pointers_or_delete_entries(self, tablename, citation_id, surviving_citation_id):
+        # For each of the tables below:
+        #   1. Acquire the objects filtered by the citation_id.
+        #   2. Iterate through the objects and change their pointers, 
+        #      except for the priority table where we just delete the 'expired' priority entries.
+        # Subsequently, the objects should point to only one of the duplicate citations; 
+        #   it does not matter which one, since the purpose of this course of action is 
+        #   to release the 'non-surviving' duplicate citations from all label-bindings.
+        # A switch statement would be nice here, wouldn't it?
+
+        if tablename=='priority':
+            priorities = model.meta.Session.query(model.Priority).filter(model.Priority.citation_id==citation_id).all()
+            for priority in priorities:
+                if priority.citation_id != surviving_citation_id:
+                    model.Session.delete(priority)
+
+        elif tablename=='tags':
+            tags = model.meta.Session.query(model.Tags).filter(model.Tags.citation_id==citation_id).all()
+            for tag in tags:
+                tag.citation_id = surviving_citation_id
+
+        elif tablename=='notes':
+            notes = model.meta.Session.query(model.Note).filter(model.Note.citation_id==citation_id).all()
+            for note in notes:
+                note.citation_id = surviving_citation_id
+
+        elif tablename=='labels':
+            labels = model.meta.Session.query(model.Label).filter(model.Label.study_id==citation_id).all()
+            for label in labels:
+                label.study_id = surviving_citation_id
+
+        elif tablename=='fixedtasks':
+            fixedtasks = model.meta.Session.query(model.FixedTask).filter(model.FixedTask.citation_id==citation_id).all()
+            for fixedtask in fixedtasks:
+                fixedtasks.citation_id = surviving_citation_id
+
+        elif tablename=='predictions':
+            predictions = model.meta.Session.query(model.Prediction).filter(model.Prediction.study_id==citation_id).all()
+            for prediction in predictions:
+                prediction.study_id = surviving_citation_id
+
+        # Now save your changes to the DB:
+        model.Session.commit()
+
+    
+    def _delete_citation(self, id):
+        model.Session.delete(model.meta.Session.query(model.Citation).filter(model.Citation.citation_id==id).first())
+        
+
 
     def _update_num_labels_in_priority_queue(self, review_id):
         '''
@@ -345,6 +574,23 @@ class ReviewController(BaseController):
         # also update the  
         review.screening_mode = new_screening_mode
         model.Session.commit()
+
+
+    def _change_tag_privacy(self,review_id, new_privacy_setting):
+        '''Possible values for new_visibility: Private and Public'''
+        # Step 1: Obtain the review.
+        review = self._get_review_from_id(review_id)
+        
+        # Step 2: Check if the privacy setting has been changed. 
+        #         If it hasn't, do nothing.
+        if review.tag_privacy == new_privacy_setting:
+            return None
+
+        # Step 3: If the privacy setting has been changed, 
+        #         all we need to do is update the tag_privacy field in the reviews table.
+        review.tag_privacy = new_privacy_setting
+        model.Session.commit()
+
 
     def _delete_perpetual_assignments_for_review(self, review_id):
         assignment_q = model.meta.Session.query(model.Assignment)     
@@ -562,8 +808,11 @@ class ReviewController(BaseController):
         new_review.date_created = datetime.datetime.now()
 
         new_review.initial_round_size = 0
+        new_review.tag_privacy = True
+
         return new_review
 
+    
     @ActionProtector(not_anonymous())
     def invite_reviewers(self, id):
         emails = request.params['emails'].split(",")
@@ -574,6 +823,7 @@ class ReviewController(BaseController):
         
         return self.admin(id, admin_msg="OK -- sent invites to: %s" % request.params['emails'])
 
+    
     # @TODO this is redundant with code in account.py --
     # re-factor.
     def _invite_person_to_join(self, email, project):
@@ -1319,12 +1569,14 @@ class ReviewController(BaseController):
             if user_tag not in existing_tag_types:
                 self.add_tag(review_id, user_tag)
 
+        '''
         # ok -- now, get tags for this citation; we're going to 
         # untag everything first
         cur_tags = self._get_tags_for_citation(study_id, texts_only=False)
         for tag in cur_tags:
             model.Session.delete(tag)
             model.Session.commit()
+        '''
 
         # now add all the new tags
         for tag in list(set(tags)):
@@ -1407,7 +1659,18 @@ class ReviewController(BaseController):
             c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
             c.review_id = review_id
             c.assignment = assignment
+
+            user = controller_globals._get_user_from_email(current_user.email)
+            # Need the above line to obtain a model.User object (which is what I need)
+            # as opposed to a model.auth.User object
+
+            # The following help determine which fields of the citation are shown.
+            c.show_journal = user.show_journal
+            c.show_authors = user.show_authors
+            c.show_keywords = user.show_keywords
+
             return render("/citation_fragment.mako")
+        
         else:
             # either there is no existing label or this is a consens label
             # being provided (or both!)
@@ -1486,6 +1749,8 @@ class ReviewController(BaseController):
             print "returning progress html str %s" % progress_html_str
             return progress_html_str
 
+    
+
     @ActionProtector(not_anonymous())
     def markup_citation(self, id, assignment_id, citation_id):
         citation_q = model.meta.Session.query(model.Citation)
@@ -1507,8 +1772,21 @@ class ReviewController(BaseController):
             c.cur_lbl = c.cur_lbl[0]
         else:
             c.cur_lbl = None
+
+        user = controller_globals._get_user_from_email(current_user.email)
+        # Need the above line because the first line of this function gives
+        #   a model.auth.User object
+        # as opposed to
+        #   a model.User object (which is what I need)
+
+        # The following help determine which fields of the citation are shown.
+        c.show_journal = user.show_journal
+        c.show_authors = user.show_authors
+        c.show_keywords = user.show_keywords
+
         return render("/citation_fragment.mako")
       
+    
     @ActionProtector(not_anonymous())
     def screen(self, review_id, assignment_id):
         current_user = request.environ.get('repoze.who.identity')['user']
@@ -1529,7 +1807,18 @@ class ReviewController(BaseController):
         c.review_name = review.name
         c.assignment_id = assignment_id
         c.assignment_type = assignment.assignment_type
-        c.assignment = assignment 
+        c.assignment = assignment
+
+        user = controller_globals._get_user_from_email(current_user.email)
+        # Need the above line because the first line of this function gives
+        #   a model.auth.User object
+        # as opposed to
+        #   a model.User object (which is what I need)
+
+        # The following help determine which fields of the citation are shown.
+        c.show_journal = user.show_journal
+        c.show_authors = user.show_authors
+        c.show_keywords = user.show_keywords
 
         c.cur_citation = self._get_next_citation(assignment, review)
         
@@ -1552,8 +1841,16 @@ class ReviewController(BaseController):
         
         # now get tags for this citation
         # issue #34; only show tags that *this* user has provided
-        c.tags = self._get_tags_for_citation(c.cur_citation.citation_id, \
-                only_for_user_id=current_user.id)
+        # 
+        # Changes made on 4/30/2012: The tag visibility setting has been added.
+        # First check to make sure tag_privacy is not 'null' in the database.
+        if review.tag_privacy==None:
+            review.tag_privacy = True
+        # If tag visibility is set to be public, then obtain all tags regardless of who the user is.
+        if not review.tag_privacy:
+            c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
+        else:
+            c.tags = self._get_tags_for_citation(c.cur_citation.citation_id, only_for_user_id=current_user.id)
         
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
@@ -1586,15 +1883,25 @@ class ReviewController(BaseController):
         review = self._get_review_from_id(review_id)
 
         c.review_id = review_id
-        c.review_name = self._get_review_from_id(review_id).name
+        c.review_name = review.name
         c.assignment_id = assignment_id
         c.assignment_type = assignment.assignment_type
-        c.assignment = assignment 
+        c.assignment = assignment
+
+        user = controller_globals._get_user_from_email(current_user.email)
+        # Need the above line because the first line of this function gives
+        #   a model.auth.User object
+        # as opposed to
+        #   a model.User object (which is what I need)
+
+        # The following help determine which fields of the citation are shown.
+        c.show_journal = user.show_journal
+        c.show_authors = user.show_authors
+        c.show_keywords = user.show_keywords
 
         # in the case of getting the next citation for cacheing, we
         # respect the user's locks
-        c.cur_citation = self._get_next_citation(assignment, review, 
-                                        ignore_my_own_locks=False)
+        c.cur_citation = self._get_next_citation(assignment, review, ignore_my_own_locks=False)
 
         # but wait -- are we finished?
         if assignment.done or c.cur_citation is None:
@@ -1614,8 +1921,14 @@ class ReviewController(BaseController):
             c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
         
         # now get tags for this citation
-        c.tags = self._get_tags_for_citation(c.cur_citation.citation_id,\
-                            only_for_user_id=current_user.id)
+        # Make sure tag_privacy is not 'null' in the database.
+        if review.tag_privacy==None:
+            review.tag_privacy = True
+        # If tag visibility is set to be public, then obtain all tags regardless of who the user is.
+        if not review.tag_privacy:
+            c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
+        else:
+            c.tags = self._get_tags_for_citation(c.cur_citation.citation_id, only_for_user_id=current_user.id)
         
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
@@ -1874,7 +2187,8 @@ class ReviewController(BaseController):
     def show_labeled_citation(self, review_id, citation_id, assignment_id):
         current_user = request.environ.get('repoze.who.identity')['user']
         c.review_id = review_id
-        c.review_name = self._get_review_from_id(review_id).name
+        review = self._get_review_from_id(review_id)
+        c.review_name = review.name
  
         citation_q = model.meta.Session.query(model.Citation)
         c.cur_citation = citation_q.filter(model.Citation.citation_id == citation_id).one()
@@ -1907,13 +2221,17 @@ class ReviewController(BaseController):
         # pass the assignment id back to the client
         c.assignment_id = assignment_id
  
-        # grab the tags for this study
-        # issue #34; blinding screeners to others' tags
+        # grab the tags for this study:
+        # issue #34; blinding screeners to others' tags...
+        
+        # First check to make sure tag_privacy is not 'null' in the database.
+        if review.tag_privacy==None:
+            review.tag_privacy = True
+
         c.tag_types = self._get_tag_types_for_review(review_id)
         c.tags = None
-        # ... unless we're in review conflicts mode, in which case
-        # we show all tags
-        if c.assignment_type == "conflict":
+        # ... unless either we're in review conflicts mode or tag visibility has been set to public
+        if (c.assignment_type == "conflict") or (not review.tag_privacy):
             c.tags = self._get_tags_for_citation(citation_id)
         else: 
             c.tags = self._get_tags_for_citation(citation_id, only_for_user_id=current_user.id)
@@ -1922,6 +2240,17 @@ class ReviewController(BaseController):
         # @TODO what should we show for notes in the case of conflict mode,
         #   i.e., if multiple users have made notes..??
         c.notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
+
+        user = controller_globals._get_user_from_email(current_user.email)
+        # Need the above line because the first line of this function gives 
+        #   a model.auth.User object
+        # as opposed to
+        #   a model.User object (which is what I need)
+
+        # The following help determine which fields of the citation are shown.
+        c.show_journal = user.show_journal
+        c.show_authors = user.show_authors
+        c.show_keywords = user.show_keywords
 
         return render("/screen.mako")
         
@@ -2097,6 +2426,7 @@ class ReviewController(BaseController):
         # this person has nothing more to do!
         return None
     
+    
     def _get_initial_task_for_review(self, review_id):
         task_q = model.meta.Session.query(model.Task)
         # there should only be one of these!
@@ -2240,7 +2570,7 @@ class ReviewController(BaseController):
         
     def _get_citation_from_id(self, citation_id):
         citation_q = model.meta.Session.query(model.Citation)
-        return citation_q.filter(model.Citation.citation_id == citation_id).one()
+        return citation_q.filter(model.Citation.citation_id == citation_id).first()
         
     def _get_assignment_from_id(self, assignment_id):
         assignment_q = model.meta.Session.query(model.Assignment)
@@ -2525,9 +2855,5 @@ class ReviewController(BaseController):
                 citation.marked_up_abstract = ""
         citation.marked_up_title = literal(citation.marked_up_title)
         citation.marked_up_abstract = literal(citation.marked_up_abstract)
-        return citation
-   
         
-
-
-
+        return citation
