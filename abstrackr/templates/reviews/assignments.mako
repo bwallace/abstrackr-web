@@ -14,8 +14,10 @@
 <h1>${c.review.name}: administrivia</h1>
 
 <div class="actions">
-<a href="${url(controller='review', action='admin', id=c.review.review_id)}">manage participants</a>
-<a href="${url(controller='review', action='edit_review', id=c.review.review_id)}">edit settings</a>
+    <a href="${url(controller='review', action='admin', id=c.review.review_id)}">Manage Participants</a>
+    <a href="${url(controller='review', action='assignments', id=c.review.review_id)}">Manage Assignments</a>
+    <a href="${url(controller='review', action='edit_review', id=c.review.review_id)}">Edit Settings</a>
+    <a href="${url(controller='review', action='render_add_citations', id=c.review.review_id)}">Add Citations</a>
 </div>
 
 <div class="content">
