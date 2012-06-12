@@ -71,7 +71,7 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 
          // now add all selected tags to the study
          var tags = $.map($('.ui-selected, this'), function(element, i) {  
-           return $(element).text();  
+           return $(element).text();
          });
 
          // push new tag, too (if it's empty, we'll drop it server-side)
@@ -171,7 +171,10 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
             }
         );
 
-        $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
+        if ( !(${c.tag_privacy}) )
+        {
+            $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
+        }
         
         // reset the timer
         reset_timer();

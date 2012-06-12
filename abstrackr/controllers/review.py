@@ -99,8 +99,7 @@ class ReviewController(BaseController):
             c.frequencies = [] # This is the list of frequencies of the number of 'yes' votes.
             for i in xrange(12):
                 c.frequencies.append( len([x for x in c.predictions_for_review if x.num_yes_votes==i]) )
-            
-        #pdb.set_trace()
+
         c.review_being_predicted = self._get_review_from_id(id).name
         
         return render("/reviews/remaining_reviews.mako")
@@ -190,6 +189,8 @@ class ReviewController(BaseController):
         # machine learning stuff.
         return render("/reviews/review_created.mako")
         
+    
+
     @ActionProtector(not_anonymous())
     def merge_reviews(self):
         reviews_to_merge = \
@@ -283,6 +284,7 @@ class ReviewController(BaseController):
         #if init_round_size == cur_init_assignment.
 
 
+    
     @ActionProtector(not_anonymous())
     def render_add_citations(self, id, message=None):
         if not self._current_user_leads_review(id):
@@ -1669,6 +1671,8 @@ class ReviewController(BaseController):
             c.show_authors = user.show_authors
             c.show_keywords = user.show_keywords
 
+            c.tag_privacy = self._get_review_from_id(review_id).tag_privacy
+
             return render("/citation_fragment.mako")
         
         else:
@@ -1784,6 +1788,8 @@ class ReviewController(BaseController):
         c.show_authors = user.show_authors
         c.show_keywords = user.show_keywords
 
+        c.tag_privacy = self._get_review_from_id(id).tag_privacy
+
         return render("/citation_fragment.mako")
       
     
@@ -1838,6 +1844,8 @@ class ReviewController(BaseController):
         if assignment.assignment_type == "conflict":
             c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
             c.reviewer_ids_to_names_d = self._labels_to_reviewer_name_d(c.cur_lbl)
+
+        c.tag_privacy = review.tag_privacy
         
         # now get tags for this citation
         # issue #34; only show tags that *this* user has provided
@@ -1851,10 +1859,10 @@ class ReviewController(BaseController):
             c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
         else:
             c.tags = self._get_tags_for_citation(c.cur_citation.citation_id, only_for_user_id=current_user.id)
-        
+
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
-        
+
         # now get any associated notes
         notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
         c.notes = notes
@@ -1920,6 +1928,8 @@ class ReviewController(BaseController):
             c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
             c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
         
+        c.tag_privacy = review.tag_privacy
+
         # now get tags for this citation
         # Make sure tag_privacy is not 'null' in the database.
         if review.tag_privacy==None:
@@ -2228,6 +2238,8 @@ class ReviewController(BaseController):
         if review.tag_privacy==None:
             review.tag_privacy = True
 
+        c.tag_privacy = review.tag_privacy
+        
         c.tag_types = self._get_tag_types_for_review(review_id)
         c.tags = None
         # ... unless either we're in review conflicts mode or tag visibility has been set to public
@@ -2589,6 +2601,7 @@ class ReviewController(BaseController):
         model.Session.commit()
         return new_task
 
+    
     def _set_initial_screen_size_for_review(self, review, n):
         '''
         sets the initial screening size for the review specified by 
@@ -2598,7 +2611,7 @@ class ReviewController(BaseController):
 
         --- warning -- this is typically an 'expensive' routine
         '''
-        #pdb.set_trace()
+        
         if n == review.initial_round_size:
             # nothing to do
             return None
