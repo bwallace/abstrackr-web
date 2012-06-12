@@ -30,9 +30,11 @@
     <ul id="selectable" class="ui-selectable">
       % for tag in c.tag_types:
           % if tag in c.tags:
-            <li class="ui-selected">${tag}</li>
+              <li class="ui-selected">${tag}</li>
           % else:
-            <li>${tag}</li>
+              % if not c.tag_privacy:
+                  <li>${tag}</li>
+              % endif
           % endif
       % endfor
     </ul>
@@ -48,8 +50,8 @@
 <div id="notes-dialog" >
    <form>
    
-    <b>general notes</b><br/> 
-    <textarea id="general_notes" name="general_notes" rows="4" cols="40" /> 
+    <b>general notes</b><br/>
+    <textarea id="general_notes" name="general_notes" rows="4" cols="40" />
     </textarea><br />
     
     <br>population notes</b><br/>
@@ -389,8 +391,8 @@
                var tag_str = $("input#new_tag").val();
 
                // now add all selected tags to the study
-               var tags = $.map($('.ui-selected, this'), function(element, i) {  
-                 return $(element).text();  
+               var tags = $.map( $('.ui-selected, this'), function(element, i) {  
+                 return $(element).text();
                });
 
                // push new tag, too (if it's empty, we'll drop it server-side)
@@ -405,8 +407,7 @@
                     });
                     
                     $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
-                    
-                  }                     
+                  }
                );
 
                $( "#dialog" ).dialog( "close" );
