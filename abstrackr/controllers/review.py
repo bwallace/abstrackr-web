@@ -1672,7 +1672,10 @@ class ReviewController(BaseController):
             c.show_authors = user.show_authors
             c.show_keywords = user.show_keywords
 
+            # The following help keep tags public/private, 
+            # depending on which option the project leader selected.
             c.tag_privacy = self._get_review_from_id(review_id).tag_privacy
+            c.user_id = user.id
 
             return render("/citation_fragment.mako")
         
@@ -1779,7 +1782,7 @@ class ReviewController(BaseController):
             c.cur_lbl = None
 
         user = controller_globals._get_user_from_email(current_user.email)
-        # Need the above line because the first line of this function gives
+        # Need the above line because the environment gives
         #   a model.auth.User object
         # as opposed to
         #   a model.User object (which is what I need)
@@ -1789,7 +1792,9 @@ class ReviewController(BaseController):
         c.show_authors = user.show_authors
         c.show_keywords = user.show_keywords
 
+        # The following help in the execution of the 'tag-privacy' option.
         c.tag_privacy = self._get_review_from_id(id).tag_privacy
+        c.user_id = user.id
 
         return render("/citation_fragment.mako")
       
@@ -1846,7 +1851,6 @@ class ReviewController(BaseController):
             c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
             c.reviewer_ids_to_names_d = self._labels_to_reviewer_name_d(c.cur_lbl)
 
-        c.tag_privacy = review.tag_privacy
         
         # now get tags for this citation
         # issue #34; only show tags that *this* user has provided
@@ -1868,14 +1872,21 @@ class ReviewController(BaseController):
         notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
         c.notes = notes
 
+        # These help keep tags public/private, depending on project lead's selection.
+        c.tag_privacy = review.tag_privacy
+        c.user_id = user.id
+
         model.meta.Session.commit()
         return render("/screen.mako")
           
 
     @ActionProtector(not_anonymous())
-    def update_tags(self, study_id):
-        # now get tags for this citation
-        c.tags = self._get_tags_for_citation(study_id)
+    def update_tags(self, study_id, tag_privacy):
+        # get tags for this citation and maintain the tag-privacy setting
+        c.tag_privacy = tag_privacy
+        current_user = request.environ.get('repoze.who.identity')['user']
+        user = controller_globals._get_user_from_email(current_user.email)
+        c.tags = self._get_tags_for_citation(study_id, only_for_user_id=user.id)
         return render("/tag_fragment.mako")
 
     @ActionProtector(not_anonymous())
@@ -1928,8 +1939,6 @@ class ReviewController(BaseController):
         if assignment.assignment_type == "conflict":
             c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
             c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
-        
-        c.tag_privacy = review.tag_privacy
 
         # now get tags for this citation
         # Make sure tag_privacy is not 'null' in the database.
@@ -1940,13 +1949,17 @@ class ReviewController(BaseController):
             c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
         else:
             c.tags = self._get_tags_for_citation(c.cur_citation.citation_id, only_for_user_id=current_user.id)
-        
+
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
         
         # now get any associated notes
         notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
         c.notes = notes
+
+        # These help in the execution of the tag-privacy option:
+        c.tag_privacy = review.tag_privacy
+        c.user_id = user.id
 
         model.meta.Session.commit()
         
@@ -2239,8 +2252,6 @@ class ReviewController(BaseController):
         if review.tag_privacy==None:
             review.tag_privacy = True
 
-        c.tag_privacy = review.tag_privacy
-
         c.tag_types = self._get_tag_types_for_review(review_id)
         c.tags = None
         # ... unless either we're in review conflicts mode or tag visibility has been set to public
@@ -2265,8 +2276,14 @@ class ReviewController(BaseController):
         c.show_authors = user.show_authors
         c.show_keywords = user.show_keywords
 
+        # These help keep tags public/private, depending on project lead's selection:
+        c.tag_privacy = review.tag_privacy
+        c.user_id = user.id
+
         return render("/screen.mako")
         
+    
+
     @ActionProtector(not_anonymous())
     def create_assignment(self, id):
         assign_to = request.params.getall("assign_to")

@@ -30,7 +30,7 @@
     <ul id="selectable" class="ui-selectable">
       % for tag in c.tag_types:
           % if tag in c.tags:
-              <li class="ui-selected">${tag}</li>
+            <li class="ui-selected">${tag}</li>
           % else:
               % if not c.tag_privacy:
                   <li>${tag}</li>
@@ -50,8 +50,8 @@
 <div id="notes-dialog" >
    <form>
    
-    <b>general notes</b><br/>
-    <textarea id="general_notes" name="general_notes" rows="4" cols="40" />
+    <b>general notes</b><br/> 
+    <textarea id="general_notes" name="general_notes" rows="4" cols="40" /> 
     </textarea><br />
     
     <br>population notes</b><br/>
@@ -381,31 +381,33 @@
             % endif
           }
 
-          function setup_submit(){
+          function setup_submit() {
             $("#selectable").selectable();
 
             $("#submit_btn").unbind();
             $("#submit_btn").click(function()
             {
-               
+
                var tag_str = $("input#new_tag").val();
 
                // now add all selected tags to the study
-               var tags = $.map( $('.ui-selected, this'), function(element, i) {  
-                 return $(element).text();
+               var tags = $.map($('.ui-selected, this'), function(element, i) {  
+                 return $(element).text();  
                });
 
                // push new tag, too (if it's empty, we'll drop it server-side)
                tags.push(tag_str);
 
                $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", {tags: tags},
-                  function(){
+                  function()
+                  {
                     $("#tags").fadeOut('slow', function() {
-                      $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}", function() {
-                        $("#tags").fadeIn('slow');
-                      });
+                      $("#tags").load("${'/review/update_tags/%s/%s' % (c.cur_citation.citation_id, c.tag_privacy)}",
+                        function() {
+                          $("#tags").fadeIn('slow');
+                        });
                     });
-                    
+
                     $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
                   }
                );
@@ -419,7 +421,7 @@
             $("#save_notes_btn").unbind();
             $("#save_notes_btn").click(function()
             {
-              // something like
+               // something like
                var general_notes = $("#general_notes").val();
                var pop_notes =  $("#pop_notes").val();
                var ic_notes = $("#ic_notes").val();
@@ -432,8 +434,8 @@
                               $("#notes-status").html("<font color='green'>notes added.</font>");
                               $( "#notes-dialog" ).dialog( "close" );
                               $("#notes-status").html("");
-
-                          });
+                          }
+                      );
 
 
                

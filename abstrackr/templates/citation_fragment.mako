@@ -71,17 +71,18 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 
          // now add all selected tags to the study
          var tags = $.map($('.ui-selected, this'), function(element, i) {  
-           return $(element).text();
+           return $(element).text();  
          });
 
          // push new tag, too (if it's empty, we'll drop it server-side)
          tags.push(tag_str);
 
          $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", {tags: tags},
-            function(){
+            function()
+            {
               $("#tags").fadeOut('slow', function() {
-                $("#tags").load("${'/review/update_tags/%s' %  c.cur_citation.citation_id}", function() {
-                  //$("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
+                $("#tags").load("${'/review/update_tags/%s/%s' % (c.cur_citation.citation_id, c.tag_privacy)}", 
+                function() {
                   $("#tags").fadeIn('slow');
                 });
               });
@@ -96,6 +97,7 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
 
 
       /** adding note-taking functionality **/
+
       $("#save_notes_btn").unbind();
       $("#save_notes_btn").click(function()
       {
@@ -113,9 +115,11 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                         $( "#notes-dialog" ).dialog( "close" );
                         $("#notes-status").html("");
                     });
-         
+
       });
+
       /** end notes functionality **/
+
 
 
       $("#tag_btn").click(function()
@@ -171,10 +175,7 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
             }
         );
 
-        if ( !(${c.tag_privacy}) )
-        {
-            $("#tags").load("${'/review/update_tags/%s' % c.cur_citation.citation_id}");
-        }
+        $("#tags").load("${'/review/update_tags/%s/%s' % (c.cur_citation.citation_id, c.tag_privacy)}");
         
         // reset the timer
         reset_timer();
@@ -189,8 +190,8 @@ ${c.cur_citation.marked_up_abstract}<br/><br/>
                 });
             });
         }
-    
-        
+
+
         function label_cur_citation(lbl_str){
             $("#citation").fadeOut('fast', function() {
                   if (!(we_are_reviewing_a_label()) && is_perpetual_assignment()){
