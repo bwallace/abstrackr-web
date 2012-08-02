@@ -27,6 +27,7 @@ pubmedpy.set_email("byron.wallace@gmail.com")
 OBLIGATORY_FIELDS = ["id", "title", "abstract"] # these have to be there
 OPTIONAL_FIELDS = ["authors", "keywords", "journal", "pmid"]
 
+MAX_TITLE_LENGTH = 480
 
 def looks_like_tsv(file_path):
     header_line = open(file_path, 'r').readline()
@@ -85,6 +86,57 @@ def pmid_list_to_sql(pmids_path, review):
     dict_to_sql(d, review)
     print "ok."
     return len(d)
+
+def ris_to_sql(ris_path, review):
+    print "building a dictionary from %s..." % ris_path
+    d = ris_to_dict(open(ris_path).readlines())
+    print "ok. now inserting into sql..."
+    dict_to_sql(d, review)
+    print "ok."
+    return len(d)
+    
+def ris_to_d(ris_data):
+    ris_d = {}
+    cur_id = 1
+    cur_authors, cur_keywords = [], []
+    current_citation = {"title":"", "abstract":"", "journal":"",\
+                                "keywords":"", "pmid":"", "authors":""}
+
+    # we skip the first line which just starts the
+    # first citation (citation 1)
+    for line in ris_data[1:]:
+        field, value = line.split("-")[0], "-".join(line.split("-")[1:])
+        field, value = field.strip(), value.strip()
+
+        if field == "TY":
+            # new citation
+            #pdb.set_trace()
+            current_citation["authors"] = list(cur_authors)
+            current_citation["keywords"] = list(cur_keywords)
+            ris_d[cur_id] = current_citation
+
+            ###
+            # now create a new (empty) citation
+            # to be overwritten
+            current_citation = {"title":"", "abstract":"", "journal":"",\
+                                "keywords":"", "pmid":"", "authors":""}
+            cur_authors, cur_keywords = [], []
+            cur_id += 1
+        elif field == "AU":
+            # author
+            #pdb.set_trace()
+            cur_authors.append(value)
+        elif field in ("T1", "TI"):
+            current_citation["title"] = value[:MAX_TITLE_LENGTH]
+        elif field.startswith("J"):
+            current_citation["journal"] = value
+        elif field == "KW":
+            cur_keywords.append(value)
+        elif field == "AB":
+            current_citation["abstract"] = value
+
+    return ris_d
+
 
 def tsv_to_d(citations, field_index_d):
     tsv_d = {}
@@ -150,6 +202,7 @@ def xml_to_sql(xml_path, review):
     print "ok."
     return len(d)
 
+
     
 def dict_to_sql(xml_d, review): 
     cit_num = 0
@@ -174,7 +227,7 @@ def insert_citation(review_id, ref_id, citation_d):
     pmid = citation_d['pmid']
     citation.pmid_id =  pmid if (pmid is not None and pmid != '') else 0
     # we truncate the citation if it's too long!
-    citation.title = citation_d['title'][:480] if \
+    citation.title = citation_d['title'][:MAX_TITLE_LENGTH] if \
                                 citation_d['title'] is not None else "(no title found)"
     citation.abstract = citation_d['abstract'][:9980] if \
                                 citation_d['abstract'] is not None else None
