@@ -255,8 +255,10 @@ class Prediction(Base):
     id = sa.Column(types.Integer, primary_key=True)
     study_id = sa.Column(types.Integer) # the (internal) study id
     review_id = sa.Column(types.Integer) # it makes life easier to have this around
-    prediction = sa.Column(types.Boolean) # true = include; false = exclude
+    prediction = sa.Column(types.Float) # true = include; false = exclude
+    
     num_yes_votes = sa.Column(types.Float) # number of ensemble members that voted yes
+    predicted_probability = sa.Column(types.Float) # probability of inclusion
 
 ####################################
 ## these tables for authentication #

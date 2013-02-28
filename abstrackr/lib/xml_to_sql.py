@@ -28,10 +28,11 @@ OBLIGATORY_FIELDS = ["id", "title", "abstract"] # these have to be there
 OPTIONAL_FIELDS = ["authors", "keywords", "journal", "pmid"]
 
 MAX_TITLE_LENGTH = 480
+START_FILE_MARKER = "\xef\xbb\xbf" # AKA BOM
 
 def looks_like_tsv(file_path):
     header_line = open(file_path, 'r').readline()
-    headers = [x.lower().strip() for x in header_line.split("\t")]
+    headers = [x.lower().strip().replace(START_FILE_MARKER, "") for x in header_line.split("\t")]
     if len(headers) == 0:
         return False
     
@@ -89,7 +90,7 @@ def pmid_list_to_sql(pmids_path, review):
 
 def ris_to_sql(ris_path, review):
     print "building a dictionary from %s..." % ris_path
-    d = ris_to_dict(open(ris_path).readlines())
+    d = ris_to_d(open(ris_path).readlines())
     print "ok. now inserting into sql..."
     dict_to_sql(d, review)
     print "ok."
@@ -102,6 +103,9 @@ def ris_to_d(ris_data):
     current_citation = {"title":"", "abstract":"", "journal":"",\
                                 "keywords":"", "pmid":"", "authors":""}
 
+    # drop garbage/blank lines
+    ris_data = [line for line in ris_data if "-" in line]
+
     # we skip the first line which just starts the
     # first citation (citation 1)
     for line in ris_data[1:]:
@@ -110,8 +114,7 @@ def ris_to_d(ris_data):
 
         if field == "TY":
             # new citation
-            #pdb.set_trace()
-            current_citation["authors"] = list(cur_authors)
+            current_citation["authors"] = list(set(cur_authors))
             current_citation["keywords"] = list(cur_keywords)
             ris_d[cur_id] = current_citation
 
@@ -122,7 +125,7 @@ def ris_to_d(ris_data):
                                 "keywords":"", "pmid":"", "authors":""}
             cur_authors, cur_keywords = [], []
             cur_id += 1
-        elif field == "AU":
+        elif field in ("AU", "A1"):
             # author
             #pdb.set_trace()
             cur_authors.append(value)
@@ -132,9 +135,11 @@ def ris_to_d(ris_data):
             current_citation["journal"] = value
         elif field == "KW":
             cur_keywords.append(value)
-        elif field == "AB":
+        elif field in ("N2", "AB"):
             current_citation["abstract"] = value
-
+    # add the last citation
+    ris_d[cur_id] = current_citation
+    
     return ris_d
 
 
@@ -173,7 +178,7 @@ def tsv_to_sql(tsv_path, review):
     citations = csv.reader(open_f, delimiter="\t")
     # map field names to the corresponding indices
     # in the tsv, as indicated by the header
-    headers = [header.strip() for header in citations.next()]
+    headers = [header.strip().replace(START_FILE_MARKER, "") for header in citations.next()]
     field_index_d = _field_index_d(headers)
     d = tsv_to_d(citations, field_index_d)
     dict_to_sql(d, review)

@@ -297,7 +297,7 @@ def _re_prioritize(review_id, sort_by_str):
             priority_update = \
                 priorities.update(priorities.c.id == priority_id)
 
-        priority_update.execute(priority = cit_id_to_new_priority[citation_id])
+            priority_update.execute(priority = cit_id_to_new_priority[citation_id])
         
 
 if __name__ == "__main__":
