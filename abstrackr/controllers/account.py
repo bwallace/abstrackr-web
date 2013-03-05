@@ -234,18 +234,22 @@ class AccountController(BaseController):
     
         person = request.environ.get('repoze.who.identity')['user']
         c.person = person
-
-        user = controller_globals._get_user_from_email(person.email)
+        user = controller_globals._get_user_from_email(c.person.email)
+        if not user:
+            log.error('Hum...fetching user from the database returned False. \
+We need to investigate. Go remove the catch all in controller_globals.py, method \
+_get_user_from_email() to see which OperationalError is being raised')
+        #pdb.set_trace()
         # Need the above line because the first line of this function gives
         #   a model.auth.User object
         # as opposed to
         #   a model.User object (which is what I need)
 
-        
+
         # If somehow the user's citation settings variables don't get initialized yet,
         # then the following 3 if-else blocks should take care of it in order to avoid
         # any errors due to the values of the variables being null:
-        
+
         c.show_journal = user.show_journal if not user.show_journal is None else True
 
         if (user.show_authors==True or user.show_authors==False):

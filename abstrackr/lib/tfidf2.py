@@ -89,7 +89,7 @@ import copy
 
 
 
-stop_list_path="H:\\abstrackr-web\\abstrackr\\lib\\stop_list.txt"
+stop_list_path=os.getcwd() + "/abstrackr/lib/stop_list.txt"
 print "stop word list path is %s" % stop_list_path
 
 def build_stop_list(stop_list_path):

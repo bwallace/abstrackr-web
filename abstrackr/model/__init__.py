@@ -289,22 +289,24 @@ class Permission(Base):
     name = sa.Column(types.Unicode(255))
     
 class User(Base):
+
     __tablename__ = "user"
+
     id  = sa.Column(types.Integer, primary_key=True)
     username = sa.Column(types.Unicode(255))
     email = sa.Column(types.Unicode(80))
     password = sa.Column(types.Unicode(80))
     fullname = sa.Column(types.Unicode(255))
-    # num systematic reviews they've been involved with
+    # num of systematic reviews they've been involved with
     experience = sa.Column(types.Integer)
-
-    # -> Global settings that determine which fields pertaining to the citation 
-    #    appear on the content section of the page during screening
-    # -> Set to 'True' by default
-    show_journal = sa.Column(types.Boolean)
-    show_authors = sa.Column(types.Boolean)
-    show_keywords = sa.Column(types.Boolean)
+    # These three columns are meant to hold user's preference
+    # choices as to whether to show the corresponding information
+    # on the citation screen (default=True)
+    show_journal = sa.Column(types.Boolean, default=True)
+    show_authors = sa.Column(types.Boolean, default=True)
+    show_keywords = sa.Column(types.Boolean, default=True)
     
+
     def _set_password(self, password):
         """Hash password on the fly."""
         hashed_password = password
