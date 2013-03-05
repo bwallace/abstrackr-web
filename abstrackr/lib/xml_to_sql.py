@@ -50,7 +50,7 @@ def _field_in(field, headers):
 
 def _parse_pmids(pmids_path):
     pmids = []
-    for pmid in [x.replace("\n", "") for x in open(pmids_path, 'r').readlines()]:
+    for pmid in [x.strip() for x in open(pmids_path, 'rU').readlines()]:
         if pmid != "":
             try:
                 pmids.append(int(pmid))
