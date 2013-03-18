@@ -7,9 +7,9 @@
 <h1>${c.review.name}</h1>
 	<div class="actions">
     <a
-      href="${url(controller='review', action='review_labels', review_id=c.review.review_id)}">review labels</a>
+      href="${url(controller='review', action='review_labels', review_id=c.review.id)}">review labels</a>
     <a 
-      href="${url(controller='review', action='review_terms', id=c.review.review_id)}">review terms</a>
+      href="${url(controller='review', action='review_terms', id=c.review.id)}">review terms</a>
 </div>
 <div class="content">
 <h2>Project description</h2> 

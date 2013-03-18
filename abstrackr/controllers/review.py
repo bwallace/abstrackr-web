@@ -1436,7 +1436,7 @@ class ReviewController(BaseController):
         c.pi_url = chart.get_url()
         
         reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
-        reviewer_ids = [rp.reviewer_id for rp in reviewer_proj_q.filter(model.Citation.project_id == id).all()]
+        reviewer_ids = [rp.user_id for rp in reviewer_proj_q.filter(model.Citation.project_id == id).all()]
 
         c.participating_reviewers = reviewers = self._get_participants_for_review(id)
         user_q = model.meta.Session.query(model.User)
@@ -1488,8 +1488,8 @@ class ReviewController(BaseController):
         labeled_term.label = new_label
         model.Session.add(labeled_term)
         model.Session.commit()
-        redirect(url(controller="review", action="review_terms", \
-                        id=labeled_term.review_id, assignment_id=assignment_id)) 
+        redirect(url(controller="review", action="review_terms",
+                id=labeled_term.project_id, assignment_id=assignment_id)) 
         
     @ActionProtector(not_anonymous())
     def delete_term(self, term_id, assignment_id):
@@ -1497,9 +1497,8 @@ class ReviewController(BaseController):
         labeled_term = term_q.filter(model.LabeledFeature.id == term_id).one()
         model.Session.delete(labeled_term)
         model.Session.commit()
-        redirect(url(controller="review", action="review_terms", \
-                        id=labeled_term.review_id, assignment_id=assignment_id)) 
-        
+        redirect(url(controller="review", action="review_terms",
+                id=labeled_term.project_id, assignment_id=assignment_id)) 
         
     @ActionProtector(not_anonymous())
     def label_term(self, review_id, label):
@@ -1819,7 +1818,7 @@ class ReviewController(BaseController):
         
 
         # clear our locks for this review
-        self._clear_all_my_locks(review.review_id)
+        self._clear_all_my_locks(review.id)
     
         c.review_id = review_id
         c.review_name = review.name
@@ -2343,25 +2342,25 @@ class ReviewController(BaseController):
         reviewer_reviews = reviewer_review_q.filter(and_(\
                  model.ReviewerProject.project_id == review_id, 
                  model.ReviewerProject.user_id == current_user.id)).all()
-        
+
         if len(reviewer_reviews) == 0:
             # we only add them if they aren't already a part of the review.
             reviewer_project = model.ReviewerProject()
             reviewer_project.user_id = current_user.id
             reviewer_project.project_id = review_id
             model.Session.add(reviewer_project)
-        
+
             # now we check what type of screening mode we're using
             review = self._get_review_from_id(review_id)
             if review.screening_mode in (u"single", u"double"):
                 # then we automatically add a `perpetual' assignment
-                self._assign_perpetual_task(current_user.id, review.review_id)
-             
+                self._assign_perpetual_task(current_user.id, review.id)
+
             # assign any initial tasks for this review to the joinee.  
-            self._assign_initial_tasks(current_user.id, review.review_id)
+            self._assign_initial_tasks(current_user.id, review.id)
             return True
-        return False     
-        
+        return False
+
     def _clear_all_my_locks(self, review_id):
         me = request.environ.get('repoze.who.identity')['user'].id
         priority_q = model.meta.Session.query(model.Priority)
@@ -2389,7 +2388,7 @@ class ReviewController(BaseController):
         locked by the current user *will* be returned; if this is
         False, these locks will be respected.
         '''
-        review_id = review.review_id
+        review_id = review.id
         priority_q = model.meta.Session.query(model.Priority)
         me = request.environ.get('repoze.who.identity')['user'].id
     
@@ -2565,7 +2564,7 @@ class ReviewController(BaseController):
     def _get_participants_for_review(self, review_id):
         reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
         reviewer_ids = \
-            list(set([rp.reviewer_id for rp in reviewer_proj_q.filter(model.ReviewerProject.project_id == review_id).all()]))
+            list(set([rp.user_id for rp in reviewer_proj_q.filter(model.ReviewerProject.project_id == review_id).all()]))
         user_q = model.meta.Session.query(model.User)
         reviewers = [user_q.filter(model.User.id == reviewer_id).one() \
                     for reviewer_id in reviewer_ids]

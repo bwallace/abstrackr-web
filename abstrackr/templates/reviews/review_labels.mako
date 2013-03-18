@@ -5,7 +5,7 @@
 
 %if c.assignment is not None:
 <div class = "actions">
-    <a href="${url(controller='review', action='screen', review_id=c.assignment.review_id, assignment_id=c.assignment.id)}">ok, get back to screening <img src="../../arrow_right.png"></img></a>
+    <a href="${url(controller='review', action='screen', review_id=c.assignment.project_id, assignment_id=c.assignment.id)}">ok, get back to screening <img src="../../arrow_right.png"></img></a>
     </div>
 %endif
 
@@ -30,11 +30,11 @@
             % for i, label in enumerate(c.given_labels):
                 <tr>
                 <td>${label.study_id}</td>
-                <td>${c.citations_d[label.study_id].refman_id}</td>
-                <td>${c.citations_d[label.study_id].pmid_id}</td>
+                <td>${c.citations_d[label.study_id].refman}</td>
+                <td>${c.citations_d[label.study_id].pmid}</td>
                 <td>
                
-                <a href="${url(controller='review', action='show_labeled_citation', review_id=label.review_id, citation_id=label.study_id, assignment_id=label.assignment_id)}">${c.citations_d[label.study_id].title}</a></td>
+                <a href="${url(controller='review', action='show_labeled_citation', review_id=label.project_id, citation_id=label.study_id, assignment_id=label.assignment_id)}">${c.citations_d[label.study_id].title}</a></td>
 
                 <td>${label.label}</td>
                 <td>${label.first_labeled.month}/${label.first_labeled.day}/${label.first_labeled.year}</td>

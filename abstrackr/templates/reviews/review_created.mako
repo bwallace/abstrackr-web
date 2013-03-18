@@ -33,7 +33,7 @@ Awesome, you're ready to start screening.
 <b>What now?</b>, you ask. You can invite additional reviewers, if you'd like.<br/><br/>
 
 <div align="right">
-<form action = "/review/invite_reviewers/${c.review.review_id}">
+<form action = "/review/invite_reviewers/${c.review.id}">
 <div class="actions">
 <label for="emails">Enter their emails (comma-separated).</label>
 <input type="text" id="emails" name="emails" /><br />

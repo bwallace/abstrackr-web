@@ -5,26 +5,27 @@ basically, this contains code to map data from a given format
 '''
 
 # std libs
-import pdb
-import string 
 import csv
 import random
+import string
 
 # third party
-import sqlite3
-import elementtree
-from elementtree.ElementTree import ElementTree
 import Bio
 from Bio import Entrez
 
-# homegrown 
+import elementtree
+from elementtree.ElementTree import ElementTree
+
+import sqlite3
+
+# homegrown
 import pubmedpy
-import abstrackr.model as model # for access to sqlalchemy
+import abstrackr.model as model  # for access to sqlalchemy
 
 pubmedpy.set_email("byron.wallace@gmail.com")
 
-# for tsv importing 
-OBLIGATORY_FIELDS = ["id", "title", "abstract"] # these have to be there
+# for tsv importing
+OBLIGATORY_FIELDS = ["id", "title", "abstract"]  # these have to be there
 OPTIONAL_FIELDS = ["authors", "keywords", "journal", "pmid"]
 
 
@@ -33,18 +34,19 @@ def looks_like_tsv(file_path):
     headers = [x.lower().strip() for x in header_line.split("\t")]
     if len(headers) == 0:
         return False
-    
+
     # title, etc.?
     if all([_field_in(field, headers) for field in OBLIGATORY_FIELDS]):
         return True
-    
     return False
+
 
 def _field_in(field, headers):
     # we'll only enforce that a string *start* with
     # the field; this avoids issues with, e.g.,
     # pluralization and new lines.
     return any([x.startswith(field) for x in headers])
+
 
 def _parse_pmids(pmids_path):
     pmids = []
@@ -62,22 +64,24 @@ def pubmed_ids_to_d(pmids):
     articles = pubmedpy.batch_fetch(pmids)
     print "ok."
 
-    articles = [article for article in articles if len(article)>=3]
-    
+    articles = [article for article in articles if len(article) >= 3]
+
     pmids_d = {}
     none_to_str = lambda x: x if x is not None else ""
-    
+
     for article in articles:
         title_text = article.get("TI")
-        ab_text = article.get("AB")    
+        ab_text = article.get("AB")
         authors = none_to_str(article.get("AU"))
         journal = none_to_str(article.get("JT"))
         keywords = none_to_str(article.get("MH"))
-        pmid = int(article["PMID"]) 
-        pmids_d[pmid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
-                                             "keywords":keywords, "pmid":pmid, "authors":authors}
+        pmid = int(article["PMID"])
+        pmids_d[pmid] = {"title": title_text, "abstract": ab_text,
+                    "journal": journal, "keywords": keywords, "pmid": pmid,
+                    "authors": authors}
     return pmids_d
-                                
+
+
 def pmid_list_to_sql(pmids_path, review):
     pmids = _parse_pmids(pmids_path)
     d = pubmed_ids_to_d(pmids)
@@ -85,6 +89,7 @@ def pmid_list_to_sql(pmids_path, review):
     dict_to_sql(d, review)
     print "ok."
     return len(d)
+
 
 def tsv_to_d(citations, field_index_d):
     tsv_d = {}
@@ -95,21 +100,24 @@ def tsv_to_d(citations, field_index_d):
         for field in OPTIONAL_FIELDS:
             if field in field_index_d:
                     tsv_d[cur_id][field] = \
-                            citation[field_index_d[field]].decode('utf8', 'replace')
-        
-                    # issue 2 -- if this is the authors field, we expect author names
-                    # to be separated by commas. later in the pipeline, we'll expect
-                    # a *list* here, so we create that now.
-                    if field == "authors" or field=="keywords":
+                            citation[field_index_d[field]].decode('utf8',
+                                    'replace')
+
+                    # issue 2 -- if this is the authors field, we expect
+                    # author names to be separated by commas. later in the
+                    # pipeline, we'll expect a *list* here, so we create
+                    # that now.
+                    if field == "authors" or field == "keywords":
                         tsv_d[cur_id][field] = tsv_d[cur_id][field].split(",")
-                    
+
             else:
                 # just insert a blank string
                 tsv_d[cur_id][field] = ""
-        
+
         # now add the obligatory fields
         for field in OBLIGATORY_FIELDS:
-            tsv_d[cur_id][field] = citation[field_index_d[field]].decode('utf8', 'replace')
+            tsv_d[cur_id][field] = \
+                    citation[field_index_d[field]].decode('utf8', 'replace')
 
     return tsv_d
 
@@ -150,15 +158,15 @@ def xml_to_sql(xml_path, review):
     print "ok."
     return len(d)
 
-    
+
 def dict_to_sql(xml_d, review): 
     cit_num = 0
     # issue #31: explicitly randomize ordering
     xml_d_items = xml_d.items()
     random.shuffle(xml_d_items)
     for ref_id, citation_d in xml_d_items:
-        cit_id = insert_citation(review.review_id, ref_id, citation_d)
-        insert_priority_entry(review.review_id, cit_id, cit_num)
+        cit_id = insert_citation(review.id, ref_id, citation_d)
+        insert_priority_entry(review.id, cit_id, cit_num)
         cit_num += 1
     model.Session.commit()
 
@@ -259,8 +267,8 @@ def xml_to_dict(fpath):
             # journal
             journal = record.findtext(journal_path_str)
 
-            ref_ids_to_abs[refmanid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
-                        "keywords":keywords, "pmid":pubmed_id, "authors":authors}
+            ref_ids_to_abs[refmanid] = {"title": title_text, "abstract": ab_text, "journal": journal,\
+                        "keywords": keywords, "pmid": pubmed_id, "authors": authors}
 
     
     print "\nFinished. Returning %s title/abstract/keyword sets, %s of which have no abstracts.\n" \

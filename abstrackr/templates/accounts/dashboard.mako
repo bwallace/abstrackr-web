@@ -49,12 +49,12 @@
         
         % for i,review in enumerate(c.leading_projects):
         <tr class="${'odd' if i%2 else 'even'}">
-            <td><a href="${url(controller='review', action='show_review', id=review.review_id)}">${review.name}</td>           
-            <td class="inline-actions"><a href="${url(controller='review', action='admin', id=review.review_id)}">admin 
+            <td><a href="${url(controller='review', action='show_review', id=review.id)}">${review.name}</td>           
+            <td class="inline-actions"><a href="${url(controller='review', action='admin', id=review.id)}">admin 
                          <img src = "../../admin_sm.png"></a></td> 
             <td class="inline-actions">
             <a href="#" onclick="javascript:    
-                      $('#export').load('${url(controller="review", action="get_fields", review_id=review.review_id)}', 
+                      $('#export').load('${url(controller="review", action="get_fields", review_id=review.id)}', 
                         function() {
                             $('#export').dialog('open');
                             $('#selectable').selectable();
@@ -62,20 +62,20 @@
                       ">
                       export<img src = "../../export_sm.png"></a></td>
                     
-            % if c.statuses[review.review_id]:
-                <td class="inline-actions"><a href="${url(controller='review', action='predictions_about_remaining_citations', id=review.review_id)}">predictions
+            % if c.statuses[review.id]:
+                <td class="inline-actions"><a href="${url(controller='review', action='predictions_about_remaining_citations', id=review.id)}">predictions
                             <img src = "../../Robot-icon.png"></a></td>
             % else:
                 <td class="inline-actions"><i>no predictions yet</i></td>
             % endif
             
-            <td id="conflict_button_${review.review_id}">loading...</td>
+            <td id="conflict_button_${review.id}">loading...</td>
             <script language="javascript">
-                $("#conflict_button_${review.review_id}").load("/review/get_conflict_button_fragment/${review.review_id}");
+                $("#conflict_button_${review.id}").load("/review/get_conflict_button_fragment/${review.id}");
             </script>
             
             % if c.do_we_have_a_maybe:
-                <td class="inline-actions"><a href="${url(controller='review', action='review_maybes', id=review.review_id)}">
+                <td class="inline-actions"><a href="${url(controller='review', action='review_maybes', id=review.id)}">
                     maybes<img src = "../../maybe_sm.png"></a></td>
             % else:
                 <td class="inline-actions"><i>no maybes yet</i></td>
@@ -84,7 +84,7 @@
             <td class="inline-actions">
                 <a href="#" onclick="javascript:jConfirm('are you sure you want to delete this review? all labels will be lost!', 
                      'delete review?', function(r) {
-                        if(r) window.location = '${url(controller='review', action='delete_review', id=review.review_id)}'; 
+                        if(r) window.location = '${url(controller='review', action='delete_review', id=review.id)}'; 
                    });">delete<img src = "../../delete.png"></a></td> 
         </tr>
         % endfor
@@ -98,9 +98,9 @@
         <table class="list_table">
         % for i,review in enumerate(c.participating_projects):
         <tr class="${'odd' if i%2 else 'even'}">
-            <td><a href="${url(controller='review', action='show_review', id=review.review_id)}">${review.name}</td>    
-            <td class="inline-actions"><a href="${url(controller='review', action='review_labels', review_id=review.review_id)}">review my labels</td>  
-            <td class="inline-actions"><a href="${url(controller='review', action='leave_review', id=review.review_id)}" 
+            <td><a href="${url(controller='review', action='show_review', id=review.id)}">${review.name}</td>    
+            <td class="inline-actions"><a href="${url(controller='review', action='review_labels', review_id=review.id)}">review my labels</td>  
+            <td class="inline-actions"><a href="${url(controller='review', action='leave_review', id=review.id)}" 
                            onclick="javascript:return confirm('are you sure you want to leave this review?')">
             leave review</a></td>      
         </tr>
@@ -139,8 +139,8 @@
                 </tr>
                 % for i, assignment in enumerate(c.outstanding_assignments):
                     <tr>
-                    <td><a href="${url(controller='review', action='show_review', id=assignment.review_id)}">
-                            ${c.review_ids_to_names_d[assignment.review_id]}</td>          
+                    <td><a href="${url(controller='review', action='show_review', id=assignment.project_id)}">
+                            ${c.review_ids_to_names_d[assignment.project_id]}</td>          
                     %if not assignment.assignment_type == "perpetual":
                         <td>${assignment.num_assigned}</td>
                     %else:
@@ -155,9 +155,9 @@
                         <td>--</td>
                     %endif
                     <td class="inline-actions">
-                    <a href="${url(controller='review', action='screen', review_id=assignment.review_id, assignment_id=assignment.id)}">
+                    <a href="${url(controller='review', action='screen', review_id=assignment.project_id, assignment_id=assignment.id)}">
                     screen <img src="../../arrow_right.png"></img></a>
-                    <a href="${url(controller='review', action='review_labels', review_id=assignment.review_id, assignment_id=assignment.id)}">review labels <img src="../../arrow_right.png"></a>
+                    <a href="${url(controller='review', action='review_labels', review_id=assignment.project_id, assignment_id=assignment.id)}">review labels <img src="../../arrow_right.png"></a>
                     </td>
                     </tr>
                 % endfor
@@ -177,8 +177,8 @@
                 </tr>
                 % for i,assignment in enumerate(c.finished_assignments):
                     <tr>
-                    <td><a href="${url(controller='review', action='show_review', id=assignment.review_id)}">
-                            ${c.review_ids_to_names_d[assignment.review_id]}</td>          
+                    <td><a href="${url(controller='review', action='show_review', id=assignment.project_id)}">
+                            ${c.review_ids_to_names_d[assignment.project_id]}</td>          
                     %if not assignment.assignment_type == "perpetual":
                         <td>${assignment.num_assigned}</td>
                     %else:
@@ -192,7 +192,7 @@
                         <td>--</td>
                     %endif
                         <td class="inline-actions">
-                                      <a href="${url(controller='review', action='review_labels', review_id=assignment.review_id, assignment_id=assignment.id)}">review labels <img src="../../arrow_right.png"></a>
+                                      <a href="${url(controller='review', action='review_labels', review_id=assignment.project_id, assignment_id=assignment.id)}">review labels <img src="../../arrow_right.png"></a>
                         </td>
                     </td>
                     </tr>
