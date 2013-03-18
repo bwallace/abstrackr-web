@@ -90,7 +90,7 @@ def _get_maybes(review_id):
 def _get_all_citations_for_review(review_id, return_query_obj=False):
     citation_query_obj = model.meta.Session.query(model.Citation, model.Label).\
             filter(model.Citation.citation_id==model.Label.study_id).\
-            filter(model.Label.review_id==review_id).order_by(model.Citation.citation_id)
+            filter(model.Label.project_id==review_id).order_by(model.Citation.citation_id)
     if return_query_obj:
         return citation_query_obj
     # this can be expensive!

@@ -164,15 +164,15 @@ def dict_to_sql(xml_d, review):
 
 def insert_citation(review_id, ref_id, citation_d):
     citation = model.Citation()
-    citation.review_id = review_id
+    citation.project_id = review_id
     try:
         ref_id = int(ref_id)
     except:
         ref_id = None
 
-    citation.refman_id = ref_id
+    citation.refman = ref_id
     pmid = citation_d['pmid']
-    citation.pmid_id =  pmid if (pmid is not None and pmid != '') else 0
+    citation.pmid =  pmid if (pmid is not None and pmid != '') else 0
     # we truncate the citation if it's too long!
     citation.title = citation_d['title'][:480] if \
                                 citation_d['title'] is not None else "(no title found)"
@@ -190,7 +190,7 @@ def insert_citation(review_id, ref_id, citation_d):
 def insert_priority_entry(review_id, citation_id, \
                             init_priority_num, num_times_labeled=0):
     priority = model.Priority()
-    priority.review_id = review_id
+    priority.project_id = review_id
     priority.citation_id = citation_id
     priority.priority = init_priority_num
     priority.num_times_labeled = num_times_labeled

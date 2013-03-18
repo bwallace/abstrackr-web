@@ -30,6 +30,6 @@ class TrackrController(BaseController):
             redirect(log_in)
             
     def show_reviews(self):
-        q = model.Session.query(model.Review)
+        q = model.Session.query(model.Project)
         c.reviews= q.limit(5)
         return render("/index.mako")

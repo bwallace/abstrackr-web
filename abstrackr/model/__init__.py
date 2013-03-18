@@ -1,32 +1,36 @@
+import os
 import sqlalchemy as sa
-from sqlalchemy import types
+
+from hashlib import sha1
+
+from sqlalchemy import Table, ForeignKey,\
+    Column, types, orm
+
+from sqlalchemy.types import Unicode, UnicodeText,\
+    Integer, Date, CHAR, Float
 
 # imports from the model
 from abstrackr.model import meta
-from abstrackr.model.meta import Session, Base
+from abstrackr.model.meta import Session, Base, metadata
+
 # authentication
 from abstrackr.model.auth import User, Group, Permission
-from sqlalchemy import Table, ForeignKey, Column
-from sqlalchemy.types import Unicode, UnicodeText, Integer, Date, CHAR, Float
-from sqlalchemy import orm
-from abstrackr.model.meta import metadata
-import os
-from hashlib import sha1
+
 
 def init_model(engine):
     """Call me before using any of the tables or classes in the model"""
     Session.configure(bind=engine)
 
 
-class Review(Base):
-    __tablename__ = "Reviews"
+class Project(Base):
+    __tablename__ = "project"
     #__mapper_args__ = dict(order_by="date desc")
 
-    review_id = sa.Column(types.Integer, primary_key=True)
+    id = sa.Column(types.Integer, primary_key=True)
     project_lead_id = sa.Column(types.Integer)
     project_description = sa.Column(types.Unicode(10000))
     
-    # this is for joining the review
+    # this is for joining the project
     code = sa.Column(types.Unicode(10))
     
     # `single', `double', or `advanced'
@@ -49,7 +53,7 @@ class Review(Base):
     # under the same condition, this will point to
     # the entry in the FixedAssignment table that
     # maps to the initial assignment associated with
-    # this review.
+    # this project.
     initial_assignment_id = sa.Column(types.Integer)
     
     date_created = sa.Column(types.DateTime())
@@ -60,10 +64,10 @@ class Citation(Base):
     __tablename__ = "Citations"
     # note that this is independent of pubmed/refman/whatever id!
     citation_id = sa.Column(types.Integer, primary_key=True)
-    # associates the citation with the review/project that owns it
-    review_id = sa.Column(types.Integer)
-    pmid_id = sa.Column(types.Integer)
-    refman_id = sa.Column(types.Integer)
+    # associates the citation with the project that owns it
+    project_id = sa.Column(types.Integer)
+    pmid = sa.Column(types.Integer)
+    refman = sa.Column(types.Integer)
     
     title = sa.Column(types.Unicode(500))
     # length is based on back-of-envelope calculation
@@ -76,13 +80,13 @@ class Priority(Base):
     '''
     This table stores the ordered priority for citation screening, i.e.,
     facilitates active learning. It also attempts to solve the potential
-    problem of reviewers labeling the same citation simultaneously by 
+    problem of users labeling the same citation simultaneously by 
     containing a `is_out` field and date.
     '''
     __tablename__ = "Priority"
     id = sa.Column(types.Integer, primary_key=True) 
-    # review to which this ordering applies
-    review_id = sa.Column(types.Integer)
+    # project to which this ordering applies
+    project_id = sa.Column(types.Integer)
     citation_id = sa.Column(types.Integer)
     priority = sa.Column(types.Integer)
     
@@ -104,8 +108,8 @@ class TagTypes(Base):
     __tablename__ = "TagTypes"
     id = sa.Column(types.Integer, primary_key=True)
     text = sa.Column(types.Unicode(500))
-    # review for which tag was generated
-    review_id = sa.Column(types.Integer)
+    # project for which tag was generated
+    project_id = sa.Column(types.Integer)
     label = sa.Column(types.SmallInteger)
     # who invented this?
     creator_id = sa.Column(types.Integer)
@@ -136,10 +140,10 @@ class LabeledFeature(Base):
     __tablename__ = "LabelFeatures"
     id = sa.Column(types.Integer, primary_key=True)
     term = sa.Column(types.Unicode(500))
-    # review for which this term applies
-    review_id = sa.Column(types.Integer)
+    # project for which this term applies
+    project_id = sa.Column(types.Integer)
     # person who entered the term
-    reviewer_id = sa.Column(types.Integer)  
+    user_id = sa.Column(types.Integer)  
     # label
     label = sa.Column(types.SmallInteger)
     date_created = sa.Column(types.DateTime())
@@ -148,10 +152,10 @@ class Label(Base):
     ''' Stores instances labels '''
     __tablename__ = "Labels"
     id = sa.Column(types.Integer, primary_key=True)
-    # review for which this document was screened
-    review_id = sa.Column(types.Integer)
+    # project for which this document was screened
+    project_id = sa.Column(types.Integer)
     study_id = sa.Column(types.Integer)
-    reviewer_id = sa.Column(types.Integer)
+    user_id = sa.Column(types.Integer)
     assignment_id = sa.Column(types.Integer)
     # -1, 0, 1
     label = sa.Column(types.SmallInteger)
@@ -162,19 +166,19 @@ class Label(Base):
     
 class ReviewerProject(Base):
     '''
-    junction table; maps reviewers to the projects they
+    junction table; maps users to the projects they
     are on (and vice versa).
     '''
     __tablename__ = "ReviewersProjects"
     id = sa.Column(types.Integer, primary_key=True)
-    review_id = sa.Column(types.Integer)
-    reviewer_id = sa.Column(types.Integer)
+    project_id = sa.Column(types.Integer)
+    user_id = sa.Column(types.Integer)
     
 class Assignment(Base):
     __tablename__ = "Assignments"
     id = sa.Column(types.Integer, primary_key=True)
-    review_id = sa.Column(types.Integer)
-    reviewer_id = sa.Column(types.Integer)
+    project_id = sa.Column(types.Integer)
+    user_id = sa.Column(types.Integer)
     task_id = sa.Column(types.Integer)
     done_so_far = sa.Column(types.Integer)
     date_assigned = sa.Column(types.DateTime())
@@ -197,16 +201,16 @@ class Task(Base):
     there are no more citations that have not been labeled the
     desired number of times`, and there are `finite`, in which
     assignees are to label a fixed number of citations. Tasks are 
-    always associated with exactly one review, but multiple
-    reviewers can be assigned the same Task (see the Assignment table).
+    always associated with exactly one project, but multiple
+    users can be assigned the same Task (see the Assignment table).
     '''
     __tablename__ = "Tasks"
     id = sa.Column(types.Integer, primary_key=True)
-    review = sa.Column(types.Integer)
+    project_id = sa.Column(types.Integer)
     # this is 'perpetual', 'initial' or 'finite'; the former indicates a 'perpetual'
     # screening task -- i.e., they will continue screening
     # while abstracts remain in the Priority queue for this
-    # review. The latter two are special cases; in which only n
+    # project. The latter two are special cases; in which only n
     # citations will be screened.  
     task_type = sa.Column(types.Unicode(50))
     # both of the following are N/A for 'perpetual'
@@ -232,10 +236,10 @@ class EncodeStatus(Base):
     '''
     __tablename__ = "EncodedStatuses" # sticking with the pluralized convention here
     id = sa.Column(types.Integer, primary_key=True)
-    review_id = sa.Column(types.Integer) # associated review
+    project_id = sa.Column(types.Integer) # associated project
     is_encoded = sa.Column(types.Boolean) # has it been encoded yet?
     labels_last_updated = sa.Column(types.DateTime())
-    # the location of the base directory for the encoded review
+    # the location of the base directory for the encoded project
     base_path = sa.Column(types.Unicode(100)) 
 
 
@@ -245,7 +249,7 @@ class PredictionsStatus(Base):
     '''
     __tablename__ = "PredictionStatuses" 
     id = sa.Column(types.Integer, primary_key=True)
-    review_id = sa.Column(types.Integer) # associated review
+    project_id = sa.Column(types.Integer) # associated project
     predictions_exist = sa.Column(types.Boolean) # has it been encoded yet?
     predictions_last_made = sa.Column(types.DateTime())
     train_set_size = sa.Column(types.Integer) # how many did we train on?
@@ -259,7 +263,7 @@ class Prediction(Base):
     __tablename__ = "Predictions" 
     id = sa.Column(types.Integer, primary_key=True)
     study_id = sa.Column(types.Integer) # the (internal) study id
-    review_id = sa.Column(types.Integer) # it makes life easier to have this around
+    project_id = sa.Column(types.Integer) # it makes life easier to have this around
     prediction = sa.Column(types.Boolean) # true = include; false = exclude
     num_yes_votes = sa.Column(types.Float) # number of ensemble members that voted yes
     predicted_probability = sa.Column(types.Float) # predicted probability
@@ -297,7 +301,7 @@ class User(Base):
     email = sa.Column(types.Unicode(80))
     password = sa.Column(types.Unicode(80))
     fullname = sa.Column(types.Unicode(255))
-    # num of systematic reviews they've been involved with
+    # Number of Systematic Reviews they've been involved with
     experience = sa.Column(types.Integer)
     # These three columns are meant to hold user's preference
     # choices as to whether to show the corresponding information

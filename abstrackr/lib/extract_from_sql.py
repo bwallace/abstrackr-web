@@ -18,7 +18,7 @@ metadata = MetaData(bind=engine)
 # bind the tables
 citations = Table("Citations", metadata, autoload=True)
 labels = Table("Labels", metadata, autoload=True)
-reviews = Table("Reviews", metadata, autoload=True)
+reviews = Table("project", metadata, autoload=True)
 users = Table("user", metadata, autoload=True)
 labeled_features = Table("LabelFeatures", metadata, autoload=True)
 encoded_status = Table("EncodedStatuses", metadata, autoload=True)

@@ -265,7 +265,7 @@ _get_user_from_email() to see which OperationalError is being raised')
 
         # pull all assignments for this person
         assignment_q = model.meta.Session.query(model.Assignment)
-        all_assignments = assignment_q.filter(model.Assignment.reviewer_id == person.id).all()
+        all_assignments = assignment_q.filter(model.Assignment.user_id == person.id).all()
 
         c.outstanding_assignments = [a for a in all_assignments if not a.done]
         # if there's an initial assignment, we'll only show that.
@@ -296,10 +296,10 @@ _get_user_from_email() to see which OperationalError is being raised')
         c.finished_assignments = [a for a in all_assignments if a.done]   
         
 
-        project_q = model.meta.Session.query(model.Review)   
+        project_q = model.meta.Session.query(model.Project)   
         junction_q = model.meta.Session.query(model.ReviewerProject)
         participating_project_ids = \
-            [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
+            [p.review_id for p in junction_q.filter(model.ReviewerProject.user_id == person.id).all()]
         c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids]
         c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects )
         
@@ -349,14 +349,14 @@ _get_user_from_email() to see which OperationalError is being raised')
         else:
             user.show_keywords = True
         
-        project_q = model.meta.Session.query(model.Review)       
-        c.leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()     
+        project_q = model.meta.Session.query(model.Project)       
+        c.leading_projects = project_q.filter(model.Project.project_lead_id == person.id).all()     
         leading_project_ids = [proj.review_id for proj in c.leading_projects]
          
         # pull the reviews that this person is participating in
         junction_q = model.meta.Session.query(model.ReviewerProject)
         participating_project_ids = \
-            [p.review_id for p in junction_q.filter(model.ReviewerProject.reviewer_id == person.id).all()]
+            [p.review_id for p in junction_q.filter(model.ReviewerProject.user_id == person.id).all()]
         c.participating_projects = [p for p in project_q.all() if p.review_id in participating_project_ids and \
                                                 not p.review_id in leading_project_ids]
         
@@ -368,7 +368,7 @@ _get_user_from_email() to see which OperationalError is being raised')
         c.do_we_have_a_maybe = {}
         for project_id in leading_project_ids:
             
-            predictions_for_review = statuses_q.filter(model.PredictionsStatus.review_id==project_id).all()
+            predictions_for_review = statuses_q.filter(model.PredictionsStatus.project_id==project_id).all()
             if len(predictions_for_review) > 0 and predictions_for_review[0].predictions_exist:
                 c.statuses[project_id] = True
             else:
@@ -383,8 +383,8 @@ _get_user_from_email() to see which OperationalError is being raised')
         
     
     def _get_projects_person_leads(self, person):
-        project_q = model.meta.Session.query(model.Review)       
-        leading_projects = project_q.filter(model.Review.project_lead_id == person.id).all()
+        project_q = model.meta.Session.query(model.Project)       
+        leading_projects = project_q.filter(model.Project.project_lead_id == person.id).all()
         return leading_projects
 
     def _get_review_ids_to_names_d(self, reviews):
