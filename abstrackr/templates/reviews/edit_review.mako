@@ -59,7 +59,7 @@ jQuery(document).ready(function(){
 </script>
 
 <div class="breadcrumbs">
-./<a href="${url(controller='account', action='my_projects')}">my projects</a>/<a href="${url(controller='review', action='show_review', id=c.review.review_id)}">${c.review.name}</a>
+./<a href="${url(controller='account', action='my_projects')}">my projects</a>/<a href="${url(controller='review', action='show_review', id=c.review.id)}">${c.review.name}</a>
 </div>
 
 <div id="train-round-help" class="ui-dialog">
@@ -98,10 +98,10 @@ In a <b>pilot round</b>, everyone screens the same abstracts. Conflicts can then
 
 <h1>${c.review.name}: administrivia</h1>
 <div class="actions">
-<a href="${url(controller='review', action='admin', id=c.review.review_id)}">Manage Participants</a>
-<a href="${url(controller='review', action='assignments', id=c.review.review_id)}">Manage Assignments</a>
-<a href="${url(controller='review', action='edit_review', id=c.review.review_id)}">Edit Settings</a>
-<a href="${url(controller='review', action='render_add_citations', id=c.review.review_id)}">Add Citations</a>
+<a href="${url(controller='review', action='admin', id=c.review.id)}">Manage Participants</a>
+<a href="${url(controller='review', action='assignments', id=c.review.id)}">Manage Assignments</a>
+<a href="${url(controller='review', action='edit_review', id=c.review.id)}">Edit Settings</a>
+<a href="${url(controller='review', action='render_add_citations', id=c.review.id)}">Add Citations</a>
 </div>
 
 <div class="content">
@@ -109,7 +109,7 @@ In a <b>pilot round</b>, everyone screens the same abstracts. Conflicts can then
 
 <center>
 <table class="form_table">
- ${h.form(url(controller='review', action='edit_review_settings', id=c.review.review_id), multipart=True, id="edit_project_form",  method='post')}
+ ${h.form(url(controller='review', action='edit_review_settings', id=c.review.id), multipart=True, id="edit_project_form",  method='post')}
 
     <tr><td><label>screening mode (<a href="#" id="screen-mode-link">what?</a>):</td> <td>${h.select("screen_mode", None, ["Single-screen", "Double-screen", "Advanced"])} </label></td></tr>
 

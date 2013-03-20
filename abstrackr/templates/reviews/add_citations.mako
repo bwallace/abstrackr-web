@@ -45,7 +45,7 @@
 </script>
 
 <div class="breadcrumbs">
-    ./<a href="${url(controller='account', action='my_projects')}">my projects</a>/<a href="${url(controller='review', action='show_review', id=c.review.review_id)}">${c.review.name}</a>
+    ./<a href="${url(controller='account', action='my_projects')}">my projects</a>/<a href="${url(controller='review', action='show_review', id=c.review.id)}">${c.review.name}</a>
 </div>
 
 <div id="dialog" >
@@ -60,10 +60,10 @@
 
 <h1>${c.review.name}: administrivia</h1>
 <div class="actions">
-    <a href="${url(controller='review', action='admin', id=c.review.review_id)}">Manage Participants</a>
-    <a href="${url(controller='review', action='assignments', id=c.review.review_id)}">Manage Assignments</a>
-    <a href="${url(controller='review', action='edit_review', id=c.review.review_id)}">Edit Settings</a>
-    <a href="${url(controller='review', action='render_add_citations', id=c.review.review_id)}">Add Citations</a>
+    <a href="${url(controller='review', action='admin', id=c.review.id)}">Manage Participants</a>
+    <a href="${url(controller='review', action='assignments', id=c.review.id)}">Manage Assignments</a>
+    <a href="${url(controller='review', action='edit_review', id=c.review.id)}">Edit Settings</a>
+    <a href="${url(controller='review', action='render_add_citations', id=c.review.id)}">Add Citations</a>
 </div>
 
 <div id="upload-help" class="ui-dialog">
@@ -87,7 +87,7 @@
 
     <center>
         <table class="form_table">
-            ${h.form(url(controller='review', action='add_citations', id=c.review.review_id), multipart=True, id="add_citations_form",  method='post')}
+            ${h.form(url(controller='review', action='add_citations', id=c.review.id), multipart=True, id="add_citations_form",  method='post')}
                 
                 <tr><td><label>Upload Citation-File (<a href="#" id="help-link">what can I upload?</a>):</label></td> <td>${h.file('db')} </td></tr>
 

@@ -10,7 +10,6 @@ from controller_globals import *
 
 import turbomail
 import abstrackr.model as model
-import pdb
 import smtplib
 import string
 import random
@@ -192,13 +191,13 @@ class AccountController(BaseController):
             
             -- The Tufts EPC.
         """ % (new_user.fullname, new_user.username)
-        
+
         try:
             self.send_email_to_user(new_user, "welcome to abstrackr", greeting_message)
         except:
             # this almost certainly means we're on our Windows dev box :)
             pass
-        
+
         ###
         # log this user in programmatically (issue #28)
         rememberer = request.environ['repoze.who.plugins']['cookie']
@@ -216,7 +215,7 @@ class AccountController(BaseController):
             redirect(url(controller="account", action="login"))
 
 
- 
+
     '''
     The following methods are protected, i.e., the user must be logged in.
     '''
@@ -239,7 +238,6 @@ class AccountController(BaseController):
             log.error('Hum...fetching user from the database returned False. \
 We need to investigate. Go remove the catch all in controller_globals.py, method \
 _get_user_from_email() to see which OperationalError is being raised')
-        #pdb.set_trace()
         # Need the above line because the first line of this function gives
         #   a model.auth.User object
         # as opposed to

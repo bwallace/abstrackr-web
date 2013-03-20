@@ -14,16 +14,16 @@
 </script>
 
 <div class="breadcrumbs">
-    ./<a href="${url(controller='account', action='my_projects')}">my projects</a>/<a href="${url(controller='review', action='show_review', id=c.review.review_id)}">${c.review.name}</a>
+    ./<a href="${url(controller='account', action='my_projects')}">my projects</a>/<a href="${url(controller='review', action='show_review', id=c.review.id)}">${c.review.name}</a>
 </div>
 
 <h1>${c.review.name}: administrivia</h1>
 
 <div class="actions">
-    <a href="${url(controller='review', action='admin', id=c.review.review_id)}">Manage Participants</a>
-    <a href="${url(controller='review', action='assignments', id=c.review.review_id)}">Manage Assignments</a>
-    <a href="${url(controller='review', action='edit_review', id=c.review.review_id)}">Edit Settings</a>
-    <a href="${url(controller='review', action='render_add_citations', id=c.review.review_id)}">Add Citations</a>
+    <a href="${url(controller='review', action='admin', id=c.review.id)}">Manage Participants</a>
+    <a href="${url(controller='review', action='assignments', id=c.review.id)}">Manage Assignments</a>
+    <a href="${url(controller='review', action='edit_review', id=c.review.id)}">Edit Settings</a>
+    <a href="${url(controller='review', action='render_add_citations', id=c.review.id)}">Add Citations</a>
 </div>
 
 
@@ -37,8 +37,8 @@
             <tr>
                 <td>${participant.fullname}</td>
                 <td class="actions">
-                    <a href="/review/remove_from_review/${participant.id}/${c.review.review_id}")>remove from review</a>
-                    <a href="/review/transfer_admin/${c.review.review_id}/${participant.id}")>set user as the project lead</a></td>
+                    <a href="/review/remove_from_review/${participant.id}/${c.review.id}")>remove from review</a>
+                    <a href="/review/transfer_admin/${c.review.id}/${participant.id}")>set user as the project lead</a></td>
                 </td>
             </tr>
         %endfor
@@ -54,7 +54,7 @@
     % endif
 
     <div align="right">
-        <form action = "/review/invite_reviewers/${c.review.review_id}">
+        <form action = "/review/invite_reviewers/${c.review.id}">
             <div class="actions">
                 <label for="emails">Want to invite additional reviewers? Enter their emails (comma-separated).</label>
                 <input type="text" id="emails" name="emails" /><br />

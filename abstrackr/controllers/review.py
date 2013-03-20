@@ -1448,7 +1448,7 @@ class ReviewController(BaseController):
         for reviewer in reviewers:
             # @TODO problematic if two reviewers have the same fullname, which
             # isn't explicitly prohibited
-            n_lbl_d[reviewer.fullname] = len([l for l in labels_for_review if l.reviewer_id == reviewer.id])
+            n_lbl_d[reviewer.fullname] = len([l for l in labels_for_review if l.user_id == reviewer.id])
         
         # now make a horizontal bar graph showing the amount of work done by reviewers
         workloads = n_lbl_d.items() # first sort by the number of citations screened, descending
@@ -2090,7 +2090,7 @@ class ReviewController(BaseController):
         tag_q = model.meta.Session.query(model.TagTypes)
         current_user = request.environ.get('repoze.who.identity')['user']
         tag = tag_q.filter(model.TagTypes.id == id).one()
-        if current_user.id == tag.creator_id or self._current_user_leads_review(tag.review_id):
+        if current_user.id == tag.creator_id or self._current_user_leads_review(tag.project_id):
             tag.text = request.params['new_text']
             model.Session.commit()
     
@@ -2100,7 +2100,7 @@ class ReviewController(BaseController):
         tag_q = model.meta.Session.query(model.TagTypes)
         current_user = request.environ.get('repoze.who.identity')['user']
         tag = tag_q.filter(model.TagTypes.id == tag_id).one()
-        review_id = tag.review_id
+        review_id = tag.project_id
         if current_user.id == tag.creator_id:
             model.Session.delete(tag)
             model.Session.commit()

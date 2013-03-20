@@ -7,17 +7,17 @@
 
 
 <div class="breadcrumbs">
-<a href="${url(controller='account', action='welcome')}">./dashboard</a>/<a href="${url(controller='review', action='show_review', id=c.review.review_id)}">${c.review.name}</a>
+<a href="${url(controller='account', action='welcome')}">./dashboard</a>/<a href="${url(controller='review', action='show_review', id=c.review.id)}">${c.review.name}</a>
 </div>
 
 
 <h1>${c.review.name}: administrivia</h1>
 
 <div class="actions">
-    <a href="${url(controller='review', action='admin', id=c.review.review_id)}">Manage Participants</a>
-    <a href="${url(controller='review', action='assignments', id=c.review.review_id)}">Manage Assignments</a>
-    <a href="${url(controller='review', action='edit_review', id=c.review.review_id)}">Edit Settings</a>
-    <a href="${url(controller='review', action='render_add_citations', id=c.review.review_id)}">Add Citations</a>
+    <a href="${url(controller='review', action='admin', id=c.review.id)}">Manage Participants</a>
+    <a href="${url(controller='review', action='assignments', id=c.review.id)}">Manage Assignments</a>
+    <a href="${url(controller='review', action='edit_review', id=c.review.id)}">Edit Settings</a>
+    <a href="${url(controller='review', action='render_add_citations', id=c.review.id)}">Add Citations</a>
 </div>
 
 <div class="content">
@@ -30,7 +30,7 @@
             </tr>
             % for i,assignment in enumerate(c.assignments):
                 <tr>
-                <td>${c.reviewer_ids_to_names_d[assignment.reviewer_id]}</td>     
+                <td>${c.reviewer_ids_to_names_d[assignment.user_id]}</td>     
                 % if assignment.num_assigned < 0:
                     <td>--</td>
                 % else:
@@ -46,7 +46,7 @@
                     <td>N/A</td>
                 % endif
                 <td><a href=
-                       "${url(controller='review', action='delete_assignment', review_id=c.review.review_id, assignment_id=assignment.id)}">
+                       "${url(controller='review', action='delete_assignment', review_id=c.review.id, assignment_id=assignment.id)}">
                        <img src="/delete_sm.png"></img></a>
                 </tr>
             % endfor
@@ -57,7 +57,7 @@
 <h2>create new assignment</h2>
 <center>
 <br/>
-<form name="new_assignment" action="${url(controller='review', action='create_assignment', id=c.review.review_id)}">
+<form name="new_assignment" action="${url(controller='review', action='create_assignment', id=c.review.id)}">
 assign to: <br/><br/>
 % for reviewer in c.participating_reviewers:
     <input type="checkbox" name="assign_to" value="${reviewer.username}" checked="yes"/> ${reviewer.username}<br/>
