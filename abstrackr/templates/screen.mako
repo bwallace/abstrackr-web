@@ -161,7 +161,7 @@
                 % if "consensus_review" in dir(c) and c.consensus_review:
                   a <b>consensus</b> label of ${write_label(label.label)} was given for this citation on on ${label.label_last_updated}<br/>
                 % else:
-                  <b>${c.reviewer_ids_to_names_d[label.reviewer_id]}</b> labeled this citation as ${write_label(label.label)} on ${label.label_last_updated}<br/>
+                  <b>${c.reviewer_ids_to_names_d[label.user_id]}</b> labeled this citation as ${write_label(label.label)} on ${label.label_last_updated}<br/>
                 % endif
               % endfor
           % else:

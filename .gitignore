@@ -2,3 +2,4 @@
 *.ini
 *.swp
 .ropeproject/
+data/

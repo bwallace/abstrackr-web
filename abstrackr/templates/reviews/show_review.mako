@@ -13,7 +13,7 @@
 </div>
 <div class="content">
 <h2>Project description</h2> 
-${c.review.project_description}
+${c.review.description}
 <br/><br/>
 <h2>Progress</h2>
 

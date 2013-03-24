@@ -348,7 +348,7 @@ _get_user_from_email() to see which OperationalError is being raised')
             user.show_keywords = True
         
         project_q = model.meta.Session.query(model.Project)       
-        c.leading_projects = project_q.filter(model.Project.project_lead_id == person.id).all()     
+        c.leading_projects = project_q.filter(model.Project.leader_id == person.id).all()     
         leading_project_ids = [proj.id for proj in c.leading_projects]
          
         # pull the reviews that this person is participating in
@@ -382,7 +382,7 @@ _get_user_from_email() to see which OperationalError is being raised')
     
     def _get_projects_person_leads(self, person):
         project_q = model.meta.Session.query(model.Project)       
-        leading_projects = project_q.filter(model.Project.project_lead_id == person.id).all()
+        leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
         return leading_projects
 
     def _get_review_ids_to_names_d(self, reviews):
