@@ -28,6 +28,16 @@ CitationTask_table = Table('CitationTask', Base.metadata,
         )
 
 
+# TODO: remove this table once refactoring is done
+class FixedTask(Base):
+    __tablename__ = "FixedTasks"
+    # the id is meaningless, but we want a primary key to make SQL
+    # happy, so...
+    id = Column(types.Integer, primary_key=True)
+    task_id = Column(types.Integer)
+    citation_id = Column(types.Integer)
+
+
 ### end of Association Tables
 
 
@@ -243,15 +253,6 @@ class Task(Base):
     task_type = Column(types.Unicode(50))
     # both of the following are N/A for 'perpetual'
     num_assigned = Column(types.Integer)
-
-
-class FixedTask(Base):
-    __tablename__ = "FixedTasks"
-    # the id is meaningless, but we want a primary key to make SQL
-    # happy, so...
-    id = Column(types.Integer, primary_key=True)
-    task_id = Column(types.Integer)
-    citation_id = Column(types.Integer)
 
 
 class EncodeStatus(Base):

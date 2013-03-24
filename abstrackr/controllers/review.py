@@ -1970,8 +1970,6 @@ class ReviewController(BaseController):
         
         return render("/citation_fragment.mako")
         
-     
-        
     def _labels_to_reviewer_name_d(self, labels):
         reviewer_ids_to_names_d = {}
         for label in labels:

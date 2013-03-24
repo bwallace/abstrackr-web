@@ -1,4 +1,5 @@
 from abstrackr.tests import TestController, url
+from abstrackr import model
 
 from nose.plugins.attrib import attr  # Decorator to mark tests
                                       # Use ``nosetests -a author=jj`` to
@@ -85,3 +86,41 @@ class TestReviewController(TestController):
     @attr(author='jj', controller='review')
     def test_predictions_about_remaining_citations(self):
         pass
+
+    @attr(author='jj', controller='review')
+    def test_delete_citation(self):
+        """ Deleting Citation entry cascades
+
+        Verify that entries in CitationTask table are destroyed when
+        corresponding citation and/or task is deleted
+        """
+
+        # Create citation and task objects
+        c1 = model.Citation()
+        c2 = model.Citation()
+        t1 = model.Task()
+        t2 = model.Task()
+
+        # Append tasks to citation, incidentally this verifies that
+        # the relationship are properly set.
+        c1.tasks.append(t1)
+        c1.tasks.append(t2)
+        c2.tasks.append(t2)
+
+        # Persist the changes.
+        model.Session.add(c1)
+        model.Session.add(c2)
+        model.Session.commit()
+
+        # Verify first that the entries in table CitationTask actually exist
+        assert len(model.Session.query(model.CitationTask_table).all()) == 3
+
+        # Finally remove one of the citations and check cascade
+        model.Session.delete(c1)
+        model.Session.commit()
+        assert len(model.Session.query(model.CitationTask_table).all()) == 1
+
+        # Do the same for when the task is removed
+        model.Session.delete(t2)
+        assert len(model.Session.query(model.CitationTask_table).all()) == 0
+

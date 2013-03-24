@@ -5,6 +5,7 @@ from abstrackr import model
 class TestReviewModel(TestController):
     """ Make sure db tables have the correct columns """
 
+
     def test_project(self):
         assert hasattr(model.Project, 'id')
         assert hasattr(model.Project, 'leader_id')
