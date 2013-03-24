@@ -1,7 +1,5 @@
 from abstrackr.tests import TestController, url
 
-#from nose.tools import ok_            # This is shorthand for assert
-
 from nose.plugins.attrib import attr  # Decorator to mark tests
                                       # Use ``nosetests -a author=jj`` to
                                       # run only marked tests or 
@@ -27,7 +25,7 @@ class TestReviewController(TestController):
                 url(controller='account', action='create_account'),
                 status=200)
         # Make sure it has the correct url.
-        assert response.req.environ['PATH_INFO'] == '/account/create_account'
+        assert response.request.url.endswith('/account/create_account')
         # Fill out the create account form.
         form = response.form
         form['first_name'] = u'tester'
@@ -74,7 +72,7 @@ class TestReviewController(TestController):
         response = response.follow(status=302)
         response = response.follow(status=200)
         # Verify path is correct
-        assert response.req.environ['PATH_INFO'] == '/review/create_new_review'
+        assert response.request.url.endswith('/review/create_new_review')
         # Verify that several keywords show up on the page
         assert 'project name' in response
         assert 'project description' in response
@@ -86,4 +84,4 @@ class TestReviewController(TestController):
 
     @attr(author='jj', controller='review')
     def test_predictions_about_remaining_citations(self):
-
+        pass
