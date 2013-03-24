@@ -49,7 +49,7 @@ def render_body(context,**pageargs):
         __M_writer(escape(url(controller='review', action='review_terms', id=c.review.id)))
         __M_writer(u'">review terms</a>\n</div>\n<div class="content">\n<h2>Project description</h2> \n')
         # SOURCE LINE 16
-        __M_writer(escape(c.review.project_description))
+        __M_writer(escape(c.review.description))
         __M_writer(u'\n<br/><br/>\n<h2>Progress</h2>\n\n')
         # SOURCE LINE 20
         if float(c.num_labels)/float(c.num_citations) >= .1:
