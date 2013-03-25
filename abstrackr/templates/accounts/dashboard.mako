@@ -3,6 +3,7 @@
 
 
 <script type="text/javascript" src="/scripts/jquery.alerts.js"></script>
+
 <link href="/scripts/jquery.alerts.css"  rel="stylesheet" type="text/css" media="screen" />
 
 <script language="javascript">
@@ -19,21 +20,30 @@
         });
         
         
-        
     });
+
 </script>
 
 
 <div id="export" class="dialog">
 </div>
 
+<button type="button" onclick="introJs().start()">Quick Tour!</button>
 	
-%if c.my_projects:
-    <a class="tab" href = "${url(controller='account', action='my_work')}">my work</a>
-    <a class="active_tab" href="${url(controller='account', action='my_projects')}">my projects</a>
-%elif c.my_work:
-    <a class="active_tab" href = "${url(controller='account', action='my_work')}">my work</a>
-    <a class="tab" href="${url(controller='account', action='my_projects')}">my projects</a>
+%if c.my_work:
+    <a class="active_tab" href="${url(controller='account', action='my_work')}"
+            data-intro='You will find all of your projects summarized on this tab'
+            data-step='2'>my work</a>
+    <a class="tab" href="${url(controller='account', action='my_projects')}"
+            data-intro='On this tab you will find all the projects you are leading'
+            data-step='3'>my projects</a>
+%elif c.my_projects:
+    <a class="tab" href="${url(controller='account', action='my_work')}"
+            data-intro='You will find all of your projects summarized on this tab'
+            data-step='2'>my work</a>
+    <a class="active_tab" href="${url(controller='account', action='my_projects')}"
+            data-intro='On this tab you will find all the projects you are leading'
+            data-step='3'>my projects</a>
 %endif
 <div class="content">
 

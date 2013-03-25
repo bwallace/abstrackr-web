@@ -1,4 +1,10 @@
-body { background-color:	#ddd; color: #333;margin-left: 5%; margin-right: 5%;  }
+body {
+  background-color: #ddd;
+  color: #333;
+  margin-top: 2em;
+  margin-left: 5%;
+  margin-right: 5%;
+}
 
 body, p, ol, ul, td {
   font-family: 'Lucida Sans Unicode', 'Lucida Grande', sans-serif;
@@ -6,6 +12,9 @@ body, p, ol, ul, td {
   line-height: 18px;
 }
 
+div#login-header {
+  margin: 1.5em;
+}
 
 
 
