@@ -2,9 +2,9 @@ from abstrackr.tests import TestController, url
 from abstrackr import model
 
 from nose.plugins.attrib import attr  # Decorator to mark tests
-                                      # Use ``nosetests -a author=jj`` to
-                                      # run only marked tests or 
-                                      # ``nosetests -a '!author=jj`` to
+                                      # Use "nosetests -a author=jj" to
+                                      # run only marked tests or
+                                      # "nosetests -a '!author=jj" to
                                       # exclude marked tests
 
 
@@ -21,7 +21,7 @@ class TestReviewController(TestController):
 
         """
 
-        # Get the `create_account` page.
+        # Get the 'create_account' page.
         response = self.app.get(
                 url(controller='account', action='create_account'),
                 status=200)
@@ -37,13 +37,13 @@ class TestReviewController(TestController):
         form['password'] = u'tester'
         # Submit the form and throw if status not 302.
         post_submit = form.submit(status=302)
-        # Submitting the form directs us back to `login` page. Let's follow.
+        # Submitting the form directs us back to 'login' page. Let's follow.
         post_submit = post_submit.follow(status=302)
-        # Since we are now registered, `login` page will redirect to
-        # `welcome` page
+        # Since we are now registered, 'login' page will redirect to
+        # 'welcome' page
         post_login = post_submit.follow(status=302)
-        # `Welcome` page redirects to `my_work` page; let's follow that also
-        # The `my_work` page gets rendered based on how many outstanding
+        # 'Welcome' page redirects to 'my_work' page; let's follow that also
+        # The 'my_work' page gets rendered based on how many outstanding
         # assignments the user has, therefore we should check that this has
         # status 200
         post_login = post_login.follow(status=200)

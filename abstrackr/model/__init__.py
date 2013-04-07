@@ -22,7 +22,7 @@ def init_model(engine):
 
 
 ### Association Tables
-CitationTask_table = Table('CitationTask', Base.metadata,
+citation_task_table = Table('citation_task', Base.metadata,
         Column('citation_id', Integer, ForeignKey('Citations.citation_id')),
         Column('task_id', Integer, ForeignKey('Tasks.id'))
         )
@@ -39,7 +39,6 @@ class FixedTask(Base):
 
 
 ### end of Association Tables
-
 
 
 class Project(Base):
@@ -65,9 +64,8 @@ class Project(Base):
     # `single', `double', or `advanced'
     screening_mode = Column(types.Unicode(50))
 
-    # True (i.e. tags are private)
-    #  or
-    # False (i.e. tags are public)
+    # True := tags are private
+    # False := tags are public
     tag_privacy = Column(types.Boolean)
 
     # the number of labels to be procured for each abstract
@@ -85,6 +83,7 @@ class Project(Base):
     date_created = Column(types.DateTime())
     date_modified = Column(types.DateTime())
 
+    priorities = relationship('Priority')
 
 class Citation(Base):
     __tablename__ = "Citations"
@@ -105,7 +104,8 @@ class Citation(Base):
     publication_date = Column(types.DateTime())
     keywords = Column(types.Unicode(5000))
 
-    tasks = relationship("Task", secondary=CitationTask_table, backref="citations")
+    tasks = relationship("Task", secondary=citation_task_table, backref="citations")
+    priorities = relationship('Priority')
 
 class Priority(Base):
     '''
@@ -118,23 +118,23 @@ class Priority(Base):
 
     id = Column(types.Integer, primary_key=True)
 
-    # project to which this ordering applies
-    project_id = Column(types.Integer)
-    citation_id = Column(types.Integer)
+    # ForeignKey relationship columns
+    project_id = Column(types.Integer, ForeignKey('project.id'))
+    citation_id = Column(types.Integer, ForeignKey('Citations.citation_id'))
+
     priority = Column(types.Integer)
 
-    # we keep the number of times that each citation has been
-    # labeled, and remove it from the queue when a sufficient
-    # number of labels have been collected
+    # we keep the number of times that each citation has been labeled, and
+    # remove it from the queue when a sufficient number of labels have been
+    # collected
     num_times_labeled = Column(types.Integer)
 
-    # here we do some bookkeeping to lock citations
-    # while they are being labeled to prevent tandem
-    # labelings
+    # Keep a record of whether this priority item is currently being labeled
+    # by a user. This is an artificial lock on the item so that users do not
+    # overwrite each other's label
     is_out = Column(types.Boolean)
     locked_by = Column(types.Integer)
     time_requested = Column(types.DateTime())
-
 
 class TagTypes(Base):
     ''' User added tags '''
@@ -148,7 +148,6 @@ class TagTypes(Base):
     creator_id = Column(types.Integer)
     color = Column(types.Unicode(50))
 
-
 class Tags(Base):
     ''' Stores study/tag pairs '''
     __tablename__ = "Tags"
@@ -156,7 +155,6 @@ class Tags(Base):
     tag_id = Column(types.Integer)
     creator_id = Column(types.Integer)
     citation_id = Column(types.Integer)
-
 
 class Note(Base):
     ''' Stores notes; both structured and unstructured '''
@@ -168,7 +166,6 @@ class Note(Base):
     population = Column(types.Unicode(1000))
     ic = Column(types.Unicode(1000)) # intervention/comparator
     outcome = Column(types.Unicode(1000))
-
 
 class LabeledFeature(Base):
     ''' Stores labeled features, i.e., terms '''
@@ -183,14 +180,13 @@ class LabeledFeature(Base):
     label = Column(types.SmallInteger)
     date_created = Column(types.DateTime())
 
-
 class Label(Base):
     ''' Stores instances labels '''
     __tablename__ = "Labels"
     id = Column(types.Integer, primary_key=True)
     # project for which this document was screened
     project_id = Column(types.Integer)
-    study_id = Column(types.Integer)
+    study_id = Column(types.Integer) # TODO: need to rename this to citation_id
     user_id = Column(types.Integer)
     assignment_id = Column(types.Integer)
     # -1, 0, 1
@@ -199,7 +195,6 @@ class Label(Base):
     labeling_time = Column(types.Integer)
     first_labeled = Column(types.DateTime())
     label_last_updated = Column(types.DateTime())
-
 
 class ReviewerProject(Base):
     '''
@@ -210,7 +205,6 @@ class ReviewerProject(Base):
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer)
     user_id = Column(types.Integer)
-
 
 class Assignment(Base):
     __tablename__ = "Assignments"
@@ -229,7 +223,6 @@ class Assignment(Base):
     num_assigned = Column(types.Integer)
     # this is the same as `task_type'.
     assignment_type = Column(types.Unicode(50))
-
 
 class Task(Base):
     '''
@@ -254,7 +247,6 @@ class Task(Base):
     # both of the following are N/A for 'perpetual'
     num_assigned = Column(types.Integer)
 
-
 class EncodeStatus(Base):
     '''
     This table contains one entry for each dataset, indicating
@@ -272,8 +264,6 @@ class EncodeStatus(Base):
     # the location of the base directory for the encoded project
     base_path = Column(types.Unicode(100))
 
-
-
 class PredictionsStatus(Base):
     '''
     Status of predictions (do they exist? last update, etc.)
@@ -285,7 +275,6 @@ class PredictionsStatus(Base):
     predictions_last_made = Column(types.DateTime())
     train_set_size = Column(types.Integer) # how many did we train on?
     num_pos_train = Column(types.Integer) # number of positive examples we trained on
-
 
 class Prediction(Base):
     '''
