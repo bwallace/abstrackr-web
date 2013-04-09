@@ -2341,7 +2341,6 @@ class ReviewController(BaseController):
         False, these locks will be respected.
         '''
         review_id = review.id
-        priority_q = model.meta.Session.query(model.Priority)
         me = request.environ.get('repoze.who.identity')['user'].id
 
         ranked_priorities = model.meta.Session.query(model.Priority).\
@@ -2350,7 +2349,8 @@ class ReviewController(BaseController):
             filter(model.Priority.project_id==review_id).\
             filter(model.Assignment.user_id==me).\
             filter(and_(or_(model.Label.user_id!=me, model.Label.user_id==None))).\
-            order_by(model.Priority.priority)
+            order_by(model.Priority.priority).\
+            limit(3)
 
         # now filter the priorities, excluding those that are locked
         # note that we also will remove locks here if a citation has

@@ -19,7 +19,7 @@
                 $("#select-file").show();
             }
         });
-        
+
         // Enable the 'Create New Review' button after the user enters a project name and a file to upload
         $("#name").keyup(function() {
             if ( ($.trim($(this).val()) != "") && ($(this).val() != null) && $("input:file").val() ) {
@@ -73,7 +73,7 @@
             show: "blind",
         });
 
-        
+
         $("#post").click(function(){
             $("#dialog").dialog( "open" );
         });
@@ -149,7 +149,7 @@
 <div class="content">
     <center>
         <table class="form_table">
-         
+
             ${h.form(url(controller='review', action='create_review_handler'), multipart=True, id="new_project_form",  method='post')}
 
             <tr><td><label>project name:</td><td> ${h.text('name', "Review " + c.review_count)}</label></td></tr>
@@ -165,7 +165,7 @@
             <tr><td><label>pilot round size (<a href="#" id="train-round-link">huh?</a>):</td><td> ${h.text('init_size', '0')}</label></td></tr>
 
             <tr><td><label>tag visibility (<a href="#" id="tag-visibility-link">what?</a>):</td> <td>${h.select("tag_visibility", None, ["Private", "Public"])} </label></td></tr>
-            
+
             <div id='create' class="actions">
                 <tr><td></td><td></td><td class="actions">
                 <a href="${url(controller='account', action='back_to_projects')}">Cancel</a></td>

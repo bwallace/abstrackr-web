@@ -7,6 +7,8 @@ from nose.plugins.attrib import attr  # Decorator to mark tests
                                       # "nosetests -a '!author=jj" to
                                       # exclude marked tests
 
+from abstrackr.controllers.review import _get_next_priority
+
 
 class TestReviewController(TestController):
 
@@ -93,6 +95,7 @@ class TestReviewController(TestController):
 
         Verify that entries in CitationTask table are destroyed when
         corresponding citation and/or task is deleted
+
         """
 
         # Create citation and task objects
@@ -124,3 +127,15 @@ class TestReviewController(TestController):
         model.Session.delete(t2)
         assert len(model.Session.query(model.CitationTask_table).all()) == 0
 
+    @attr(author='jj', controller='review')
+    def test_get_next_priority(self):
+        """ Verify return value of _get_next_priority method
+
+        Verify that _get_next_priority returns the correct type, as well as
+        the fact that it does not query the database unnecessarily.
+
+        """
+
+        review = model.meta.Session.query(model.Project).filter(model.Project.id == '1')
+        priority = _get_next_priority(review, ignore_my_own_locks=True)
+        pass
