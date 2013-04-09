@@ -83,7 +83,10 @@ class Project(Base):
     date_created = Column(types.DateTime())
     date_modified = Column(types.DateTime())
 
-    priorities = relationship('Priority')
+    priorities = relationship('Priority', order_by=id, backref='project')
+    citations = relationship('Citation', order_by=id, backref='project')
+    assignments = relationship('Assignment', order_by=id, backref='project')
+    labels = relationship('Label', order_by=id, backref='project')
 
 class Citation(Base):
     __tablename__ = "Citations"
@@ -92,7 +95,7 @@ class Citation(Base):
     citation_id = Column(types.Integer, primary_key=True)
 
     # associates the citation with the project that owns it
-    project_id = Column(types.Integer)
+    project_id = Column(types.Integer, ForeignKey('project.id'))
     pmid = Column(types.Integer)
     refman = Column(types.Integer)
 
@@ -105,7 +108,8 @@ class Citation(Base):
     keywords = Column(types.Unicode(5000))
 
     tasks = relationship("Task", secondary=citation_task_table, backref="citations")
-    priorities = relationship('Priority')
+    priorities = relationship('Priority', backref="citation")
+    labels = relationship("Label", backref="citation")
 
 class Priority(Base):
     '''
@@ -185,8 +189,8 @@ class Label(Base):
     __tablename__ = "Labels"
     id = Column(types.Integer, primary_key=True)
     # project for which this document was screened
-    project_id = Column(types.Integer)
-    study_id = Column(types.Integer) # TODO: need to rename this to citation_id
+    project_id = Column(types.Integer, ForeignKey('project.id'))
+    study_id = Column(types.Integer, ForeignKey('Citations.citation_id')) # TODO: need to rename this to citation_id
     user_id = Column(types.Integer)
     assignment_id = Column(types.Integer)
     # -1, 0, 1
@@ -207,11 +211,13 @@ class ReviewerProject(Base):
     user_id = Column(types.Integer)
 
 class Assignment(Base):
+
     __tablename__ = "Assignments"
+
     id = Column(types.Integer, primary_key=True)
-    project_id = Column(types.Integer)
-    user_id = Column(types.Integer)
-    task_id = Column(types.Integer)
+    project_id = Column(types.Integer, ForeignKey('project.id'))
+    user_id = Column(types.Integer, ForeignKey('user.id'))
+    task_id = Column(types.Integer, ForeignKey('Tasks.id'))
     done_so_far = Column(types.Integer)
     date_assigned = Column(types.DateTime())
     date_due = Column(types.DateTime())
@@ -246,6 +252,8 @@ class Task(Base):
     task_type = Column(types.Unicode(50))
     # both of the following are N/A for 'perpetual'
     num_assigned = Column(types.Integer)
+
+    assignments = relationship("Assignment", order_by=id, backref="task")
 
 class EncodeStatus(Base):
     '''
@@ -333,6 +341,7 @@ class User(Base):
     show_keywords = Column(types.Boolean, default=True)
 
     projects = relationship("Project", backref=backref('leader', order_by=id))
+    assignments = relationship("Assignment", backref=backref('user', order_by=id))
 
     def _set_password(self, password):
         """Hash password on the fly."""

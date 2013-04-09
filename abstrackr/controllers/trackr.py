@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 class TrackrController(BaseController):
 
-    def start(self):        
+    def start(self):
         """
         This is where the login form should be rendered.
         Without the login counter, we won't be able to tell if the user has
@@ -21,14 +21,14 @@ class TrackrController(BaseController):
         identity = request.environ.get('repoze.who.identity')
         came_from = str(request.GET.get('came_from', '')) or \
                     url(controller='account', action='welcome')
-        
+
         if identity:
             # then we're logged in
             redirect(url(came_from))
         else:
             log_in = url(controller='account', action='login')
             redirect(log_in)
-            
+
     def show_reviews(self):
         q = model.Session.query(model.Project)
         c.reviews= q.limit(5)
