@@ -12,7 +12,7 @@ import re
 import shutil
 import smtplib
 import string
-import time
+import subprocess
 
 import numpy as np  # we only use this for plotting...
 
@@ -52,8 +52,6 @@ STRONG_NEG_C = "#FF0000"
 POS_C = "#4CC417"
 STRONG_POS_C = "#347235"
 COLOR_D = {1:POS_C, 2:STRONG_POS_C, -1:NEG_C, -2:STRONG_NEG_C}
-
-import subprocess
 
 class ReviewController(BaseController):
 
@@ -1584,6 +1582,7 @@ class ReviewController(BaseController):
         # cargo-cult programming... @TODO further investigate
         model.meta.Session.commit()
 
+
         current_user = request.environ.get('repoze.who.identity')['user']
 
         # check if we've already labeled this; if so, handle
@@ -1709,7 +1708,8 @@ class ReviewController(BaseController):
                         model.Session.commit()
 
                     # has this person already labeled everything in this review?
-                    num_citations_in_review = len(self._get_citations_for_review(review_id))
+                    num_citations_in_review = model.Session.query(
+                        func.count(model.Citation.project_id == review_id))
                     num_screened = len(self._get_already_labeled_ids(review.id))
                     if num_screened >= num_citations_in_review:
                         assignment.done = True
