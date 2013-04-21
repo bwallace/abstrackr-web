@@ -1085,7 +1085,7 @@ class ReviewController(BaseController):
 
         # make sure we're actually the project lead
         current_user = request.environ.get('repoze.who.identity')['user']
-        if not review.project_lead_id == current_user.id:
+        if not review.leader_id == current_user.id:
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
 
         ###
@@ -1280,7 +1280,7 @@ class ReviewController(BaseController):
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
 
         review = self._get_review_from_id(review_id)
-        review.project_lead_id = user_id
+        review.leader_id = user_id
         model.Session.commit()
 
         redirect(url(controller="account", action="my_projects"))

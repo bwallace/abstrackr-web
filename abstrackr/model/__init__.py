@@ -83,10 +83,10 @@ class Project(Base):
     date_created = Column(types.DateTime())
     date_modified = Column(types.DateTime())
 
-    priorities = relationship('Priority', order_by=id, backref='project')
-    citations = relationship('Citation', order_by=id, backref='project')
-    assignments = relationship('Assignment', order_by=id, backref='project')
-    labels = relationship('Label', order_by=id, backref='project')
+    priorities = relationship('Priority', order_by='Priority.id', backref='project')
+    citations = relationship('Citation', order_by='Citation.citation_id', backref='project')
+    assignments = relationship('Assignment', order_by='Assignment.id', backref='project')
+    labels = relationship('Label', order_by='Label.id', backref='project')
 
 class Citation(Base):
     __tablename__ = "Citations"
@@ -253,7 +253,7 @@ class Task(Base):
     # both of the following are N/A for 'perpetual'
     num_assigned = Column(types.Integer)
 
-    assignments = relationship("Assignment", order_by=id, backref="task")
+    assignments = relationship("Assignment", order_by='Assignment.id', backref="task")
 
 class EncodeStatus(Base):
     '''
