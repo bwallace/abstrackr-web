@@ -42,7 +42,7 @@ class FixedTask(Base):
 
 
 class Project(Base):
-    __tablename__ = "project"
+    __tablename__ = "projects"
     #__mapper_args__ = dict(order_by="date desc")
 
     id = Column(types.Integer, primary_key=True)
@@ -95,7 +95,7 @@ class Citation(Base):
     citation_id = Column(types.Integer, primary_key=True)
 
     # associates the citation with the project that owns it
-    project_id = Column(types.Integer, ForeignKey('project.id'))
+    project_id = Column(types.Integer, ForeignKey('projects.id'))
     pmid = Column(types.Integer)
     refman = Column(types.Integer)
 
@@ -123,7 +123,7 @@ class Priority(Base):
     id = Column(types.Integer, primary_key=True)
 
     # ForeignKey relationship columns
-    project_id = Column(types.Integer, ForeignKey('project.id'))
+    project_id = Column(types.Integer, ForeignKey('projects.id'))
     citation_id = Column(types.Integer, ForeignKey('Citations.citation_id'))
 
     priority = Column(types.Integer)
@@ -189,7 +189,7 @@ class Label(Base):
     __tablename__ = "Labels"
     id = Column(types.Integer, primary_key=True)
     # project for which this document was screened
-    project_id = Column(types.Integer, ForeignKey('project.id'))
+    project_id = Column(types.Integer, ForeignKey('projects.id'))
     study_id = Column(types.Integer, ForeignKey('Citations.citation_id')) # TODO: need to rename this to citation_id
     user_id = Column(types.Integer)
     assignment_id = Column(types.Integer)
@@ -215,7 +215,7 @@ class Assignment(Base):
     __tablename__ = "Assignments"
 
     id = Column(types.Integer, primary_key=True)
-    project_id = Column(types.Integer, ForeignKey('project.id'))
+    project_id = Column(types.Integer, ForeignKey('projects.id'))
     user_id = Column(types.Integer, ForeignKey('user.id'))
     task_id = Column(types.Integer, ForeignKey('Tasks.id'))
     done_so_far = Column(types.Integer)
