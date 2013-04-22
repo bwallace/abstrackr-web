@@ -2348,6 +2348,7 @@ class ReviewController(BaseController):
             outerjoin(model.Label, model.Priority.citation_id==model.Label.study_id).\
             filter(model.Priority.project_id==review_id).\
             filter(model.Assignment.user_id==me).\
+            filter(model.Assignment.assignment_type=='perpetual').\
             filter(and_(or_(model.Label.user_id!=me, model.Label.user_id==None))).\
             order_by(model.Priority.priority).\
             limit(3)
