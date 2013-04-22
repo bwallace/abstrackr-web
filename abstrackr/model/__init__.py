@@ -29,13 +29,13 @@ citations_tasks_table = Table('citations_tasks', Base.metadata,
 
 
 # TODO: remove this table once refactoring is done
-class FixedTask(Base):
-    __tablename__ = "FixedTasks"
-    # the id is meaningless, but we want a primary key to make SQL
-    # happy, so...
-    id = Column(types.Integer, primary_key=True)
-    task_id = Column(types.Integer)
-    citation_id = Column(types.Integer)
+#class FixedTask(Base):
+#    __tablename__ = "FixedTasks"
+#    # the id is meaningless, but we want a primary key to make SQL
+#    # happy, so...
+#    id = Column(types.Integer, primary_key=True)
+#    task_id = Column(types.Integer)
+#    citation_id = Column(types.Integer)
 
 
 ### end of Association Tables
@@ -59,7 +59,7 @@ class Project(Base):
 
     # This is used to identify the project when
     # the leader invites others to the project
-    code = Column(types.Unicode(10))
+    code = Column(types.Unicode(10), index=True, unique=True)
 
     # `single', `double', or `advanced'
     screening_mode = Column(types.Unicode(50))
