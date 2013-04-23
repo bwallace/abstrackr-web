@@ -22,8 +22,8 @@ def init_model(engine):
 
 
 ### Association Tables
-citation_task_table = Table('citation_task', Base.metadata,
-        Column('citation_id', Integer, ForeignKey('Citations.citation_id')),
+citations_tasks_table = Table('citations_tasks', Base.metadata,
+        Column('citation_id', Integer, ForeignKey('citations.citation_id')),
         Column('task_id', Integer, ForeignKey('Tasks.id'))
         )
 
@@ -89,7 +89,7 @@ class Project(Base):
     labels = relationship('Label', order_by='Label.id', backref='project')
 
 class Citation(Base):
-    __tablename__ = "Citations"
+    __tablename__ = "citations"
 
     # note that this is independent of pubmed/refman/whatever id!
     citation_id = Column(types.Integer, primary_key=True)
@@ -107,7 +107,7 @@ class Citation(Base):
     publication_date = Column(types.DateTime())
     keywords = Column(types.Unicode(5000))
 
-    tasks = relationship("Task", secondary=citation_task_table, backref="citations")
+    tasks = relationship("Task", secondary=citations_tasks_table, backref="citations")
     priorities = relationship('Priority', backref="citation")
     labels = relationship("Label", backref="citation")
 
@@ -118,13 +118,13 @@ class Priority(Base):
     problem of users labeling the same citation simultaneously by
     containing a `is_out` field and date.
     '''
-    __tablename__ = "Priority"
+    __tablename__ = "priorities"
 
     id = Column(types.Integer, primary_key=True)
 
     # ForeignKey relationship columns
     project_id = Column(types.Integer, ForeignKey('projects.id'))
-    citation_id = Column(types.Integer, ForeignKey('Citations.citation_id'))
+    citation_id = Column(types.Integer, ForeignKey('citations.citation_id'))
 
     priority = Column(types.Integer)
 
@@ -190,7 +190,7 @@ class Label(Base):
     id = Column(types.Integer, primary_key=True)
     # project for which this document was screened
     project_id = Column(types.Integer, ForeignKey('projects.id'))
-    study_id = Column(types.Integer, ForeignKey('Citations.citation_id')) # TODO: need to rename this to citation_id
+    study_id = Column(types.Integer, ForeignKey('citations.citation_id')) # TODO: need to rename this to citation_id
     user_id = Column(types.Integer)
     assignment_id = Column(types.Integer)
     # -1, 0, 1

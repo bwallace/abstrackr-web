@@ -2024,10 +2024,10 @@ class ReviewController(BaseController):
         if self._current_user_leads_review(review_id):
             tags = tag_q.filter(model.TagTypes.project_id == review_id).all()
         else:
-            tags = tag_q.filter(and_(\
-                                model.TagTypes.project_id == review_id,\
-                                model.TagTypes.creator_id == current_user.id
-                         )).all()
+            tags = tag_q.filter(
+                and_(model.TagTypes.project_id == review_id,\
+                     model.TagTypes.creator_id == current_user.id
+                     )).all()
         c.tags = tags
         c.assignment_id = assignment_id
         c.review_id = review_id
