@@ -7,7 +7,7 @@ from nose.plugins.attrib import attr  # Decorator to mark tests
                                       # "nosetests -a '!author=jj" to
                                       # exclude marked tests
 
-from abstrackr.controllers.review import _get_next_priority
+from abstrackr.controllers.review import ReviewController
 
 
 class TestReviewController(TestController):
@@ -136,6 +136,20 @@ class TestReviewController(TestController):
 
         """
 
+        review_controller = ReviewController()
         review = model.meta.Session.query(model.Project).filter(model.Project.id == '1')
-        priority = _get_next_priority(review, ignore_my_own_locks=True)
-        pass
+        priority = review_controller._get_next_priority(review, ignore_my_own_locks=True)
+        assert priority == 1
+
+    @attr(author='jj', controller='review')
+    def test_get_ids_for_task(self):
+        """ Verify return value of _get_ids_for_task method
+
+        Verify that _get_ids_for_task method returns a list of citations
+        associated with the given task id
+
+        """
+
+        review_controller = ReviewController()
+        citations_lst = review_controller._get_ids_for_task(1)
+        assert citations_lst == ['63L', '69L', '95L', '97L', '106L']

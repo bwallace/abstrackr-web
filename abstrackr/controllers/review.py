@@ -38,6 +38,8 @@ from repoze.what.predicates import not_anonymous, has_permission
 from sqlalchemy import or_, and_, desc, func
 from sqlalchemy.sql import select
 
+from random import shuffle
+
 import abstrackr.controllers.controller_globals as controller_globals
 import abstrackr.model as model
 
@@ -427,8 +429,8 @@ class ReviewController(BaseController):
                     # Label table:
                     self._change_pointers_or_delete_entries('labels', each_duplicate_citation.citation_id, surviving_citation_id)
 
-                    # FixedTask table:
-                    self._change_pointers_or_delete_entries('fixedtasks', each_duplicate_citation.citation_id, surviving_citation_id)
+                    # citations_tasks_table table:
+                    self._change_pointers_or_delete_entries('citations_tasks', each_duplicate_citation.citation_id, surviving_citation_id)
 
                     # Prediction table:
                     self._change_pointers_or_delete_entries('predictions', each_duplicate_citation.citation_id, surviving_citation_id)
@@ -470,10 +472,10 @@ class ReviewController(BaseController):
             for label in labels:
                 label.study_id = surviving_citation_id
 
-        elif tablename=='fixedtasks':
-            fixedtasks = model.meta.Session.query(model.FixedTask).filter(model.FixedTask.citation_id==citation_id).all()
-            for fixedtask in fixedtasks:
-                fixedtasks.citation_id = surviving_citation_id
+        elif tablename=='citations_tasks':
+            citations_tasks = model.meta.Session.query(model.citations_tasks_table).filter(model.citations_tasks_table.citation_id==citation_id).all()
+            for citations_task in citations_tasks:
+                citations_task.citation_id = surviving_citation_id
 
         elif tablename=='predictions':
             predictions = model.meta.Session.query(model.Prediction).filter(model.Prediction.study_id==citation_id).all()
@@ -667,14 +669,6 @@ class ReviewController(BaseController):
         tasks = tasks_q.filter(\
                     model.Task.project_id == old_review_id).all()
         for task in tasks:
-            #task.review = new_review_id
-            #model.Session.commit()
-            fixed_task_q = model.meta.Session.query(model.FixedTask)
-            associated_fixed_tasks = fixed_task_q.filter(\
-                                        model.FixedTask.task_id==task.id).all()
-            for fixed_task in associated_fixed_tasks:
-                model.Session.delete(fixed_task)
-
             model.Session.delete(task)
             model.Session.commit()
 
@@ -1131,13 +1125,6 @@ class ReviewController(BaseController):
         task_q = model.meta.Session.query(model.Task)
         tasks = task_q.filter(model.Task.project_id == review.id).all()
         for task in tasks:
-            # and any FixedTask entries associated with these
-            # tasks
-            fa_q = model.meta.Session.query(model.FixedTask)
-            fas = fa_q.filter(model.FixedTask.task_id == task.id).all()
-            for fa in fas:
-                model.Session.delete(fa)
-                model.Session.commit()
             model.Session.delete(task)
             model.Session.commit()
 
@@ -1201,9 +1188,9 @@ class ReviewController(BaseController):
         enumerated set of ids to be labeled). This task is then assigned
         to the project lead (assumed to be the current user).
         '''
-        review_id = id
-        conflicting_ids = controller_globals._get_conflicts(review_id)
-        self._create_conflict_task_with_ids(review_id, conflicting_ids)
+        project_id = id
+        conflicting_ids = controller_globals._get_conflicts(project_id)
+        self._create_conflict_task_with_ids(project_id, conflicting_ids)
 
     def _create_conflict_task_with_ids(self, review_id, study_ids):
         task_q = model.meta.Session.query(model.Task)
@@ -1225,6 +1212,7 @@ class ReviewController(BaseController):
         conflict_task.num_assigned = len(study_ids)
         model.Session.add(conflict_task)
         model.Session.commit()
+        import pdb; pdb.set_trace()
         for conflicting_id in study_ids:
             fixed_entry = model.FixedTask()
             fixed_entry.task_id = conflict_task.id
@@ -1964,7 +1952,6 @@ class ReviewController(BaseController):
             already_labeled = \
                 self._get_already_labeled_ids(review.id, reviewer_id=reviewer_id)
 
-
             eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
             next_id = None
             # here we handle the case of fetching the *next* citation, i.e.,
@@ -2471,10 +2458,10 @@ class ReviewController(BaseController):
         given task -- note that we order these by the
         citation id (somewhat arbitrarily!)
         '''
-        q = model.meta.Session.query(model.FixedTask)
-        eligible_ids = [fixed_task.citation_id for fixed_task in \
-                                q.filter(model.FixedTask.task_id == task_id).\
-                                order_by(model.FixedTask.citation_id).all()]
+        q = model.meta.Session.query(model.Task)
+        citations = q.filter_by(id=task_id).one().citations
+        eligible_ids = [cite.citation_id for cite in citations]
+        eligible_ids.sort()
         return eligible_ids
 
     def _get_already_labeled_ids(self, review_id, reviewer_id=None):
@@ -2679,34 +2666,35 @@ class ReviewController(BaseController):
             model.Session.delete(priority_entry)
             model.Session.commit()
 
-    def _create_initial_task_for_review(self, review_id, n):
+    def _create_initial_task_for_review(self, project_id, n):
         '''
         picks a random set of the citations from the specified review and
-        adds them into the FixedTask table -- participants in this
+        adds them into the citations_tasks table -- participants in this
         review should subsequently be tasked with Assignments that reference this.
         '''
-        # first grab some ids at random
-        init_ids = random.sample(\
-                [citation.citation_id for citation in \
-                    self._get_citations_for_review(review_id)], n)
+
+        # Retrieve a list of all citation objects associated with this project id
+        citation_objs_lst = self._get_citations_for_review(project_id)
+
+        # Let's shuffle this list and grab what we need
+        shuffle(citation_objs_lst)
+        citations_for_initial_task = citation_objs_lst[:n]
+
         # create an entry in the Assignments table
         init_task = model.Task()
         init_task.task_type = "initial"
-        init_task.project_id = review_id
+        init_task.project_id = project_id
         init_task.num_assigned = n
+
+        # Use SQLAlchemy's ORM model to add citations to the task
+        for citation in citations_for_initial_task:
+            init_task.citations.append(citation)
+
         model.Session.add(init_task)
         model.Session.commit()
 
-        # now associate the initial ids drawn
-        # with this Task
-        for citation_id in init_ids:
-            fixed_task_entry = model.FixedTask()
-            fixed_task_entry.task_id = init_task.id
-            fixed_task_entry.citation_id = citation_id
-            model.Session.add(fixed_task_entry)
-            model.Session.commit()
-
-            # need also to remove this id from the priority queue
+        # Remove ID's from the priority queue
+        for citation_id in [cite.citation_id for cite in citations_for_initial_task]:
             priority_q = model.meta.Session.query(model.Priority)
             priority_entry = priority_q.filter(model.Priority.citation_id == citation_id).one()
             model.Session.delete(priority_entry)
