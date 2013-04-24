@@ -782,10 +782,9 @@ class ReviewController(BaseController):
         # we generate a random code for joining this review
         make_code = lambda N: ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(N))
         review_q = model.meta.Session.query(model.Project)
-        existing_codes = [review.code for review in review_q.all()]
         code_length=10
         cur_code = make_code(code_length)
-        while cur_code in existing_codes:
+        while review_q.filter_by(code=cur_code).first():
             cur_code = make_code(code_length)
         new_review.code = cur_code
 
