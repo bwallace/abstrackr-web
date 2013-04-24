@@ -17,7 +17,7 @@ import pdb
 def _get_user_from_email(email):
     '''
     If a user with the provided email exists in the database, their
-    object is returned; otherwise this method returns False. 
+    object is returned; otherwise this method returns False.
     '''
     user_q = model.meta.Session.query(model.User)
     try:
@@ -33,34 +33,36 @@ def _does_a_conflict_exist(review_id):
 
     citation_query_obj = _get_all_citations_for_review(review_id, return_query_obj=True)
     labels_for_cur_citation, last_citation = [], None
-    
+
     for citation, label in citation_query_obj:
         if last_citation is not None and last_citation != citation.citation_id:
             labels_for_cur_citation = [label.label]
         else:
 
             labels_for_cur_citation.append(label.label)
-            # note that this isn't expensive because the set 
+            # note that this isn't expensive because the set
             # cardinality likely <= ~10
             if len(set(labels_for_cur_citation)) > 1:
                 return True
         last_citation = citation.citation_id
-        
+
     return False
 
 
 def _get_conflicts(review_id):
+    """Finds all conflicting labels and returns as a dictionary"""
+
     citation_ids_to_labels = \
         _get_labels_dict_for_review(review_id)
 
     # now figure out which citations have conflicting labels
     citation_ids_to_conflicting_labels = {}
-    
+
     for citation_id in [c_id for c_id in citation_ids_to_labels.keys() if citation_ids_to_labels[c_id]>1]:
         if len(set([label.label for label in citation_ids_to_labels[citation_id]])) > 1 and\
-                not CONSENSUS_USER in [label.reviewer_id for label in citation_ids_to_labels[citation_id]]:
+                not CONSENSUS_USER in [label.user_id for label in citation_ids_to_labels[citation_id]]:
             citation_ids_to_conflicting_labels[citation_id] = citation_ids_to_labels[citation_id]
-    
+
     return citation_ids_to_conflicting_labels
 
 

@@ -1192,7 +1192,7 @@ class ReviewController(BaseController):
         conflicting_ids = controller_globals._get_conflicts(project_id)
         self._create_conflict_task_with_ids(project_id, conflicting_ids)
 
-    def _create_conflict_task_with_ids(self, review_id, study_ids):
+    def _create_conflict_task_with_ids(self, review_id, citation_ids):
         task_q = model.meta.Session.query(model.Task)
         conflicts_task_for_this_review = \
             task_q.filter(and_(model.Task.project_id == review_id,\
@@ -1209,16 +1209,13 @@ class ReviewController(BaseController):
         conflict_task = model.Task()
         conflict_task.task_type = "conflict"
         conflict_task.review_id = review_id
-        conflict_task.num_assigned = len(study_ids)
+        conflict_task.num_assigned = len(citation_ids)
+        for conflicting_id in citation_ids:
+            obj_citation = model.Session.query(model.Citation).\
+                    filter(model.Citation.citation_id == conflicting_id).one()
+            conflict_task.citations.append(obj_citation)
         model.Session.add(conflict_task)
         model.Session.commit()
-        import pdb; pdb.set_trace()
-        for conflicting_id in study_ids:
-            fixed_entry = model.FixedTask()
-            fixed_entry.task_id = conflict_task.id
-            fixed_entry.citation_id = conflicting_id
-            model.Session.add(fixed_entry)
-            model.Session.commit()
 
         # finally, add an assignment to (me). note that (me)
         # is the project lead.
@@ -1299,11 +1296,12 @@ class ReviewController(BaseController):
         c.review = self._get_review_from_id(review_id)
         return c.review.leader_id == current_user.id
 
-    def _reviewer_ids_to_names(self, reviewers):
+    def _reviewer_ids_to_names(self, users):
         # for the client side
         reviewer_ids_to_names_d = {}
-        for reviewer in reviewers:
-            reviewer_ids_to_names_d[reviewer.id] = reviewer.username
+        for user in users:
+            #reviewer_ids_to_names_d[reviewer.id] = reviewer.username
+            reviewer_ids_to_names_d[user.id] = user.username
         reviewer_ids_to_names_d = reviewer_ids_to_names_d
         return reviewer_ids_to_names_d
 
@@ -2334,6 +2332,7 @@ class ReviewController(BaseController):
             outerjoin(model.Label, model.Priority.citation_id==model.Label.study_id).\
             filter(model.Priority.project_id==review_id).\
             filter(model.Assignment.user_id==me).\
+            filter(model.Assignment.assignment_type=='perpetual').\
             filter(and_(or_(model.Label.user_id!=me, model.Label.user_id==None))).\
             order_by(model.Priority.priority).\
             limit(3)
@@ -2394,7 +2393,7 @@ class ReviewController(BaseController):
                             model.Task.task_type == "initial")).all()
         if len(init_task) == 0:
             return False # no initial task for this review
-        # really there shouldonly be one!
+        # really there should only be one!
         return init_task[0]
 
     def _get_tag_id(self, review_id, text):
@@ -2572,23 +2571,14 @@ class ReviewController(BaseController):
 
         if n < review.initial_round_size:
             num_to_remove = review.initial_round_size - n
-
-            # now grab the FixedTask objects associated with
-            # the initial tasks.
-            fixed_task_q = model.meta.Session.query(model.FixedTask)
-
-            # we order these by the citation_id, since this is what
-            # we do when we grab the next citation in a FixedTask.
-            fixed_task_objs = fixed_task_q.filter(\
-                                model.FixedTask.task_id == cur_init_task.id).\
-                                order_by(model.FixedTask.citation_id).all()
-            fixed_tasks_to_remove = fixed_task_objs[-num_to_remove:]
+            task_citations_to_remove = cur_init_task.citations[-num_to_remove:]
 
             # this is for re-inserting entries into the priority queue
             cur_max_priority = self._get_max_priority(review.id)+1
-            if len(fixed_tasks_to_remove) > 0:
-                for fixed_task in fixed_task_objs[-num_to_remove:]:
-                    model.Session.delete(fixed_task)
+
+            if len(task_citations_to_remove) > 0:
+                for citation in task_citations_to_remove:
+                    model.Session.delete(citation)
                     model.Session.commit()
                     ###
                     # crucial -- we need to add this guy back onto
@@ -2611,30 +2601,27 @@ class ReviewController(BaseController):
         else:
             # then n > review.init_round_size: we have to add
             # citations to the fixed_task.
-            fixed_task_q = model.meta.Session.query(model.FixedTask)
 
-            # get a list of citation ids not already in the initial
-            # assignment (warning -- O(n^2), though the initial round will
-            # probably be << total # citations, so likely more O(n lg n).
-            all_citation_ids = \
-                [cit.citation_id for cit in self._get_citations_for_review(review.id)]
+            # Let's find all the citations that are currently not associated with a task
+            citations_not_tasked = model.Session.query(model.Citation).\
+                    filter(model.Citation.project_id == review.id).\
+                    filter(~model.Citation.tasks.any()).all()
 
-            init_citation_ids = self._get_ids_for_task(cur_init_task.id)
-            citations_not_in_init = \
-              [cit_id for cit_id in all_citation_ids if not cit_id in init_citation_ids]
+            # Add random citations to task associations via citations_tasks_table
+            num_to_add = min(n-review.initial_round_size, len(citations_not_tasked))
+            shuffle(citations_not_tasked)
 
-            num_to_add = min(n-review.initial_round_size, len(citations_not_in_init))
+            # Use extend here instead of append to Task.citations list or else we end up
+            # with something like [a, b, [c, d, e]]. We could have used itertools to chain
+            # the lists, but I think this is simpler, ergo more pythonic
+            cur_init_task.citations.extend(citations_not_tasked[:num_to_add])
+            model.Session.add(cur_init_task)
+            model.Session.commit()
 
-            for i in xrange(num_to_add):
-                citation_id = citations_not_in_init[i]
-                fixed_task_entry = model.FixedTask()
-                fixed_task_entry.task_id = cur_init_task.id
-                fixed_task_entry.citation_id = citation_id
-                model.Session.add(fixed_task_entry)
-                model.Session.commit()
-
-                # and remove it from the priority queue.
-                self._remove_citation_from_priority_queue(citation_id)
+            # Additional citations have been associated with the initial task.
+            # Time to remove them from the priority queue
+            for citation in citations_not_tasked[:num_to_add]:
+                self._remove_citation_from_priority_queue(citation.citation_id)
 
         # update the assignment objects
         init_assignments_for_tasks = \
