@@ -5,15 +5,11 @@ from hashlib import sha1
 from sqlalchemy import ForeignKey, Column, types, Table
 from sqlalchemy.orm import relationship, backref
 
-from sqlalchemy.types import Unicode, UnicodeText,\
-    Integer, Date, CHAR, Float
-
 # imports from the model
-from abstrackr.model import meta
-from abstrackr.model.meta import Session, Base, metadata
+from abstrackr.model.meta import Session, Base
 
 # authentication
-from abstrackr.model.auth import User, Group, Permission
+#from abstrackr.model.auth import User, Group, Permission
 
 
 def init_model(engine):
@@ -23,23 +19,11 @@ def init_model(engine):
 
 ### Association Tables
 citations_tasks_table = Table('citations_tasks', Base.metadata,
-        Column('citation_id', Integer, ForeignKey('citations.citation_id')),
-        Column('task_id', Integer, ForeignKey('Tasks.id'))
+        Column('citation_id', types.Integer, ForeignKey('citations.citation_id')),
+        Column('task_id', types.Integer, ForeignKey('Tasks.id'))
         )
 
-
-# TODO: remove this table once refactoring is done
-#class FixedTask(Base):
-#    __tablename__ = "FixedTasks"
-#    # the id is meaningless, but we want a primary key to make SQL
-#    # happy, so...
-#    id = Column(types.Integer, primary_key=True)
-#    task_id = Column(types.Integer)
-#    citation_id = Column(types.Integer)
-
-
 ### end of Association Tables
-
 
 class Project(Base):
     __tablename__ = "projects"
@@ -49,7 +33,7 @@ class Project(Base):
     leader_id = Column(types.Integer, ForeignKey('user.id'))
 
     # If initial_round_size > 0, this will point to
-    # the entry in the FixedAssignment table that
+    # the entry in the citations_tasks table that
     # maps to the initial assignment associated with
     # this project.
     initial_assignment_id = Column(types.Integer)
@@ -112,12 +96,14 @@ class Citation(Base):
     labels = relationship("Label", backref="citation")
 
 class Priority(Base):
-    '''
+    """
     This table stores the ordered priority for citation screening, i.e.,
     facilitates active learning. It also attempts to solve the potential
     problem of users labeling the same citation simultaneously by
     containing a `is_out` field and date.
-    '''
+
+    """
+
     __tablename__ = "priorities"
 
     id = Column(types.Integer, primary_key=True)
@@ -141,28 +127,32 @@ class Priority(Base):
     time_requested = Column(types.DateTime())
 
 class TagTypes(Base):
-    ''' User added tags '''
+    """User added tags"""
+
     __tablename__ = "TagTypes"
+
     id = Column(types.Integer, primary_key=True)
     text = Column(types.Unicode(500))
-    # project for which tag was generated
     project_id = Column(types.Integer)
     label = Column(types.SmallInteger)
-    # who invented this?
     creator_id = Column(types.Integer)
     color = Column(types.Unicode(50))
 
 class Tags(Base):
-    ''' Stores study/tag pairs '''
+    """Stores study/tag pairs"""
+
     __tablename__ = "Tags"
+
     id = Column(types.Integer, primary_key=True)
     tag_id = Column(types.Integer)
     creator_id = Column(types.Integer)
     citation_id = Column(types.Integer)
 
 class Note(Base):
-    ''' Stores notes; both structured and unstructured '''
+    """Stores notes; both structured and unstructured"""
+
     __tablename__ = "Notes"
+
     id = Column(types.Integer, primary_key=True)
     creator_id = Column(types.Integer)
     citation_id = Column(types.Integer)
@@ -172,8 +162,10 @@ class Note(Base):
     outcome = Column(types.Unicode(1000))
 
 class LabeledFeature(Base):
-    ''' Stores labeled features, i.e., terms '''
+    """Stores labeled features, i.e., terms"""
+
     __tablename__ = "LabelFeatures"
+
     id = Column(types.Integer, primary_key=True)
     term = Column(types.Unicode(500))
     # project for which this term applies
@@ -185,8 +177,10 @@ class LabeledFeature(Base):
     date_created = Column(types.DateTime())
 
 class Label(Base):
-    ''' Stores instances labels '''
+    """Stores instances labels"""
+
     __tablename__ = "Labels"
+
     id = Column(types.Integer, primary_key=True)
     # project for which this document was screened
     project_id = Column(types.Integer, ForeignKey('projects.id'))
@@ -201,11 +195,14 @@ class Label(Base):
     label_last_updated = Column(types.DateTime())
 
 class ReviewerProject(Base):
-    '''
+    """
     junction table; maps users to the projects they
     are on (and vice versa).
-    '''
+
+    """
+
     __tablename__ = "ReviewersProjects"
+
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer)
     user_id = Column(types.Integer)
@@ -231,7 +228,7 @@ class Assignment(Base):
     assignment_type = Column(types.Unicode(50))
 
 class Task(Base):
-    '''
+    """
     a Task is a unit of work. Tasks have types;
     some are `perpetual`, i.e., they basically say `allow the
     person to whom this is assigned to keep on labeling, until
@@ -240,8 +237,11 @@ class Task(Base):
     assignees are to label a fixed number of citations. Tasks are
     always associated with exactly one project, but multiple
     users can be assigned the same Task (see the Assignment table).
-    '''
+
+    """
+
     __tablename__ = "Tasks"
+
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer)
     # this is 'perpetual', 'initial' or 'finite'; the former indicates a 'perpetual'
@@ -256,15 +256,18 @@ class Task(Base):
     assignments = relationship("Assignment", order_by='Assignment.id', backref="task")
 
 class EncodeStatus(Base):
-    '''
+    """
     This table contains one entry for each dataset, indicating
     its encoded (i.e., for curious_snake/machine learning stuff)
     status. That is, this table contains information regarding:
         1) if the dataset has been encoded
         2) when the labels of this encoded file were last updated
         3) the path to the encoded file
-    '''
+
+    """
+
     __tablename__ = "EncodedStatuses" # sticking with the pluralized convention here
+
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer) # associated project
     is_encoded = Column(types.Boolean) # has it been encoded yet?
@@ -273,10 +276,10 @@ class EncodeStatus(Base):
     base_path = Column(types.Unicode(100))
 
 class PredictionsStatus(Base):
-    '''
-    Status of predictions (do they exist? last update, etc.)
-    '''
+    """Status of predictions (do they exist? last update, etc.)"""
+
     __tablename__ = "PredictionStatuses"
+
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer) # associated project
     predictions_exist = Column(types.Boolean) # has it been encoded yet?
@@ -285,10 +288,10 @@ class PredictionsStatus(Base):
     num_pos_train = Column(types.Integer) # number of positive examples we trained on
 
 class Prediction(Base):
-    '''
-    Current inclusion/exclusion predictions for studies
-    '''
+    """Current inclusion/exclusion predictions for studies"""
+
     __tablename__ = "Predictions"
+
     id = Column(types.Integer, primary_key=True)
     study_id = Column(types.Integer) # the (internal) study id
     project_id = Column(types.Integer) # it makes life easier to have this around
@@ -302,12 +305,15 @@ class Prediction(Base):
 ## these tables for authentication #
 ####################################
 class ResetPassword(Base):
-    '''
+    """
     This table facilitates password recovery. If someone requests to reset
     their password, we generate a random token and insert it into this db.
     We then email them this token, verifying their id.
-    '''
+
+    """
+
     __tablename__ = "ResetPassword"
+
     id = Column(types.Integer, primary_key=True)
     user_email = Column(types.Unicode(80))
     token = Column(types.Unicode(10))
@@ -345,6 +351,7 @@ class User(Base):
 
     def _set_password(self, password):
         """Hash password on the fly."""
+
         hashed_password = password
 
         if isinstance(password, unicode):
@@ -368,6 +375,7 @@ class User(Base):
 
     def _get_password(self):
         """Return the password hashed"""
+
         return self.password
 
     def validate_password(self, password):
@@ -382,6 +390,7 @@ class User(Base):
         :rtype: bool
 
         """
+
         hashed_pass = sha1()
         hashed_pass.update(password + self.password[:40])
         return self.password[40:] == hashed_pass.hexdigest()
