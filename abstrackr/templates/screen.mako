@@ -143,7 +143,7 @@
           <b>keywords:</b> ${c.cur_citation.keywords}<br/><br/>
       % endif
 
-      <b>ID:</b> ${c.cur_citation.citation_id}<br/><br/>
+      <b>ID:</b> ${c.cur_citation.id}<br/><br/>
 
       <%def name="write_label(label)">
           % if label == 1:
@@ -258,7 +258,7 @@
                   // reload the current citation, with markup
                   $("#wait").text("marking up the current citation..")
                   $("#citation").fadeOut('slow', function() {
-                      $("#citation").load("${'/markup/%s/%s/%s' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}", function() {
+                      $("#citation").load("${'/markup/%s/%s/%s' % (c.review_id, c.assignment_id, c.cur_citation.id)}", function() {
                            $("#citation").fadeIn('slow');
                            $("#wait").text("");
                       });
@@ -275,7 +275,7 @@
                           load_next_citation();
                         }
 
-                        $.post("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.citation_id)}" + seconds + "/" + lbl_str, function(data){
+                        $.post("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.id)}" + seconds + "/" + lbl_str, function(data){
                             if (we_are_reviewing_a_label()){
                               // in the case that we are re-labeling a citation, 
                               // this the label method will return the citation fragment.
@@ -398,17 +398,17 @@
                // push new tag, too (if it's empty, we'll drop it server-side)
                tags.push(tag_str);
 
-               $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.citation_id)}", {tags: tags},
+               $.post("${'/review/tag_citation/%s/%s' % (c.review_id, c.cur_citation.id)}", {tags: tags},
                   function()
                   {
                     $("#tags").fadeOut('slow', function() {
-                      $("#tags").load("${'/review/update_tags/%s/%s' % (c.cur_citation.citation_id, c.tag_privacy)}",
+                      $("#tags").load("${'/review/update_tags/%s/%s' % (c.cur_citation.id, c.tag_privacy)}",
                         function() {
                           $("#tags").fadeIn('slow');
                         });
                     });
 
-                    $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.citation_id)}");
+                    $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.id)}");
                   }
                );
 
@@ -428,7 +428,7 @@
                var outcome_notes = $("#outcome_notes").val();
 
 
-               $.post("${'/review/add_notes/%s' % c.cur_citation.citation_id}",
+               $.post("${'/review/add_notes/%s' % c.cur_citation.id}",
                           {"general_notes": general_notes, "population_notes":pop_notes, "ic_notes":ic_notes,
                           "outcome_notes":outcome_notes}, function() {
                               $("#notes-status").html("<font color='green'>notes added.</font>");

@@ -486,7 +486,7 @@ class ReviewController(BaseController):
         model.Session.commit()
 
     def _delete_citation(self, id):
-        model.Session.delete(model.meta.Session.query(model.Citation).filter(model.Citation.citation_id==id).first())
+        model.Session.delete(model.meta.Session.query(model.Citation).filter(model.Citation.id==id).first())
 
     def _update_num_labels_in_priority_queue(self, review_id):
         '''
@@ -941,8 +941,8 @@ class ReviewController(BaseController):
         # first collect labels for all citations that pass our
         # filtering criteria
         for citation, label in model.meta.Session.query(\
-            model.Citation, model.Label).filter(model.Citation.citation_id==model.Label.study_id).\
-              filter(model.Label.project_id==id).order_by(model.Citation.citation_id).all():
+            model.Citation, model.Label).filter(model.Citation.id==model.Label.study_id).\
+              filter(model.Label.project_id==id).order_by(model.Citation.id).all():
                 # the above gives you all labeled citations for this review
                 # i.e., citations that have at least one label
                 if lbl_filter_f(label):
@@ -1212,7 +1212,7 @@ class ReviewController(BaseController):
         conflict_task.num_assigned = len(citation_ids)
         for conflicting_id in citation_ids:
             obj_citation = model.Session.query(model.Citation).\
-                    filter(model.Citation.citation_id == conflicting_id).one()
+                    filter(model.Citation.id == conflicting_id).one()
             conflict_task.citations.append(obj_citation)
         model.Session.add(conflict_task)
         model.Session.commit()
@@ -1610,7 +1610,7 @@ class ReviewController(BaseController):
             c.assignment_id = assignment_id
             citation_q = model.meta.Session.query(model.Citation)
             c.assignment_type = assignment.assignment_type
-            c.cur_citation = citation_q.filter(model.Citation.citation_id == study_id).one()
+            c.cur_citation = citation_q.filter(model.Citation.id == study_id).one()
             c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
             c.review_id = review_id
             c.assignment = assignment
@@ -1713,7 +1713,7 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def markup_citation(self, id, assignment_id, citation_id):
         citation_q = model.meta.Session.query(model.Citation)
-        c.cur_citation = citation_q.filter(model.Citation.citation_id == citation_id).one()
+        c.cur_citation = citation_q.filter(model.Citation.id == citation_id).one()
         c.review_id = id
         c.assignment_id = assignment_id
 
@@ -1798,7 +1798,7 @@ class ReviewController(BaseController):
 
         c.cur_lbl = None
         if assignment.assignment_type == "conflict":
-            c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
+            c.cur_lbl = self._get_labels_for_citation(c.cur_citation.id)
             c.reviewer_ids_to_names_d = self._labels_to_reviewer_name_d(c.cur_lbl)
 
 
@@ -1811,15 +1811,15 @@ class ReviewController(BaseController):
             review.tag_privacy = True
         # If tag visibility is set to be public, then obtain all tags regardless of who the user is.
         if not review.tag_privacy:
-            c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
+            c.tags = self._get_tags_for_citation(c.cur_citation.id)
         else:
-            c.tags = self._get_tags_for_citation(c.cur_citation.citation_id, only_for_user_id=current_user.id)
+            c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=current_user.id)
 
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
 
         # now get any associated notes
-        notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
+        notes = self._get_notes_for_citation(c.cur_citation.id, current_user.id)
         c.notes = notes
 
         # These help keep tags public/private, depending on project lead's selection.
@@ -1886,7 +1886,7 @@ class ReviewController(BaseController):
 
         c.cur_lbl = None
         if assignment.assignment_type == "conflict":
-            c.cur_lbl = self._get_labels_for_citation(c.cur_citation.citation_id)
+            c.cur_lbl = self._get_labels_for_citation(c.cur_citation.id)
             c.reviewer_ids_to_names_d =  self._labels_to_reviewer_name_d(c.cur_lbl)
 
         # now get tags for this citation
@@ -1895,15 +1895,15 @@ class ReviewController(BaseController):
             review.tag_privacy = True
         # If tag visibility is set to be public, then obtain all tags regardless of who the user is.
         if not review.tag_privacy:
-            c.tags = self._get_tags_for_citation(c.cur_citation.citation_id)
+            c.tags = self._get_tags_for_citation(c.cur_citation.id)
         else:
-            c.tags = self._get_tags_for_citation(c.cur_citation.citation_id, only_for_user_id=current_user.id)
+            c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=current_user.id)
 
         # and these are all available tags
         c.tag_types = self._get_tag_types_for_review(review_id)
 
         # now get any associated notes
-        notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
+        notes = self._get_notes_for_citation(c.cur_citation.id, current_user.id)
         c.notes = notes
 
         # These help in the execution of the tag-privacy option:
@@ -2159,7 +2159,7 @@ class ReviewController(BaseController):
         c.review_name = review.name
 
         citation_q = model.meta.Session.query(model.Citation)
-        c.cur_citation = citation_q.filter(model.Citation.citation_id == citation_id).one()
+        c.cur_citation = citation_q.filter(model.Citation.id == citation_id).one()
         # mark up the labeled terms
         c.cur_citation = self._mark_up_citation(review_id, c.cur_citation)
 
@@ -2207,7 +2207,7 @@ class ReviewController(BaseController):
         # also grab the notes
         # @TODO what should we show for notes in the case of conflict mode,
         #   i.e., if multiple users have made notes..??
-        c.notes = self._get_notes_for_citation(c.cur_citation.citation_id, current_user.id)
+        c.notes = self._get_notes_for_citation(c.cur_citation.id, current_user.id)
 
         user = controller_globals._get_user_from_email(current_user.email)
         # Need the above line because the first line of this function gives
@@ -2523,7 +2523,7 @@ class ReviewController(BaseController):
 
     def _get_citation_from_id(self, citation_id):
         citation_q = model.meta.Session.query(model.Citation)
-        return citation_q.filter(model.Citation.citation_id == citation_id).first()
+        return citation_q.filter(model.Citation.id == citation_id).first()
 
     def _get_assignment_from_id(self, assignment_id):
         assignment_q = model.meta.Session.query(model.Assignment)

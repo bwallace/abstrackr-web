@@ -19,7 +19,7 @@ def init_model(engine):
 
 ### Association Tables
 citations_tasks_table = Table('citations_tasks', Base.metadata,
-        Column('citation_id', types.Integer, ForeignKey('citations.citation_id')),
+        Column('citation_id', types.Integer, ForeignKey('citations.id')),
         Column('task_id', types.Integer, ForeignKey('Tasks.id'))
         )
 
@@ -68,7 +68,7 @@ class Project(Base):
     date_modified = Column(types.DateTime())
 
     priorities = relationship('Priority', order_by='Priority.id', backref='project')
-    citations = relationship('Citation', order_by='Citation.citation_id', backref='project')
+    citations = relationship('Citation', order_by='Citation.id', backref='project')
     assignments = relationship('Assignment', order_by='Assignment.id', backref='project')
     labels = relationship('Label', order_by='Label.id', backref='project')
 
@@ -76,7 +76,7 @@ class Citation(Base):
     __tablename__ = "citations"
 
     # note that this is independent of pubmed/refman/whatever id!
-    citation_id = Column(types.Integer, primary_key=True)
+    id = Column(types.Integer, primary_key=True)
 
     # associates the citation with the project that owns it
     project_id = Column(types.Integer, ForeignKey('projects.id'))
@@ -110,7 +110,7 @@ class Priority(Base):
 
     # ForeignKey relationship columns
     project_id = Column(types.Integer, ForeignKey('projects.id'))
-    citation_id = Column(types.Integer, ForeignKey('citations.citation_id'))
+    citation_id = Column(types.Integer, ForeignKey('citations.id'))
 
     priority = Column(types.Integer)
 
@@ -134,7 +134,7 @@ class TagTypes(Base):
     id = Column(types.Integer, primary_key=True)
     text = Column(types.Unicode(500))
     project_id = Column(types.Integer)
-    label = Column(types.SmallInteger)
+    #label = Column(types.SmallInteger)
     creator_id = Column(types.Integer)
     color = Column(types.Unicode(50))
 
@@ -184,7 +184,7 @@ class Label(Base):
     id = Column(types.Integer, primary_key=True)
     # project for which this document was screened
     project_id = Column(types.Integer, ForeignKey('projects.id'))
-    study_id = Column(types.Integer, ForeignKey('citations.citation_id')) # TODO: need to rename this to citation_id
+    study_id = Column(types.Integer, ForeignKey('citations.id')) # TODO: need to rename this to citation_id
     user_id = Column(types.Integer)
     assignment_id = Column(types.Integer)
     # -1, 0, 1
