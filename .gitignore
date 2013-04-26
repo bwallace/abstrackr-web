@@ -1,6 +1,7 @@
 *.pyc
 *.ini
 *.swp
+*.DS_Store
 .ropeproject/
 data/
 uploads/
