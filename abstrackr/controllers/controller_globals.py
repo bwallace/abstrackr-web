@@ -35,7 +35,7 @@ def _does_a_conflict_exist(review_id):
     labels_for_cur_citation, last_citation = [], None
 
     for citation, label in citation_query_obj:
-        if last_citation is not None and last_citation != citation.citation_id:
+        if last_citation is not None and last_citation != citation.id:
             labels_for_cur_citation = [label.label]
         else:
 
@@ -44,7 +44,7 @@ def _does_a_conflict_exist(review_id):
             # cardinality likely <= ~10
             if len(set(labels_for_cur_citation)) > 1:
                 return True
-        last_citation = citation.citation_id
+        last_citation = citation.id
 
     return False
 
@@ -69,10 +69,10 @@ def _get_conflicts(review_id):
 def _get_labels_dict_for_review(review_id):
     citation_ids_to_labels = {}
     for citation, label in _get_all_citations_for_review(review_id):
-            if citation.citation_id in citation_ids_to_labels.keys():
-                citation_ids_to_labels[citation.citation_id].append(label)
+            if citation.id in citation_ids_to_labels.keys():
+                citation_ids_to_labels[citation.id].append(label)
             else:
-                citation_ids_to_labels[citation.citation_id] = [label]
+                citation_ids_to_labels[citation.id] = [label]
 
     return citation_ids_to_labels
 
@@ -91,8 +91,8 @@ def _get_maybes(review_id):
 
 def _get_all_citations_for_review(review_id, return_query_obj=False):
     citation_query_obj = model.meta.Session.query(model.Citation, model.Label).\
-            filter(model.Citation.citation_id==model.Label.study_id).\
-            filter(model.Label.project_id==review_id).order_by(model.Citation.citation_id)
+            filter(model.Citation.id==model.Label.study_id).\
+            filter(model.Label.project_id==review_id).order_by(model.Citation.id)
     if return_query_obj:
         return citation_query_obj
     # this can be expensive!
