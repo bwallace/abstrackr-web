@@ -25,7 +25,7 @@ class TestReviewModel(TestController):
         assert hasattr(model.Project, 'leader')
 
     def test_citation(self):
-        assert hasattr(model.Citation, 'citation_id')
+        assert hasattr(model.Citation, 'id')
         assert hasattr(model.Citation, 'project_id')
         assert hasattr(model.Citation, 'pmid')
         assert hasattr(model.Citation, 'refman')

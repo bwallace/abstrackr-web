@@ -2459,7 +2459,7 @@ class ReviewController(BaseController):
         '''
         q = model.meta.Session.query(model.Task)
         citations = q.filter_by(id=task_id).one().citations
-        eligible_ids = [cite.citation_id for cite in citations]
+        eligible_ids = [cite.id for cite in citations]
         eligible_ids.sort()
         return eligible_ids
 
