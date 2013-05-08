@@ -38,7 +38,7 @@
  ${h.form(url(controller='review', action='merge_reviews'), multipart=True, id="merge_review_form",  method='post')}
     
     % for review in c.reviews:
-        <tr><td><input type="checkbox" name="merge_review" value="${review.review_id}" checked="no"/> ${review.name}</td></tr>
+        <tr><td><input type="checkbox" name="merge_review" value="${review.id}" checked="no"/> ${review.name}</td></tr>
     % endfor
     
     <tr><td><label>merged project name:</td><td> ${h.text('name')}</label></td></tr>

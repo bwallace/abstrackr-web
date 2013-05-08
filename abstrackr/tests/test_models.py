@@ -62,7 +62,7 @@ class TestReviewModel(TestController):
     def test_label(self):
         pass
 
-    def test_reviewerproject(self):
+    def test_users_projects(self):
         pass
 
     def test_assignment(self):

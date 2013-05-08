@@ -20,8 +20,13 @@ def init_model(engine):
 ### Association Tables
 citations_tasks_table = Table('citations_tasks', Base.metadata,
         Column('citation_id', types.Integer, ForeignKey('citations.id')),
-        Column('task_id', types.Integer, ForeignKey('Tasks.id'))
-        )
+        Column('task_id', types.Integer, ForeignKey('tasks.id'))
+)
+
+users_projects_table = Table('users_projects', Base.metadata,
+        Column('user_id', types.Integer, ForeignKey('user.id')),
+        Column('project_id', types.Integer, ForeignKey('projects.id'))
+)
 
 ### end of Association Tables
 
@@ -71,6 +76,8 @@ class Project(Base):
     citations = relationship('Citation', order_by='Citation.id', backref='project')
     assignments = relationship('Assignment', order_by='Assignment.id', backref='project')
     labels = relationship('Label', order_by='Label.id', backref='project')
+    members = relationship("User", secondary=users_projects_table, backref="projects")
+
 
 class Citation(Base):
     __tablename__ = "citations"
@@ -126,10 +133,11 @@ class Priority(Base):
     locked_by = Column(types.Integer)
     time_requested = Column(types.DateTime())
 
-class TagTypes(Base):
+
+class TagType(Base):
     """User added tags"""
 
-    __tablename__ = "TagTypes"
+    __tablename__ = "tagtypes"
 
     id = Column(types.Integer, primary_key=True)
     text = Column(types.Unicode(500))
@@ -138,20 +146,22 @@ class TagTypes(Base):
     creator_id = Column(types.Integer)
     color = Column(types.Unicode(50))
 
-class Tags(Base):
+
+class Tag(Base):
     """Stores study/tag pairs"""
 
-    __tablename__ = "Tags"
+    __tablename__ = "tags"
 
     id = Column(types.Integer, primary_key=True)
     tag_id = Column(types.Integer)
     creator_id = Column(types.Integer)
     citation_id = Column(types.Integer)
 
+
 class Note(Base):
     """Stores notes; both structured and unstructured"""
 
-    __tablename__ = "Notes"
+    __tablename__ = "notes"
 
     id = Column(types.Integer, primary_key=True)
     creator_id = Column(types.Integer)
@@ -161,10 +171,11 @@ class Note(Base):
     ic = Column(types.Unicode(1000)) # intervention/comparator
     outcome = Column(types.Unicode(1000))
 
+
 class LabeledFeature(Base):
     """Stores labeled features, i.e., terms"""
 
-    __tablename__ = "LabelFeatures"
+    __tablename__ = "labeledfeatures"
 
     id = Column(types.Integer, primary_key=True)
     term = Column(types.Unicode(500))
@@ -176,10 +187,11 @@ class LabeledFeature(Base):
     label = Column(types.SmallInteger)
     date_created = Column(types.DateTime())
 
+
 class Label(Base):
     """Stores instances labels"""
 
-    __tablename__ = "Labels"
+    __tablename__ = "labels"
 
     id = Column(types.Integer, primary_key=True)
     # project for which this document was screened
@@ -194,27 +206,15 @@ class Label(Base):
     first_labeled = Column(types.DateTime())
     label_last_updated = Column(types.DateTime())
 
-class ReviewerProject(Base):
-    """
-    junction table; maps users to the projects they
-    are on (and vice versa).
-
-    """
-
-    __tablename__ = "ReviewersProjects"
-
-    id = Column(types.Integer, primary_key=True)
-    project_id = Column(types.Integer)
-    user_id = Column(types.Integer)
 
 class Assignment(Base):
 
-    __tablename__ = "Assignments"
+    __tablename__ = "assignments"
 
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer, ForeignKey('projects.id'))
     user_id = Column(types.Integer, ForeignKey('user.id'))
-    task_id = Column(types.Integer, ForeignKey('Tasks.id'))
+    task_id = Column(types.Integer, ForeignKey('tasks.id'))
     done_so_far = Column(types.Integer)
     date_assigned = Column(types.DateTime())
     date_due = Column(types.DateTime())
@@ -226,6 +226,7 @@ class Assignment(Base):
     num_assigned = Column(types.Integer)
     # this is the same as `task_type'.
     assignment_type = Column(types.Unicode(50))
+
 
 class Task(Base):
     """
@@ -240,7 +241,7 @@ class Task(Base):
 
     """
 
-    __tablename__ = "Tasks"
+    __tablename__ = "tasks"
 
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer)
@@ -255,6 +256,7 @@ class Task(Base):
 
     assignments = relationship("Assignment", order_by='Assignment.id', backref="task")
 
+
 class EncodeStatus(Base):
     """
     This table contains one entry for each dataset, indicating
@@ -266,7 +268,7 @@ class EncodeStatus(Base):
 
     """
 
-    __tablename__ = "EncodedStatuses" # sticking with the pluralized convention here
+    __tablename__ = "encodedstatuses"
 
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer) # associated project
@@ -275,10 +277,11 @@ class EncodeStatus(Base):
     # the location of the base directory for the encoded project
     base_path = Column(types.Unicode(100))
 
+
 class PredictionsStatus(Base):
     """Status of predictions (do they exist? last update, etc.)"""
 
-    __tablename__ = "PredictionStatuses"
+    __tablename__ = "predictionstatuses"
 
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer) # associated project
@@ -287,10 +290,11 @@ class PredictionsStatus(Base):
     train_set_size = Column(types.Integer) # how many did we train on?
     num_pos_train = Column(types.Integer) # number of positive examples we trained on
 
+
 class Prediction(Base):
     """Current inclusion/exclusion predictions for studies"""
 
-    __tablename__ = "Predictions"
+    __tablename__ = "predictions"
 
     id = Column(types.Integer, primary_key=True)
     study_id = Column(types.Integer) # the (internal) study id
@@ -346,7 +350,7 @@ class User(Base):
     show_authors = Column(types.Boolean, default=True)
     show_keywords = Column(types.Boolean, default=True)
 
-    projects = relationship("Project", backref=backref('leader', order_by=id))
+    projects_leader = relationship("Project", backref=backref('leader', order_by=id))
     assignments = relationship("Assignment", backref=backref('user', order_by=id))
 
     def _set_password(self, password):
@@ -408,6 +412,6 @@ class GroupPermission(Base):
 # groups and users
 class UserGroup(Base):
     __tablename__ = "user_group"
-    id  = Column(types.Integer, primary_key=True)
+    id = Column(types.Integer, primary_key=True)
     user_id = Column(types.Integer)
     group_id = Column(types.Integer)

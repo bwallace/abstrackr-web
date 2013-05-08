@@ -451,33 +451,33 @@ class ReviewController(BaseController):
         #   to release the 'non-surviving' duplicate citations from all label-bindings.
         # A switch statement would be nice here, wouldn't it?
 
-        if tablename=='priority':
+        if tablename == 'priority':
             priorities = model.meta.Session.query(model.Priority).filter(model.Priority.citation_id==citation_id).all()
             for priority in priorities:
                 if priority.citation_id != surviving_citation_id:
                     model.Session.delete(priority)
 
-        elif tablename=='tags':
-            tags = model.meta.Session.query(model.Tags).filter(model.Tags.citation_id==citation_id).all()
+        elif tablename == 'tags':
+            tags = model.meta.Session.query(model.Tag).filter(model.Tag.citation_id==citation_id).all()
             for tag in tags:
                 tag.citation_id = surviving_citation_id
 
-        elif tablename=='notes':
+        elif tablename == 'notes':
             notes = model.meta.Session.query(model.Note).filter(model.Note.citation_id==citation_id).all()
             for note in notes:
                 note.citation_id = surviving_citation_id
 
-        elif tablename=='labels':
+        elif tablename == 'labels':
             labels = model.meta.Session.query(model.Label).filter(model.Label.study_id==citation_id).all()
             for label in labels:
                 label.study_id = surviving_citation_id
 
-        elif tablename=='citations_tasks':
+        elif tablename == 'citations_tasks':
             citations_tasks = model.meta.Session.query(model.citations_tasks_table).filter(model.citations_tasks_table.citation_id==citation_id).all()
             for citations_task in citations_tasks:
                 citations_task.citation_id = surviving_citation_id
 
-        elif tablename=='predictions':
+        elif tablename == 'predictions':
             predictions = model.meta.Session.query(model.Prediction).filter(model.Prediction.study_id==citation_id).all()
             for prediction in predictions:
                 prediction.study_id = surviving_citation_id
@@ -638,17 +638,15 @@ class ReviewController(BaseController):
 
         ###
         # move (reviewers) first
-        reviewer_project_q = model.meta.Session.query(model.ReviewerProject)
-        reviewer_projects = reviewer_project_q.filter(and_(\
-                                model.ReviewerProject.project_id == old_review_id)).all()
-        for reviewer_project in reviewer_projects:
-            # note that this method makes sure the reviewer isn't already a
-            # part of the review; if they are, then they
-            self._add_user_to_review(reviewer_project.reviewer_id, new_review_id)
-            # get rid of the previous entry: this review will no longer exist,
-            # anyway.
-            model.Session.delete(reviewer_project)
-            model.Session.commit()
+        old_project = model.Session.query(model.Project).filter(model.Project.id == old_review_id).one()
+        new_project = model.Session.query(model.Project).filter(model.Project.id == new_review_id).one()
+        users_to_move = model.Session.query(model.User).\
+                filter(model.User.projects.any(id=old_review_id)).all()
+        for user_to_move in users_to_move:
+            new_project.members.append(user_to_move)
+
+        model.Session.add(new_project)
+        model.Session.commit()
 
         ###
         # NOTE: we *remove* all assignments and tasks (below) -- resolving the
@@ -705,17 +703,17 @@ class ReviewController(BaseController):
 
 
         ###
-        # tags (technically, TagTypes)
-        tag_types_q = model.meta.Session.query(model.TagTypes)
+        # tags (technically, TagType)
+        tag_types_q = model.meta.Session.query(model.TagType)
         tag_types_to_move = tag_types_q.filter(\
-                    model.TagTypes.project_id == old_review_id).all()
+                    model.TagType.project_id == old_review_id).all()
 
         # issues #29/#33: need to handle duplicate tags properly
         # here -- so we pull all tags aleady associated with the
         # review were are moving old_review to.
         tag_texts_to_ids = {}
         tags_already_in_new_review = tag_types_q.filter(\
-                    model.TagTypes.project_id == new_review_id).all()
+                    model.TagType.project_id == new_review_id).all()
         for existing_tag in tags_already_in_new_review:
             tag_texts_to_ids[existing_tag.text.lower()] = existing_tag.id
 
@@ -737,9 +735,9 @@ class ReviewController(BaseController):
                 pre_existing_tag_id = tag_texts_to_ids[tag_to_move.text.lower()]
 
                 # for actual tags, not tag types
-                tags_q = model.meta.Session.query(model.Tags)
+                tags_q = model.meta.Session.query(model.Tag)
                 tags_of_this_type =\
-                     tags_q.filter(model.Tags.tag_id == tag_to_move.id).all()
+                     tags_q.filter(model.Tag.tag_id == tag_to_move.id).all()
 
                 for dupe_tag in tags_of_this_type:
                     # associate these tags with the already-existing
@@ -856,45 +854,52 @@ class ReviewController(BaseController):
         self._remove_user_from_review(reviewer_id, review_id)
         redirect(url(controller="review", action="admin", id=review_id))
 
-    def _remove_user_from_review(self, reviewer_id, review_id):
-        reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
-        reviewer_reviews = reviewer_review_q.filter(and_(\
-                 model.ReviewerProject.project_id == review_id,
-                 model.ReviewerProject.user_id==reviewer_id)).all()
+    def _remove_user_from_review(self, user_id, project_id):
+        project = model.Session.query(model.Project).filter_by(id=project_id).one()
+        user = model.Session.query(model.User).filter_by(id=user_id).one()
+        import pdb; pdb.set_trace()
+        # project.members is the collection of users associated with this project
+        project.members.remove(user)
+        model.Session.commit()
 
-        for reviewer_review in reviewer_reviews:
-            # note that there should only be one entry;
-            # this is just in case.
-            model.Session.delete(reviewer_review)
+        #reviewer_review_q = model.meta.Session.query(model.users_projects_table)
+        #reviewer_reviews = reviewer_review_q.filter(and_(\
+        #         model.users_projects_table.project_id == review_id,
+        #         model.users_projects_table.user_id==reviewer_id)).all()
+
+        #for reviewer_review in reviewer_reviews:
+        #    # note that there should only be one entry;
+        #    # this is just in case.
+        #    model.Session.delete(reviewer_review)
 
         # next, we need to delete all assignments for this person and review
         assignments_q = model.meta.Session.query(model.Assignment)
         assignments = assignments_q.filter(and_(\
-                    model.Assignment.project_id == review_id,
-                    model.Assignment.user_id == reviewer_id
+                    model.Assignment.project_id == project_id,
+                    model.Assignment.user_id == user_id
         )).all()
 
         for assignment in assignments:
             model.Session.delete(assignment)
             model.Session.commit()
 
-    def _add_user_to_review(self, reviewer_id, review_id):
-        ###
-        # make sure that this reviewer isn't already
-        # associated with the review
-        reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
-        reviewer_reviews = reviewer_review_q.filter(and_(\
-                 model.ReviewerProject.project_id == review_id,
-                 model.ReviewerProject.user_id == reviewer_id)).all()
-        if len(reviewer_reviews) > 0:
-            return None
+    #def _add_user_to_review(self, reviewer_id, review_id):
+    #    ###
+    #    # make sure that this reviewer isn't already
+    #    # associated with the review
+    #    reviewer_review_q = model.meta.Session.query(model.users_projects_table)
+    #    reviewer_reviews = reviewer_review_q.filter(and_(\
+    #             model.users_projects_table.project_id == review_id,
+    #             model.users_projects_table.user_id == reviewer_id)).all()
+    #    if len(reviewer_reviews) > 0:
+    #        return None
 
-        # ok, then add them.
-        reviewer_project = model.ReviewerProject()
-        reviewer_project.user_id = reviewer_id
-        reviewer_project.project_id = review_id
-        model.Session.add(reviewer_project)
-        model.Session.commit()
+    #    # ok, then add them.
+    #    reviewer_project = model.users_projects_table()
+    #    reviewer_project.user_id = reviewer_id
+    #    reviewer_project.project_id = review_id
+    #    model.Session.add(reviewer_project)
+    #    model.Session.commit()
 
     @ActionProtector(not_anonymous())
     def get_fields(self, review_id):
@@ -1097,8 +1102,8 @@ class ReviewController(BaseController):
 
         # then delete the associations in the table mapping reviewers to
         # reviews
-        reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
-        entries_for_review = reviewer_review_q.filter(model.ReviewerProject.project_id == review.id).all()
+        reviewer_review_q = model.meta.Session.query(model.users_projects_table)
+        entries_for_review = reviewer_review_q.filter(model.users_projects_table.project_id == review.id).all()
         for reviewer_review in entries_for_review:
             model.Session.delete(reviewer_review)
         model.Session.commit()
@@ -1388,7 +1393,7 @@ class ReviewController(BaseController):
         chart.set_pie_labels(['unscreened', 'screened'])
         c.pi_url = chart.get_url()
 
-        reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
+        reviewer_proj_q = model.meta.Session.query(model.users_projects_table)
         reviewer_ids = [rp.user_id for rp in reviewer_proj_q.filter(model.Citation.project_id == id).all()]
 
         c.participating_reviewers = reviewers = self._get_participants_for_review(id)
@@ -1537,7 +1542,7 @@ class ReviewController(BaseController):
 
         # now add all the new tags
         for tag in list(set(tags)):
-            new_tag = model.Tags()
+            new_tag = model.Tag()
             new_tag.creator_id = current_user.id
             new_tag.tag_id = self._get_tag_id(review_id, tag)
 
@@ -1553,7 +1558,7 @@ class ReviewController(BaseController):
         cur_tags = self._get_tag_types_for_review(review_id)
 
         if tag not in cur_tags:
-            new_tag = model.TagTypes()
+            new_tag = model.TagType()
             new_tag.text = tag
             new_tag.project_id = review_id
             new_tag.creator_id = current_user.id
@@ -2000,17 +2005,17 @@ class ReviewController(BaseController):
     def edit_tags(self, review_id, assignment_id):
         current_user = request.environ.get('repoze.who.identity')['user']
 
-        tag_q = model.meta.Session.query(model.TagTypes)
+        tag_q = model.meta.Session.query(model.TagType)
         tags = None
 
         # fix for issue #35: allow admins to edit everyone's
         #   tags
         if self._current_user_leads_review(review_id):
-            tags = tag_q.filter(model.TagTypes.project_id == review_id).all()
+            tags = tag_q.filter(model.TagType.project_id == review_id).all()
         else:
             tags = tag_q.filter(
-                and_(model.TagTypes.project_id == review_id,\
-                     model.TagTypes.creator_id == current_user.id
+                and_(model.TagType.project_id == review_id,\
+                     model.TagType.creator_id == current_user.id
                      )).all()
         c.tags = tags
         c.assignment_id = assignment_id
@@ -2019,17 +2024,17 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def edit_tag(self, tag_id, assignment_id):
-        tag_q = model.meta.Session.query(model.TagTypes)
-        c.tag = tag_q.filter(model.TagTypes.id == tag_id).one()
+        tag_q = model.meta.Session.query(model.TagType)
+        c.tag = tag_q.filter(model.TagType.id == tag_id).one()
 
         c.assignment_id = assignment_id
         return render("/reviews/edit_tag_fragment.mako")
 
     @ActionProtector(not_anonymous())
     def edit_tag_text(self, id):
-        tag_q = model.meta.Session.query(model.TagTypes)
+        tag_q = model.meta.Session.query(model.TagType)
         current_user = request.environ.get('repoze.who.identity')['user']
-        tag = tag_q.filter(model.TagTypes.id == id).one()
+        tag = tag_q.filter(model.TagType.id == id).one()
         if current_user.id == tag.creator_id or self._current_user_leads_review(tag.project_id):
             tag.text = request.params['new_text']
             model.Session.commit()
@@ -2037,9 +2042,9 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def delete_tag(self, tag_id, assignment_id):
-        tag_q = model.meta.Session.query(model.TagTypes)
+        tag_q = model.meta.Session.query(model.TagType)
         current_user = request.environ.get('repoze.who.identity')['user']
-        tag = tag_q.filter(model.TagTypes.id == tag_id).one()
+        tag = tag_q.filter(model.TagType.id == tag_id).one()
         review_id = tag.project_id
         if current_user.id == tag.creator_id:
             model.Session.delete(tag)
@@ -2047,8 +2052,8 @@ class ReviewController(BaseController):
 
             # also delete all the tag objects associated
             # with this TagType
-            tag_obj_q = model.meta.Session.query(model.Tags)
-            tags_of_this_type = tag_obj_q.filter(model.Tags.tag_id == tag_id).all()
+            tag_obj_q = model.meta.Session.query(model.Tag)
+            tags_of_this_type = tag_obj_q.filter(model.Tag.tag_id == tag_id).all()
             for tag_obj in tags_of_this_type:
                 model.Session.delete(tag_obj)
             model.Session.commit()
@@ -2274,17 +2279,17 @@ class ReviewController(BaseController):
             return self._join_review(review_id)
 
         # first, make sure this person isn't already in this review.
-        reviewer_review_q = model.meta.Session.query(model.ReviewerProject)
-        reviewer_reviews = reviewer_review_q.filter(and_(\
-                 model.ReviewerProject.project_id == review_id,
-                 model.ReviewerProject.user_id == current_user.id)).all()
+        user_projs = model.Session.query(model.User).\
+                filter(model.User.id == current_user.id).\
+                filter(model.User.projects.any(id=review_id)).all()
 
-        if len(reviewer_reviews) == 0:
+        if len(user_projs) == 0:
             # we only add them if they aren't already a part of the review.
-            reviewer_project = model.ReviewerProject()
-            reviewer_project.user_id = current_user.id
-            reviewer_project.project_id = review_id
-            model.Session.add(reviewer_project)
+            project = model.Session.query(model.Project).filter(model.Project.id == review_id).one()
+            user_to_add = model.Session.query(model.User).filter(model.User.id == current_user.id).one()
+            project.members.append(user_to_add)
+            model.Session.add(project)
+            model.Session.commit()
 
             # now we check what type of screening mode we're using
             review = self._get_review_from_id(review_id)
@@ -2397,26 +2402,26 @@ class ReviewController(BaseController):
         return init_task[0]
 
     def _get_tag_id(self, review_id, text):
-        tag_q = model.meta.Session.query(model.TagTypes)
+        tag_q = model.meta.Session.query(model.TagType)
 
         tag_type = tag_q.filter(and_(
-                model.TagTypes.project_id == review_id,
-                model.TagTypes.text == text)).all()[0]
+                model.TagType.project_id == review_id,
+                model.TagType.text == text)).all()[0]
         return tag_type.id
 
     def _get_tags_for_citation(self, citation_id, texts_only=True, only_for_user_id=None):
 
-        tag_q = model.meta.Session.query(model.Tags)
+        tag_q = model.meta.Session.query(model.Tag)
         tags = None
         if only_for_user_id:
             # then filter on the study and the user
             tags = tag_q.filter(and_(\
-                    model.Tags.citation_id == citation_id,\
-                    model.Tags.creator_id == only_for_user_id
+                    model.Tag.citation_id == citation_id,\
+                    model.Tag.creator_id == only_for_user_id
              )).all()
         else:
             # all tags for this citation, regardless of user
-            tags = tag_q.filter(model.Tags.citation_id == citation_id).all()
+            tags = tag_q.filter(model.Tag.citation_id == citation_id).all()
 
         if texts_only:
             return self._tag_ids_to_texts([tag.tag_id for tag in tags])
@@ -2426,18 +2431,18 @@ class ReviewController(BaseController):
         return [self._text_for_tag(tag_id) for tag_id in tag_ids]
 
     def _text_for_tag(self, tag_id):
-        tag_type_q = model.meta.Session.query(model.TagTypes)
-        tag_obj = tag_type_q.filter(model.TagTypes.id == tag_id).one()
+        tag_type_q = model.meta.Session.query(model.TagType)
+        tag_obj = tag_type_q.filter(model.TagType.id == tag_id).one()
         return tag_obj.text
 
     def _get_tag_types_for_citation(self, citation_id, objects=False):
         tags = self._get_tags_for_citation(citation_id)
         # now map those types to names
-        tag_type_q = model.meta.Session.query(model.TagTypes)
+        tag_type_q = model.meta.Session.query(model.TagType)
         tags = []
 
         for tag in tags:
-            tag_obj = tag_type_q.filter(model.TagTypes.id == tag.tag_id).one()
+            tag_obj = tag_type_q.filter(model.TagType.id == tag.tag_id).one()
 
             if objects:
                 tags.append(tag_obj)
@@ -2447,8 +2452,8 @@ class ReviewController(BaseController):
         return tags
 
     def _get_tag_types_for_review(self, review_id):
-        tag_q = model.meta.Session.query(model.TagTypes)
-        tag_types = tag_q.filter(model.TagTypes.project_id == review_id).all()
+        tag_q = model.meta.Session.query(model.TagType)
+        tag_types = tag_q.filter(model.TagType.project_id == review_id).all()
         return [tag_type.text for tag_type in tag_types]
 
     def _get_ids_for_task(self, task_id):
@@ -2480,14 +2485,16 @@ class ReviewController(BaseController):
 
         return already_labeled_ids
 
-    def _get_participants_for_review(self, review_id):
-        reviewer_proj_q = model.meta.Session.query(model.ReviewerProject)
-        reviewer_ids = \
-            list(set([rp.user_id for rp in reviewer_proj_q.filter(model.ReviewerProject.project_id == review_id).all()]))
-        user_q = model.meta.Session.query(model.User)
-        reviewers = [user_q.filter(model.User.id == reviewer_id).one() \
-                    for reviewer_id in reviewer_ids]
-        return reviewers
+    def _get_participants_for_review(self, project_id):
+        #reviewer_proj_q = model.meta.Session.query(model.users_projects_table)
+        #reviewer_ids = \
+        #    list(set([rp.user_id for rp in reviewer_proj_q.filter(model.users_projects_table.project_id == review_id).all()]))
+        #user_q = model.meta.Session.query(model.User)
+        #reviewers = [user_q.filter(model.User.id == reviewer_id).one() \
+        #            for reviewer_id in reviewer_ids]
+        project = model.Session.query(model.Project).filter(model.Project.id == project_id).one()
+        members = project.members
+        return members
 
     def _get_username_from_id(self, id):
         if id == CONSENSUS_USER:
