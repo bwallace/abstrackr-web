@@ -4,18 +4,18 @@
 <script language="javascript">
     var seconds = 1;
     setTimeout(update_timer, 1000);
-    
+
     function reset_timer(){
       seconds = 1; // start at one
       setTimeout(update_timer, 1000);
     }
-    
+
     function update_timer(){
       seconds +=1;
       setTimeout(update_timer, 1000);
     }
 
-  
+
 
 </script>
 
@@ -38,7 +38,7 @@
           % endif
       % endfor
     </ul>
- 
+
 
    <div class="actions" style="text-align: right;">
       <input id="submit_btn" type="button" value="tag" />
@@ -49,17 +49,17 @@
 
 <div id="notes-dialog" >
    <form>
-   
-    <b>general notes</b><br/> 
-    <textarea id="general_notes" name="general_notes" rows="4" cols="40" /> 
+
+    <b>general notes</b><br/>
+    <textarea id="general_notes" name="general_notes" rows="4" cols="40" />
     </textarea><br />
-    
+
     <br>population notes</b><br/>
     <textarea id="pop_notes" name="pop_notes" rows="1" cols="40" /></textarea><br />
     </br>
-   
+
     <br>intervention/comparator notes</b><br/>
-    <textarea id="ic_notes" name="ic_notes" rows="1" cols="40" /> 
+    <textarea id="ic_notes" name="ic_notes" rows="1" cols="40" />
     </textarea><br />
     </br>
 
@@ -85,7 +85,7 @@
   % else:
     <a
       href="${url(controller='review', action='review_labels', review_id=c.review_id, assignment_id=c.assignment_id)}">review labels</a>
-    <a 
+    <a
       href="${url(controller='review', action='review_terms', id=c.review_id, assignment_id=c.assignment_id)}">review terms</a>
   % endif
 </div>
@@ -110,17 +110,17 @@
     <input type="button" style="width: 120px" id="tag_btn" value="tag study..." />
     <br/><br/>
 
-    
-    <input type="button" style="width: 120px" id="edit_tags_btn" value="edit tags..." 
-                onclick="parent.location='/review/edit_tags/${c.review_id}/${c.assignment_id}'"> 
-   
+
+    <input type="button" style="width: 120px" id="edit_tags_btn" value="edit tags..."
+                onclick="parent.location='/review/edit_tags/${c.review_id}/${c.assignment_id}'">
+
     <br/><br/>
     <input type="button" style="width: 120px" id="notes_btn" value="notes..." />
 
     </center>
   </div>
 
- 
+
 
 
   <div id="citation-holder" style='float: right; width: 85%;'>
@@ -172,7 +172,7 @@
       % endif
 
 
-      <script type="text/javascript">    
+      <script type="text/javascript">
 
           var still_loading = false;
           var waiting_for_citation = false;
@@ -211,14 +211,14 @@
               // buttons that label the (now currently) displayed
               // citation that we fadein in the next line.
               setup_js();
-              
+
               $('#citation').fadeIn();
               $("#wait").text("")
               $('#buttons').show();
               waiting_for_citation = false;
 
 
-              // once the citation 
+              // once the citation
               get_next_citation();
             }
           }
@@ -236,7 +236,7 @@
           }
 
           function setup_js(){
-              
+
               $( "#dialog" ).dialog({
                 height: 250,
                 modal: true,
@@ -264,7 +264,7 @@
                       });
                   });
               }
-          
+
 
               function label_cur_citation(lbl_str){
                   $("#citation").fadeOut('fast', function() {
@@ -277,13 +277,13 @@
 
                         $.post("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.id)}" + seconds + "/" + lbl_str, function(data){
                             if (we_are_reviewing_a_label()){
-                              // in the case that we are re-labeling a citation, 
+                              // in the case that we are re-labeling a citation,
                               // this the label method will return the citation fragment.
                               $('#citation').html(data);
                               $('#citation').fadeIn();
                               setup_js();
                               still_loading = false;
-                            } 
+                            }
                             else if (!(is_perpetual_assignment())) {
                               load_next_citation();
                             }
@@ -292,24 +292,24 @@
                               $('#progress').html(data);
                             }
                         });
-                  });      
+                  });
               }
 
 
               $("#accept").click(function() {
                 label_cur_citation("1");
               });
-                     
+
 
               $("#maybe").click(function() {
                 label_cur_citation("0");
               });
-              
-               
+
+
               $("#reject").click(function() {
                 label_cur_citation("-1");
               });
-               
+
               $("#pos_lbl_term").click(function() {
                   // call out to the controller to label the term
                   var term_str = $("input#term").val()
@@ -321,8 +321,8 @@
                       $("#label_msg").fadeOut(3000)
                       markup_current();
                   }
-               }); 
-               
+               });
+
               $("#double_pos_lbl_term").click(function() {
                   // call out to the controller to label the term
                   var term_str = $("input#term").val()
@@ -334,8 +334,8 @@
                       $("#label_msg").fadeOut(3000)
                       markup_current();
                   }
-               }); 
-              
+               });
+
 
               $("#neg_lbl_term").click(function() {
                   // call out to the controller to label the term
@@ -348,8 +348,8 @@
                       $("#label_msg").fadeOut(3000)
                       markup_current();
                   }
-               }); 
-               
+               });
+
               $("#double_neg_lbl_term").click(function() {
                   // call out to the controller to label the term
                   var term_str = $("input#term").val()
@@ -361,7 +361,7 @@
                       $("#label_msg").fadeOut(3000)
                       markup_current();
                   }
-               }); 
+               });
 
               populate_notes();
               setup_submit();
@@ -369,12 +369,12 @@
 
           function populate_notes(){
             % if "notes" in dir(c) and c.notes is not None:
-              $("#pop_notes").val('${c.notes.population}'); 
+              $("#pop_notes").val('${c.notes.population}');
               $("textarea#general_notes").val('${c.notes.general}');
               $("textarea#ic_notes").val('${c.notes.ic}');
               $("textarea#outcome_notes").val('${c.notes.outcome}');
             % else:
-              $("#pop_notes").val(''); 
+              $("#pop_notes").val('');
               $("textarea#general_notes").val('');
               $("textarea#ic_notes").val('');
               $("textarea#outcome_notes").val('');
@@ -391,8 +391,8 @@
                var tag_str = $("input#new_tag").val();
 
                // now add all selected tags to the study
-               var tags = $.map($('.ui-selected, this'), function(element, i) {  
-                 return $(element).text();  
+               var tags = $.map($('.ui-selected, this'), function(element, i) {
+                 return $(element).text();
                });
 
                // push new tag, too (if it's empty, we'll drop it server-side)
@@ -438,7 +438,7 @@
                       );
 
 
-               
+
             });
             /** end notes functionality **/
 
@@ -462,11 +462,11 @@
             {
                $("#notes-dialog" ).dialog("open");
             });
-            
-      
+
+
           }
 
-          $(document).ready(function() { 
+          $(document).ready(function() {
               setup_js();
               // we don't queue the next citation if we're reviewing
               // labels!
@@ -476,7 +476,7 @@
               $("#hidden_div").hide();
 
           });
-          
+
       </script>
     </div>
 
@@ -485,11 +485,11 @@
     <center>
     <div id="wait"></div>
     </center>
-    
+
 
     <br/><br/>
     <center>
-    <div id="progress"> 
+    <div id="progress">
     % if 'assignment' in dir(c):
         % if c.assignment.num_assigned and c.assignment.num_assigned > 0:
             you've screened <b>${c.assignment.done_so_far}</b> out of <b>${c.assignment.num_assigned}</b> so far (nice going!)
@@ -500,16 +500,16 @@
     </div>
     </center>
 
-   
+
 
 
 
     <center>
     <br clear="all"/>
     <div id = "buttons" >
-    <a href="#" id="accept"><img src = "/accept.png"/></a> 
-    <a href="#" id="maybe"><img src = "/maybe.png"/></a> 
-    <a href="#" id="reject"><img src = "/reject.png"/></a> 
+    <a href="#" id="accept"><img src = "/accept.png"/></a>
+    <a href="#" id="maybe"><img src = "/maybe.png"/></a>
+    <a href="#" id="reject"><img src = "/reject.png"/></a>
     </div>
 
 
@@ -518,7 +518,7 @@
   <table>
   <tr>
   <td>
-  <label>term: ${h.text('term')}</label> 
+  <label>term: ${h.text('term')}</label>
   </td>
   <td width="10"></td>
   <td>
