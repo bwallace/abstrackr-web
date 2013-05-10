@@ -9,6 +9,8 @@ from nose.plugins.attrib import attr  # Decorator to mark tests
 
 from abstrackr.controllers.review import ReviewController
 
+Session = model.Session
+
 
 class TestReviewController(TestController):
 
@@ -111,21 +113,21 @@ class TestReviewController(TestController):
         c2.tasks.append(t2)
 
         # Persist the changes.
-        model.Session.add(c1)
-        model.Session.add(c2)
-        model.Session.commit()
+        Session.add(c1)
+        Session.add(c2)
+        Session.commit()
 
         # Verify first that the entries in table CitationTask actually exist
-        assert len(model.Session.query(model.citations_tasks_table).all()) == 3
+        assert len(Session.query(model.citations_tasks_table).all()) == 3
 
         # Finally remove one of the citations and check cascade
-        model.Session.delete(c1)
-        model.Session.commit()
-        assert len(model.Session.query(model.citations_tasks_table).all()) == 1
+        Session.delete(c1)
+        Session.commit()
+        assert len(Session.query(model.citations_tasks_table).all()) == 1
 
         # Do the same for when the task is removed
-        model.Session.delete(t2)
-        assert len(model.Session.query(model.citations_tasks_table).all()) == 0
+        Session.delete(t2)
+        assert len(Session.query(model.citations_tasks_table).all()) == 0
 
     #@attr(author='jj', controller='review')
     #def test_get_next_priority(self):

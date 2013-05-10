@@ -12,6 +12,7 @@ from abstrackr.lib.base import BaseController, render
 import abstrackr.model as model
 import pdb
 
+Session = model.meta.Session
 
 # This method facilitates access to User attributes that are NOT auth.User attributes.
 def _get_user_from_email(email):
@@ -121,3 +122,8 @@ def _prob_histogram(probs):
 
     counts = [count/z for count in counts]
     return counts
+
+def _get_project_member_ids(project_id):
+    members = Session.query(model.Project).\
+            filter_by(id=project_id).one().members
+    return [member.id for member in members]

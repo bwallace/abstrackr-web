@@ -1,15 +1,18 @@
 import logging
+
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
+from pylons.controllers.util import redirect
+
+import abstrackr.model as model
+from abstrackr.model.meta import Session
 from abstrackr.lib.base import BaseController, render
+import abstrackr.controllers.controller_globals as controller_globals # shared querying routines
+
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
-from pylons.controllers.util import redirect
-import abstrackr.controllers.controller_globals as controller_globals # shared querying routines
-from controller_globals import *
 
 import turbomail
-import abstrackr.model as model
 import smtplib
 import string
 import random
@@ -60,11 +63,10 @@ class AccountController(BaseController):
                         Hi, %s. \n
                         Someone (hopefully you!) asked to reset your abstrackr password.
                         To do so, follow this link:\n
-                        \t http://abstrackr.tuftscaes.org/account/confirm_password_reset/%s.\n
+                        \t %saccount/confirm_password_reset/%s.\n
                         Note that your password will be temporarily changed if you follow this link!
                         If you didn't request to reset your password, just ignore this email.
-                      """ % (user_for_email.fullname, token)
-
+                      """ % (user_for_email.fullname, url('/', qualified=True), token)
             print token
             self.send_email_to_user(user_for_email, "resetting your abstrackr password", message)
             c.pwd_msg = "OK -- check your email (and your spam folder!)"
@@ -79,7 +81,7 @@ class AccountController(BaseController):
 
     def confirm_password_reset(self, id):
         token = str(id)
-        reset_pwd_q = model.meta.Session.query(model.ResetPassword)
+        reset_pwd_q = Session.query(model.ResetPassword)
         # we pull all in case they've tried to reset their pwd a few times
         # by the way, these should time-expire...
         matches = reset_pwd_q.filter(model.ResetPassword.token == token).all()
@@ -90,18 +92,18 @@ class AccountController(BaseController):
                 """
         user = controller_globals._get_user_from_email(matches[0].user_email)
         for match in matches:
-            model.Session.delete(match)
+            Session.delete(match)
         user._set_password(token)
-        model.Session.commit()
+        Session.commit()
         return '''
           ok! your password has been set to %s (you can change it once you've logged in).\n
-          <a href="http://sunfire34.eecs.tufts.edu">log in here</a>.''' % token
+          <a href="%s">log in here</a>.''' % (token, url('/', qualified=True))
 
     def gen_token_to_reset_pwd(self, user):
         # generate a random token for the user to reset their password; stick
         # it in the database
         make_token = lambda N: ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(N))
-        reset_pwd_q = model.meta.Session.query(model.ResetPassword)
+        reset_pwd_q = Session.query(model.ResetPassword)
         existing_tokens = [entry.token for entry in reset_pwd_q.all()]
         token_length=10
         cur_token = make_token(token_length)
@@ -111,14 +113,14 @@ class AccountController(BaseController):
         reset = model.ResetPassword()
         reset.token = cur_token
         reset.user_email = user.email
-        model.Session.add(reset)
-        model.Session.commit()
+        Session.add(reset)
+        Session.commit()
         return cur_token
 
     def send_email_to_user(self, user, subject, message):
         server = smtplib.SMTP("localhost")
         to = user.email
-        sender = "noreply@abstrackr.tuftscaes.org"
+        sender = "noreply@abstrackr.cebm.brown.edu"
         body = string.join((
             "From: %s" % sender,
             "To: %s" % to,
@@ -140,7 +142,7 @@ class AccountController(BaseController):
         current_user = request.environ.get('repoze.who.identity')['user']
         if request.params["password"] == request.params["password_confirm"]:
             current_user._set_password(request.params['password'])
-            model.Session.commit()
+            Session.commit()
             c.account_msg = "ok, your password has been changed."
         else:
             c.account_msg = "whoops -- the passwords didn't match! try again."
@@ -175,22 +177,22 @@ class AccountController(BaseController):
         new_user.show_authors = True
         new_user.show_keywords = True
 
-        model.Session.add(new_user)
-        model.Session.commit()
+        Session.add(new_user)
+        Session.commit()
 
         # send out an email
         greeting_message = """
             Hi, %s.\n
 
-            Thanks for signing up at abstrackr (http://abstrackr.tuftscaes.org). You
+            Thanks for signing up at abstrackr (%s). You
             should be able to sign up now with username %s (only you know your password).
 
             This is just a welcome email to say hello, and that we've got your email.
             Should you ever need to reset your password, we'll send you instructions
             to this email. In the meantime, happy screening!
 
-            -- The Tufts EPC.
-        """ % (new_user.fullname, new_user.username)
+            -- The Brown EPC.
+        """ % (new_user.fullname, url('/', qualified=True), new_user.username)
 
         try:
             self.send_email_to_user(new_user, "welcome to abstrackr", greeting_message)
@@ -235,19 +237,15 @@ class AccountController(BaseController):
         c.person = person
         user = controller_globals._get_user_from_email(c.person.email)
         if not user:
-            log.error('Hum...fetching user from the database returned False. \
-We need to investigate. Go remove the catch all in controller_globals.py, method \
-_get_user_from_email() to see which OperationalError is being raised')
-        # Need the above line because the first line of this function gives
-        #   a model.auth.User object
-        # as opposed to
-        #   a model.User object (which is what I need)
-
+            log.error('''\
+Hum...fetching user from the database returned False.
+We need to investigate. Go remove the catch all in
+controller_globals.py, method _get_user_from_email()
+to see which OperationalError is being raised ''')
 
         # If somehow the user's citation settings variables don't get initialized yet,
         # then the following 3 if-else blocks should take care of it in order to avoid
         # any errors due to the values of the variables being null:
-
         c.show_journal = user.show_journal if not user.show_journal is None else True
 
         if (user.show_authors==True or user.show_authors==False):
@@ -262,7 +260,7 @@ _get_user_from_email() to see which OperationalError is being raised')
 
 
         # pull all assignments for this person
-        assignment_q = model.meta.Session.query(model.Assignment)
+        assignment_q = Session.query(model.Assignment)
         all_assignments = assignment_q.filter(model.Assignment.user_id == person.id).all()
 
         c.outstanding_assignments = [a for a in all_assignments if not a.done]
@@ -294,7 +292,7 @@ _get_user_from_email() to see which OperationalError is being raised')
         c.finished_assignments = [a for a in all_assignments if a.done]
 
 
-        project_q = model.Session.query(model.Project)
+        project_q = Session.query(model.Project)
         c.participating_projects = user.projects
         c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects )
 
@@ -338,7 +336,7 @@ _get_user_from_email() to see which OperationalError is being raised')
         else:
             user.show_keywords = True
 
-        project_q = model.meta.Session.query(model.Project)
+        project_q = Session.query(model.Project)
         c.leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
         leading_project_ids = [proj.id for proj in c.leading_projects]
 
@@ -346,7 +344,7 @@ _get_user_from_email() to see which OperationalError is being raised')
 
         c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects)
 
-        statuses_q = model.meta.Session.query(model.PredictionsStatus)
+        statuses_q = Session.query(model.PredictionsStatus)
         c.statuses = {}
 
         c.do_we_have_a_maybe = {}
@@ -367,7 +365,7 @@ _get_user_from_email() to see which OperationalError is being raised')
 
 
     def _get_projects_person_leads(self, person):
-        project_q = model.meta.Session.query(model.Project)
+        project_q = Session.query(model.Project)
         leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
         return leading_projects
 
@@ -406,7 +404,7 @@ _get_user_from_email() to see which OperationalError is being raised')
         cur_user.show_keywords = {"Show":True, "Hide":False}[show_keywords_str]
 
         # Add the changes to the database.
-        model.Session.commit()
+        Session.commit()
 
         # These messages appear in their designated separate locations,
         #   i.e. on the top left corner of the div that corresponds to this function.
