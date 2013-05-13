@@ -1739,11 +1739,8 @@ class ReviewController(BaseController):
         c.assignment_type = assignment.assignment_type
         c.assignment = assignment
 
+        # Get user object from db.
         user = controller_globals._get_user_from_email(current_user.email)
-        # Need the above line because the first line of this function gives
-        #   a model.auth.User object
-        # as opposed to
-        #   a model.User object (which is what I need)
 
         # The following help determine which fields of the citation are shown.
         c.show_journal = user.show_journal

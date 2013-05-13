@@ -11,8 +11,13 @@ CONSENSUS_USER = 0
 from abstrackr.lib.base import BaseController, render
 import abstrackr.model as model
 import pdb
+import logging
+
+from sqlalchemy.orm import exc
 
 Session = model.meta.Session
+
+log = logging.getLogger(__name__)
 
 # This method facilitates access to User attributes that are NOT auth.User attributes.
 def _get_user_from_email(email):
@@ -23,9 +28,8 @@ def _get_user_from_email(email):
     user_q = model.meta.Session.query(model.User)
     try:
         return user_q.filter(model.User.email == email).one()
-    except:
-        # (naively, I guess) assuming that this implies that we've
-        # no user with the provided email.
+    except (exc.NoResultFound, exc.MultipleResultsFound) as err:
+        log.debug(err)
         return False
 
 
