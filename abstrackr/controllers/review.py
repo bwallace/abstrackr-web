@@ -1808,6 +1808,7 @@ class ReviewController(BaseController):
         # now get tags for this citation
         c.tag_types = self._get_tag_types_for_review(review_id)
         c.tags = self._get_tags_for_citation(study_id)
+        c.tag_privacy = self._get_review_from_id(review_id).tag_privacy
         return render("/tag_dialog_fragment.mako")
 
     @ActionProtector(not_anonymous())
