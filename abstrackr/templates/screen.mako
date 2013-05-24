@@ -294,8 +294,10 @@ function setup_submit() {
         var pop_notes =  $("#pop_notes").val();
         var ic_notes = $("#ic_notes").val();
         var outcome_notes = $("#outcome_notes").val();
+        var cur_citation_id = $('#citation.content span#cur_citation_id').text();
 
-        $.post("${'/review/add_notes/%s' % c.cur_citation.id}", {"general_notes": general_notes, "population_notes":pop_notes, "ic_notes":ic_notes, "outcome_notes":outcome_notes}, function() {
+        ##$.post("${'/review/add_notes/%s' % c.cur_citation.id}", {"general_notes": general_notes, "population_notes":pop_notes, "ic_notes":ic_notes, "outcome_notes":outcome_notes}, function() {
+        $.post("/review/add_notes/" + cur_citation_id, {"general_notes": general_notes, "population_notes":pop_notes, "ic_notes":ic_notes, "outcome_notes":outcome_notes}, function() {
             $("#notes-status").html("<font color='green'>notes added.</font>");
             $("#notes-dialog" ).dialog( "close" );
             $("#notes-status").html("");
