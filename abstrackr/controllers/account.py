@@ -1,15 +1,18 @@
 import logging
+
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
+from pylons.controllers.util import redirect
+
+import abstrackr.model as model
+from abstrackr.model.meta import Session
 from abstrackr.lib.base import BaseController, render
+import abstrackr.controllers.controller_globals as controller_globals # shared querying routines
+
 from repoze.what.predicates import not_anonymous, has_permission
 from repoze.what.plugins.pylonshq import ActionProtector
-from pylons.controllers.util import redirect
-import abstrackr.controllers.controller_globals as controller_globals # shared querying routines
-from controller_globals import *
 
 import turbomail
-import abstrackr.model as model
 import smtplib
 import string
 import random
@@ -46,11 +49,11 @@ class AccountController(BaseController):
             msg.send()   # Message will be sent through the configured manager/transport.
         except Exception, err:
             print err
-        
+
     def recover_password(self):
         c.pwd_msg = ""
         return render('/accounts/recover.mako')
-        
+
     def reset_password(self):
         user_email = request.params['email']
         user_for_email = controller_globals._get_user_from_email(user_email)
@@ -58,67 +61,66 @@ class AccountController(BaseController):
             token = self.gen_token_to_reset_pwd(user_for_email)
             message = """
                         Hi, %s. \n
-                        Someone (hopefully you!) asked to reset your abstrackr password. 
+                        Someone (hopefully you!) asked to reset your abstrackr password.
                         To do so, follow this link:\n
-                        \t http://abstrackr.tuftscaes.org/account/confirm_password_reset/%s.\n 
+                        \t %saccount/confirm_password_reset/%s.\n
                         Note that your password will be temporarily changed if you follow this link!
-                        If you didn't request to reset your password, just ignore this email. 
-                      """ % (user_for_email.fullname, token)
-                    
+                        If you didn't request to reset your password, just ignore this email.
+                      """ % (user_for_email.fullname, url('/', qualified=True), token)
             print token
             self.send_email_to_user(user_for_email, "resetting your abstrackr password", message)
             c.pwd_msg = "OK -- check your email (and your spam folder!)"
             return render('/accounts/recover.mako')
         else:
             c.pwd_msg = """
-                Well, this is awkward. 
-                We don't have a user in our database with email: %s. 
+                Well, this is awkward.
+                We don't have a user in our database with email: %s.
                 Try again?""" % user_email
             return render('/accounts/recover.mako')
-        
-    
+
+
     def confirm_password_reset(self, id):
         token = str(id)
-        reset_pwd_q = model.meta.Session.query(model.ResetPassword)
+        reset_pwd_q = Session.query(model.ResetPassword)
         # we pull all in case they've tried to reset their pwd a few times
         # by the way, these should time-expire...
         matches = reset_pwd_q.filter(model.ResetPassword.token == token).all()
         if len(matches) == 0:
-            return """ 
-                Hrmm... It looks like you're trying to reset your password, but I can't match the provided token. 
-                Please go back to the email that was sent to you and make sure you've copied the URL correctly. 
+            return """
+                Hrmm... It looks like you're trying to reset your password, but I can't match the provided token.
+                Please go back to the email that was sent to you and make sure you've copied the URL correctly.
                 """
         user = controller_globals._get_user_from_email(matches[0].user_email)
         for match in matches:
-            model.Session.delete(match)
+            Session.delete(match)
         user._set_password(token)
-        model.Session.commit()
+        Session.commit()
         return '''
-          ok! your password has been set to %s (you can change it once you've logged in).\n 
-          <a href="http://sunfire34.eecs.tufts.edu">log in here</a>.''' % token
-        
+          ok! your password has been set to %s (you can change it once you've logged in).\n
+          <a href="%s">log in here</a>.''' % (token, url('/', qualified=True))
+
     def gen_token_to_reset_pwd(self, user):
         # generate a random token for the user to reset their password; stick
         # it in the database
         make_token = lambda N: ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(N))
-        reset_pwd_q = model.meta.Session.query(model.ResetPassword)
+        reset_pwd_q = Session.query(model.ResetPassword)
         existing_tokens = [entry.token for entry in reset_pwd_q.all()]
         token_length=10
         cur_token = make_token(token_length)
         while cur_token in existing_tokens:
             cur_token = make_code(token_length)
-        
+
         reset = model.ResetPassword()
         reset.token = cur_token
         reset.user_email = user.email
-        model.Session.add(reset)
-        model.Session.commit()
+        Session.add(reset)
+        Session.commit()
         return cur_token
-            
+
     def send_email_to_user(self, user, subject, message):
         server = smtplib.SMTP("localhost")
         to = user.email
-        sender = "noreply@abstrackr.tuftscaes.org"
+        sender = "noreply@abstrackr.cebm.brown.edu"
         body = string.join((
             "From: %s" % sender,
             "To: %s" % to,
@@ -126,10 +128,10 @@ class AccountController(BaseController):
             "",
             message
             ), "\r\n")
-        
+
         server.sendmail(sender, [to], body)
-        
-    
+
+
     def my_account(self):
         c.current_user = request.environ.get('repoze.who.identity')['user']
         c.account_msg = ""
@@ -140,7 +142,7 @@ class AccountController(BaseController):
         current_user = request.environ.get('repoze.who.identity')['user']
         if request.params["password"] == request.params["password_confirm"]:
             current_user._set_password(request.params['password'])
-            model.Session.commit()
+            Session.commit()
             c.account_msg = "ok, your password has been changed."
         else:
             c.account_msg = "whoops -- the passwords didn't match! try again."
@@ -148,14 +150,14 @@ class AccountController(BaseController):
         c.account_msg_citation_settings = ""
 
         return render("/accounts/account.mako")
-      
+
 
     def create_account(self):
         if 'then_join' in request.params:
             c.then_join = request.params['then_join']
-        
+
         return render('/accounts/register.mako')
-        
+
     @validate(schema=form.RegisterForm(), form='create_account')
     def create_account_handler(self):
         '''
@@ -168,29 +170,29 @@ class AccountController(BaseController):
         new_user.experience = request.params['experience']
         new_user._set_password(request.params['password'])
         new_user.email = request.params['email']
-        
-        # These are for citation settings, 
+
+        # These are for citation settings,
         # initialized to True to make everything in the citation visible by default.
         new_user.show_journal = True
         new_user.show_authors = True
         new_user.show_keywords = True
 
-        model.Session.add(new_user)
-        model.Session.commit()
-        
+        Session.add(new_user)
+        Session.commit()
+
         # send out an email
         greeting_message = """
             Hi, %s.\n
-            
-            Thanks for signing up at abstrackr (http://abstrackr.tuftscaes.org). You
+
+            Thanks for signing up at abstrackr (%s). You
             should be able to sign up now with username %s (only you know your password).
-            
+
             This is just a welcome email to say hello, and that we've got your email.
-            Should you ever need to reset your password, we'll send you instructions 
+            Should you ever need to reset your password, we'll send you instructions
             to this email. In the meantime, happy screening!
-            
-            -- The Tufts EPC.
-        """ % (new_user.fullname, new_user.username)
+
+            -- The Brown EPC.
+        """ % (new_user.fullname, url('/', qualified=True), new_user.username)
 
         try:
             self.send_email_to_user(new_user, "welcome to abstrackr", greeting_message)
@@ -203,11 +205,11 @@ class AccountController(BaseController):
         rememberer = request.environ['repoze.who.plugins']['cookie']
         identity = {'repoze.who.userid': new_user.username}
         response.headerlist = response.headerlist + \
-            rememberer.remember(request.environ, identity) 
-        rememberer.remember(request.environ, identity) 
+            rememberer.remember(request.environ, identity)
+        rememberer.remember(request.environ, identity)
 
 
-        # if they were originally trying to join a review prior to 
+        # if they were originally trying to join a review prior to
         # registering, then join them now. (issue #8).
         if 'then_join' in request.params and request.params['then_join'] != '':
             redirect(url(controller="review", action="join", review_code=request.params['then_join']))
@@ -226,28 +228,24 @@ class AccountController(BaseController):
     @ActionProtector(not_anonymous())
     def back_to_projects(self):
         redirect(url(controller="account", action="my_projects"))
-        
-    
+
+
     @ActionProtector(not_anonymous())
     def my_work(self):
-    
+
         person = request.environ.get('repoze.who.identity')['user']
         c.person = person
         user = controller_globals._get_user_from_email(c.person.email)
         if not user:
-            log.error('Hum...fetching user from the database returned False. \
-We need to investigate. Go remove the catch all in controller_globals.py, method \
-_get_user_from_email() to see which OperationalError is being raised')
-        # Need the above line because the first line of this function gives
-        #   a model.auth.User object
-        # as opposed to
-        #   a model.User object (which is what I need)
-
+            log.error('''\
+Hum...fetching user from the database returned False.
+We need to investigate. Go remove the catch all in
+controller_globals.py, method _get_user_from_email()
+to see which OperationalError is being raised ''')
 
         # If somehow the user's citation settings variables don't get initialized yet,
         # then the following 3 if-else blocks should take care of it in order to avoid
         # any errors due to the values of the variables being null:
-
         c.show_journal = user.show_journal if not user.show_journal is None else True
 
         if (user.show_authors==True or user.show_authors==False):
@@ -262,18 +260,18 @@ _get_user_from_email() to see which OperationalError is being raised')
 
 
         # pull all assignments for this person
-        assignment_q = model.meta.Session.query(model.Assignment)
+        assignment_q = Session.query(model.Assignment)
         all_assignments = assignment_q.filter(model.Assignment.user_id == person.id).all()
 
         c.outstanding_assignments = [a for a in all_assignments if not a.done]
         # if there's an initial assignment, we'll only show that.
         assignment_types = [assignment.assignment_type for assignment in \
                                                     c.outstanding_assignments]
-                       
+
         #####
         # for any review that has an initial assignment, we will show
-        # *only* that assignment, thereby forcining participants to 
-        # finish initial assignments before moving on to other 
+        # *only* that assignment, thereby forcining participants to
+        # finish initial assignments before moving on to other
         # assignments. fix for issue #5.
         ####
         # which reviews have (outstanding) initial assigments?
@@ -281,7 +279,7 @@ _get_user_from_email() to see which OperationalError is being raised')
         for assignment in c.outstanding_assignments:
             if assignment.assignment_type == "initial":
                 reviews_with_initial_assignments.append(assignment.project_id)
-        
+
 
         # now remove other (non-initial) assignments for reviews
         # that have an initial assignment
@@ -290,48 +288,39 @@ _get_user_from_email() to see which OperationalError is being raised')
                                 assignment.assignment_type == "initial"]
 
         c.outstanding_assignments = filtered_assignments
-                           
-        c.finished_assignments = [a for a in all_assignments if a.done]   
-        
 
-        project_q = model.meta.Session.query(model.Project)   
-        junction_q = model.meta.Session.query(model.ReviewerProject)
-        participating_project_ids = \
-            [p.project_id for p in junction_q.filter(model.ReviewerProject.user_id == person.id).all()]
-        c.participating_projects = [p for p in project_q.all() if p.id in participating_project_ids]
+        c.finished_assignments = [a for a in all_assignments if a.done]
+
+
+        project_q = Session.query(model.Project)
+        c.participating_projects = user.projects
         c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects )
-        
+
         c.my_work = True
         c.my_projects = False
         return render('/accounts/dashboard.mako')
-        
-        
+
+
     @ActionProtector(not_anonymous())
     def show_merge_review_screen(self):
         person = request.environ.get('repoze.who.identity')['user']
-        c.person = person 
+        c.person = person
 
         projects_person_leads = self._get_projects_person_leads(person)
         c.reviews = projects_person_leads
 
         return render('/reviews/merge_reviews.mako')
 
-    
+
     @ActionProtector(not_anonymous())
     def my_projects(self):
         person = request.environ.get('repoze.who.identity')['user']
         c.person = person
 
+        # Get user object from db.
         user = controller_globals._get_user_from_email(person.email)
-        # Need the above line because the first line of this function gives
-        #   a model.auth.User object
-        # as opposed to
-        #   a model.User object (which is what I need)
-        
-        # If somehow the user's citation settings variables don't get initialized yet,
-        # then the following 3 if-else blocks should take care of it in order to avoid
-        # any errors due to the values of the variables being null:
-        
+
+        # Set user's show preference defaults in case they weren't set.
         if (user.show_journal==True or user.show_journal==False):
             c.show_journal = user.show_journal
         else:
@@ -346,26 +335,21 @@ _get_user_from_email() to see which OperationalError is being raised')
             c.show_keywords = user.show_keywords
         else:
             user.show_keywords = True
-        
-        project_q = model.meta.Session.query(model.Project)       
-        c.leading_projects = project_q.filter(model.Project.leader_id == person.id).all()     
+
+        project_q = Session.query(model.Project)
+        c.leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
         leading_project_ids = [proj.id for proj in c.leading_projects]
-         
-        # pull the reviews that this person is participating in
-        junction_q = model.meta.Session.query(model.ReviewerProject)
-        participating_project_ids = \
-            [p.project_id for p in junction_q.filter(model.ReviewerProject.user_id == person.id).all()]
-        c.participating_projects = [p for p in project_q.all() if p.id in participating_project_ids and \
-                                                not p.id in leading_project_ids]
-        
+
+        c.participating_projects = [p for p in user.projects if p.id not in leading_project_ids]
+
         c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects)
-        
-        statuses_q = model.meta.Session.query(model.PredictionsStatus)
+
+        statuses_q = Session.query(model.PredictionsStatus)
         c.statuses = {}
 
         c.do_we_have_a_maybe = {}
         for project_id in leading_project_ids:
-            
+
             predictions_for_review = statuses_q.filter(model.PredictionsStatus.project_id==project_id).all()
             if len(predictions_for_review) > 0 and predictions_for_review[0].predictions_exist:
                 c.statuses[project_id] = True
@@ -376,12 +360,12 @@ _get_user_from_email() to see which OperationalError is being raised')
 
         c.my_work = False
         c.my_projects = True
-        
+
         return render('/accounts/dashboard.mako')
-        
-    
+
+
     def _get_projects_person_leads(self, person):
-        project_q = model.meta.Session.query(model.Project)       
+        project_q = Session.query(model.Project)
         leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
         return leading_projects
 
@@ -391,8 +375,8 @@ _get_user_from_email() to see which OperationalError is being raised')
         for review in reviews:
             review_ids_to_names_d[review.id] = review.name
         return review_ids_to_names_d
-        
-        
+
+
     @ActionProtector(not_anonymous())
     def test_user_access(self):
         return 'You are inside user section'
@@ -420,9 +404,9 @@ _get_user_from_email() to see which OperationalError is being raised')
         cur_user.show_keywords = {"Show":True, "Hide":False}[show_keywords_str]
 
         # Add the changes to the database.
-        model.Session.commit()
+        Session.commit()
 
-        # These messages appear in their designated separate locations, 
+        # These messages appear in their designated separate locations,
         #   i.e. on the top left corner of the div that corresponds to this function.
         # This is more appropriate than having a general message on some part of the screen.
         c.account_msg = ""

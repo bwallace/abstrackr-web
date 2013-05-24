@@ -2,6 +2,8 @@ from abstrackr.tests import TestController
 
 from abstrackr import model
 
+Session = model.meta.Session
+
 class TestReviewModel(TestController):
     """ Make sure db tables have the correct columns """
 
@@ -23,9 +25,10 @@ class TestReviewModel(TestController):
 
         # This is the backref from the "user" table
         assert hasattr(model.Project, 'leader')
+        assert hasattr(model.Project, 'members')
 
     def test_citation(self):
-        assert hasattr(model.Citation, 'citation_id')
+        assert hasattr(model.Citation, 'id')
         assert hasattr(model.Citation, 'project_id')
         assert hasattr(model.Citation, 'pmid')
         assert hasattr(model.Citation, 'refman')
@@ -62,8 +65,37 @@ class TestReviewModel(TestController):
     def test_label(self):
         pass
 
-    def test_reviewerproject(self):
-        pass
+    def test_users_projects(self):
+        # Create objects to test relationship (many-to-many)
+        u1 = model.User()
+        u2 = model.User()
+        p1 = model.Project()
+        p1.members.append(u1)
+        p1.members.append(u2)
+        Session.add(p1)
+        Session.commit()
+
+        # Get user objects now that they should have associated projects
+        u1_ = Session.query(model.User).filter_by(id=u1.id).one()
+        u2_ = Session.query(model.User).filter_by(id=u2.id).one()
+
+        # Test that relationship to project exists
+        assert u1_.projects == [p1]
+        assert u2_.projects == [p1]
+
+        # Now delete the project
+        Session.delete(p1)
+        Session.commit()
+
+        # Verify that relationship no longer exists
+        # (ie. users_projects_table entry has been removed)
+        assert u1_.projects == []
+        assert u2_.projects == []
+
+        # Let's clean up
+        Session.delete(u1)
+        Session.delete(u2)
+        Session.commit()
 
     def test_assignment(self):
         pass
@@ -94,7 +126,7 @@ class TestReviewModel(TestController):
         pass
 
     def test_user(self):
-        pass
+        assert hasattr(model.Priority, 'id')
 
     def test_grouppermission(self):
         pass

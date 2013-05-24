@@ -22,7 +22,7 @@
 <body>
 
 
-<a id="floating_link" href="http://abstrackr.tuftscaes.org">&larr; go back to <b>abstrackr</b></a>
+<a id="floating_link" href="${c.root_path}">&larr; go back to <b>abstrackr</b></a>
 <br/><br/><br/>
 <div class="content">
 
