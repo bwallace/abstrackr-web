@@ -28,6 +28,11 @@ users_projects_table = Table('users_projects', Base.metadata,
         Column('project_id', types.Integer, ForeignKey('projects.id'))
 )
 
+projects_leaders_table = Table('projects_leaders', Base.metadata,
+        Column('user_id', types.Integer, ForeignKey('user.id')),
+        Column('project_id', types.Integer, ForeignKey('projects.id'))
+)
+
 ### end of Association Tables
 
 class Project(Base):
@@ -35,7 +40,7 @@ class Project(Base):
     #__mapper_args__ = dict(order_by="date desc")
 
     id = Column(types.Integer, primary_key=True)
-    leader_id = Column(types.Integer, ForeignKey('user.id'))
+    #leader_id = Column(types.Integer, ForeignKey('user.id'))
 
     # If initial_round_size > 0, this will point to
     # the entry in the citations_tasks table that
@@ -76,7 +81,8 @@ class Project(Base):
     citations = relationship('Citation', order_by='Citation.id', backref='project')
     assignments = relationship('Assignment', order_by='Assignment.id', backref='project')
     labels = relationship('Label', order_by='Label.id', backref='project')
-    members = relationship("User", secondary=users_projects_table, backref="projects")
+    members = relationship('User', secondary=users_projects_table, backref='member_of_projects')
+    leaders = relationship('User', secondary=projects_leaders_table, backref='leader_of_projects')
 
 
 class Citation(Base):
@@ -350,7 +356,6 @@ class User(Base):
     show_authors = Column(types.Boolean, default=True)
     show_keywords = Column(types.Boolean, default=True)
 
-    projects_leader = relationship("Project", backref=backref('leader', order_by=id))
     assignments = relationship("Assignment", backref=backref('user', order_by=id))
 
     def _set_password(self, password):

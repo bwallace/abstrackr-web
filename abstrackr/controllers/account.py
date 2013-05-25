@@ -293,8 +293,8 @@ to see which OperationalError is being raised ''')
 
 
         project_q = Session.query(model.Project)
-        c.participating_projects = user.projects
-        c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects )
+        c.participating_projects = user.member_of_projects
+        c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects)
 
         c.my_work = True
         c.my_projects = False
@@ -337,10 +337,11 @@ to see which OperationalError is being raised ''')
             user.show_keywords = True
 
         project_q = Session.query(model.Project)
-        c.leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
+        #c.leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
+        c.leading_projects = user.leader_of_projects
         leading_project_ids = [proj.id for proj in c.leading_projects]
 
-        c.participating_projects = [p for p in user.projects if p.id not in leading_project_ids]
+        c.participating_projects = [p for p in user.member_of_projects if p.id not in leading_project_ids]
 
         c.review_ids_to_names_d = self._get_review_ids_to_names_d(c.participating_projects)
 

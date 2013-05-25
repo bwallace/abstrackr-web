@@ -25,7 +25,16 @@ There are ${c.num_citations} citations in this review, so far ${c.num_labels} ha
 <br/><br/>
 
 <h2>Participants</h2>
-This review is lead by ${c.project_lead.fullname}.<br/>
+This review is lead by
+<div>
+    <ul>
+        % for leader in c.project_leaders:
+            <li>
+                ${leader.fullname}
+            </li>
+        % endfor
+    </ul>
+</div>
 <br/>
 % if len(c.participating_reviewers) > 1:
     The following people are reviewers on the project: 

@@ -332,14 +332,14 @@ class ReviewController(BaseController):
 
         # Reset the encoded status of the review to 'false':
         encoded_status = model.EncodeStatus()
-        encoded_status.project_id = cur_review.review_id
+        encoded_status.project_id = cur_review.id
         encoded_status.is_encoded = False
         Session.add(encoded_status)
         Session.commit()
 
         # Reset the prediction status of the review to 'false':
         prediction_status = model.PredictionsStatus()
-        prediction_status.project_id = cur_review.review_id
+        prediction_status.project_id = cur_review.id
         prediction_status.predictions_exist = False
         Session.add(prediction_status)
         Session.commit()
@@ -371,7 +371,7 @@ class ReviewController(BaseController):
                 # If the file is a list of pubmed ids, check for duplicate pubmed ids:
                 if is_pubmed:
                     # Grab the duplicates:
-                    duplicates = self._get_duplicate_citations(str(citation.pmid_id), id, True)
+                    duplicates = self._get_duplicate_citations(str(citation.pmid), id, True)
                     # Add the citation ids so we don't have to go through the remaining of the duplicates:
                     for each in duplicates:
                         citation_ids.append(each.id)
@@ -419,25 +419,22 @@ class ReviewController(BaseController):
                     # Take care of all affected entries in all tables that have citation_id (or study_id) as a field:
 
                     # Priority table:
-                    self._change_pointers_or_delete_entries('priority', each_duplicate_citation.citation_id, surviving_citation_id)
+                    self._change_pointers_or_delete_entries('priority', each_duplicate_citation.id, surviving_citation_id)
 
                     # Tags table:
-                    self._change_pointers_or_delete_entries('tags', each_duplicate_citation.citation_id, surviving_citation_id)
+                    self._change_pointers_or_delete_entries('tags', each_duplicate_citation.id, surviving_citation_id)
 
                     # Notes table:
-                    self._change_pointers_or_delete_entries('notes', each_duplicate_citation.citation_id, surviving_citation_id)
+                    self._change_pointers_or_delete_entries('notes', each_duplicate_citation.id, surviving_citation_id)
 
                     # Label table:
-                    self._change_pointers_or_delete_entries('labels', each_duplicate_citation.citation_id, surviving_citation_id)
-
-                    # citations_tasks_table table:
-                    self._change_pointers_or_delete_entries('citations_tasks', each_duplicate_citation.citation_id, surviving_citation_id)
+                    self._change_pointers_or_delete_entries('labels', each_duplicate_citation.id, surviving_citation_id)
 
                     # Prediction table:
-                    self._change_pointers_or_delete_entries('predictions', each_duplicate_citation.citation_id, surviving_citation_id)
+                    self._change_pointers_or_delete_entries('predictions', each_duplicate_citation.id, surviving_citation_id)
 
                     # In case of the citation table, our task is slightly different - we will be deleting entries here:
-                    self._delete_citation(each_duplicate_citation.citation_id)
+                    self._delete_citation(each_duplicate_citation.id)
 
                 counter = counter + 1
         Session.commit()
@@ -472,11 +469,6 @@ class ReviewController(BaseController):
             labels = Session.query(model.Label).filter(model.Label.study_id==citation_id).all()
             for label in labels:
                 label.study_id = surviving_citation_id
-
-        elif tablename == 'citations_tasks':
-            citations_tasks = Session.query(model.citations_tasks_table).filter(model.citations_tasks_table.citation_id==citation_id).all()
-            for citations_task in citations_tasks:
-                citations_task.citation_id = surviving_citation_id
 
         elif tablename == 'predictions':
             predictions = Session.query(model.Prediction).filter(model.Prediction.study_id==citation_id).all()
@@ -769,8 +761,8 @@ class ReviewController(BaseController):
     def _make_new_review(self):
         new_review = model.Project()
 
-        # the current_user will be the lead.
         current_user = request.environ.get('repoze.who.identity')['user']
+        user = controller_globals._get_user_from_email(current_user.email)
 
         # we generate a random code for joining this review
         make_code = lambda N: ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(N))
@@ -781,7 +773,8 @@ class ReviewController(BaseController):
             cur_code = make_code(code_length)
         new_review.code = cur_code
 
-        new_review.leader_id = current_user.id
+        # The current_user will be a project leader.
+        new_review.leaders.append(user)
         new_review.date_created = datetime.datetime.now()
 
         new_review.initial_round_size = 0
@@ -816,7 +809,6 @@ class ReviewController(BaseController):
         """ % (project.name, \
                "%sjoin/%s" % (url('/', qualified=True), project.code))
 
-        import pdb; pdb.set_trace()
         server = smtplib.SMTP("localhost")
         to = email
         sender = "noreply@abstrackr.cebm.brown.edu"
@@ -854,7 +846,7 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def remove_from_review(self, reviewer_id, review_id):
         self._remove_user_from_review(reviewer_id, review_id)
-        redirect(url(controller="review", action="admin", id=review_id))
+        redirect(url(controller="review", action="admin", project_id=review_id))
 
     def _remove_user_from_review(self, user_id, project_id):
         project = Session.query(model.Project).filter_by(id=project_id).one()
@@ -1057,7 +1049,7 @@ class ReviewController(BaseController):
 
         # make sure we're actually the project lead
         current_user = request.environ.get('repoze.who.identity')['user']
-        if not review.leader_id == current_user.id:
+        if not self._current_user_leads_review(review.id):
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
 
         ###
@@ -1208,13 +1200,16 @@ class ReviewController(BaseController):
             filter(model.Label.study_id==citation_id).all()
 
     @ActionProtector(not_anonymous())
-    def admin(self, id, admin_msg=""):
+    def admin(self, project_id, admin_msg=""):
+        project = Session.query(model.Project).filter_by(id=project_id).one()
+        c.review = project
         current_user = request.environ.get('repoze.who.identity')['user']
         # make sure we're actually the project lead
-        if not self._current_user_leads_review(id):
+        if not self._current_user_leads_review(project_id):
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
 
-        c.participating_reviewers = self._get_participants_for_review(id)
+        c.project_leader_list = project.leaders
+        c.participating_reviewers = self._get_participants_for_review(project_id)
         # eliminate our the lead themselves from this list
         c.participating_reviewers = [reviewer for reviewer in c.participating_reviewers if \
                                         reviewer.id != current_user.id]
@@ -1222,23 +1217,54 @@ class ReviewController(BaseController):
         # for the client side
         c.reviewer_ids_to_names_d = self._reviewer_ids_to_names(c.participating_reviewers)
         c.admin_msg = admin_msg
+        c.root_path = url('/', qualified=True)
         return render("/reviews/admin.mako")
 
-    def transfer_admin(self, review_id, user_id):
-        '''
-        sets the user specified as user_id as the lead of the
-        review specified by review_id
-        '''
-        current_user = request.environ.get('repoze.who.identity')['user']
-        # make sure we're actually the project lead
-        if not self._current_user_leads_review(review_id):
-            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
+    @ActionProtector(not_anonymous())
+    def add_admin(self, project_id, user_id):
+        """Add user to the project leader group
 
-        review = self._get_review_from_id(review_id)
-        review.leader_id = user_id
+        Sets the user specified by user_id as a leader of the
+        review specified by project_id.
+
+        """
+        current_user = request.environ.get('repoze.who.identity')['user']
+        user = controller_globals._get_user_from_email(current_user.email)
+
+        # make sure we're actually the project lead
+        if not self._current_user_leads_review(project_id):
+            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % user.fullname
+
+        new_leader = Session.query(model.User).filter_by(id=user_id).one()
+        review = self._get_review_from_id(project_id)
+        review.leaders.append(new_leader)
+        Session.add(review)
         Session.commit()
 
-        redirect(url(controller="account", action="my_projects"))
+        redirect(url(controller="review", action="admin", project_id=project_id))
+
+    @ActionProtector(not_anonymous())
+    def remove_admin(self, project_id, user_id):
+        """Remove user from the project leader group
+
+        Removes the user specified by user_id from the leader of the
+        project group specified by project_id.
+
+        """
+        current_user = request.environ.get('repoze.who.identity')['user']
+        user = controller_globals._get_user_from_email(current_user.email)
+
+        # make sure we're actually the project lead
+        if not self._current_user_leads_review(project_id):
+            return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % user.fullname
+
+        leader_to_remove = Session.query(model.User).filter_by(id=user_id).one()
+        review = self._get_review_from_id(project_id)
+        review.leaders.remove(leader_to_remove)
+        Session.add(review)
+        Session.commit()
+
+        redirect(url(controller="review", action="admin", project_id=project_id))
 
     @ActionProtector(not_anonymous())
     def assignments(self, id):
@@ -1264,8 +1290,9 @@ class ReviewController(BaseController):
 
     def _current_user_leads_review(self, review_id):
         current_user = request.environ.get('repoze.who.identity')['user']
+        user = controller_globals._get_user_from_email(current_user.email)
         c.review = self._get_review_from_id(review_id)
-        return c.review.leader_id == current_user.id
+        return user in c.review.leaders
 
     def _reviewer_ids_to_names(self, users):
         # for the client side
@@ -1282,7 +1309,7 @@ class ReviewController(BaseController):
         # handle this verification in a decorator...)
         current_user = request.environ.get('repoze.who.identity')['user']
         c.review = self._get_review_from_id(id)
-        if not c.review.leader_id == current_user.id:
+        if not self._current_user_leads_review(c.review.id):
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
 
         c.participating_reviewers = self._get_participants_for_review(id)
@@ -1360,11 +1387,12 @@ class ReviewController(BaseController):
         c.pi_url = chart.get_url()
 
         c.participating_reviewers = reviewers = self._get_participants_for_review(id)
-        user_q = Session.query(model.User)
-        c.project_lead = user_q.filter(model.User.id == c.review.leader_id).one()
+        #user_q = Session.query(model.User)
+        #c.project_lead = user_q.filter(model.User.id == c.review.leader_id).one()
+        c.project_leaders = c.review.leaders
 
         current_user = request.environ.get('repoze.who.identity')['user']
-        c.is_admin = c.project_lead.id == current_user.id
+        c.is_admin = self._current_user_leads_review(id)
         n_lbl_d = {} # map users to the number of labels they've provided
         for reviewer in reviewers:
             # @TODO problematic if two reviewers have the same fullname, which
@@ -2217,7 +2245,7 @@ class ReviewController(BaseController):
             Session.add(new_assignment)
             Session.commit()
 
-        redirect(url(controller="review", action="admin", id=id))
+        redirect(url(controller="review", action="admin", project_id=id))
 
     def _get_priority_for_citation_review(self, citation_id, review_id):
         priority_q = Session.query(model.Priority)
@@ -2229,7 +2257,6 @@ class ReviewController(BaseController):
 
     def _join_review(self, review_id):
         current_user = request.environ.get('repoze.who.identity')['user']
-
         ###
         # this is super-hacky, but there was a bug that was causing
         # the current_user object to be None for reasons I cannot
@@ -2239,16 +2266,18 @@ class ReviewController(BaseController):
         if current_user is None:
             return self._join_review(review_id)
 
-        # first, make sure this person isn't already in this review.
-        user_projs = Session.query(model.User).\
-                filter(model.User.id == current_user.id).\
-                filter(model.User.projects.any(id=review_id)).all()
+        user = controller_globals._get_user_from_email(current_user.email)
 
-        if len(user_projs) == 0:
+        # first, make sure this person isn't already in this review.
+        #user_projs = Session.query(model.User).\
+        #        filter(model.User.id == current_user.id).\
+        #        filter(model.User.projects.any(id=review_id)).all()
+        project = Session.query(model.Project).filter_by(id=review_id).one()
+        user_projs = user.member_of_projects
+
+        if project not in user_projs:
             # we only add them if they aren't already a part of the review.
-            project = Session.query(model.Project).filter(model.Project.id == review_id).one()
-            user_to_add = Session.query(model.User).filter(model.User.id == current_user.id).one()
-            project.members.append(user_to_add)
+            project.members.append(user)
             Session.add(project)
             Session.commit()
 
@@ -2256,10 +2285,10 @@ class ReviewController(BaseController):
             review = self._get_review_from_id(review_id)
             if review.screening_mode in (u"single", u"double"):
                 # then we automatically add a `perpetual' assignment
-                self._assign_perpetual_task(current_user.id, review.id)
+                self._assign_perpetual_task(user.id, review.id)
 
             # assign any initial tasks for this review to the joinee.
-            self._assign_initial_tasks(current_user.id, review.id)
+            self._assign_initial_tasks(user.id, review.id)
             return True
         return False
 

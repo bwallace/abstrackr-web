@@ -25,7 +25,8 @@ def make_map(config):
     map.connect('/{controller}/{action}')
     map.connect('/review/add_notes/{study_id}', controller='review', action='add_notes')
     map.connect('/review/delete_assignment/{review_id}/{assignment_id}', controller='review', action='delete_assignment')
-    map.connect('/review/transfer_admin/{review_id}/{user_id}', controller='review', action='transfer_admin')
+    map.connect('/review/add_admin/{project_id}/{user_id}', controller='review', action='add_admin')
+    map.connect('/review/remove_admin/{project_id}/{user_id}', controller='review', action='remove_admin')
     map.connect('/review/get_fields/{review_id}', controller='review', action='get_fields')
 
     map.connect('/review/update_tags/{study_id}/{tag_privacy}', controller='review', action='update_tags')
@@ -35,6 +36,7 @@ def make_map(config):
     map.connect('/review/edit_tag/{tag_id}/{assignment_id}', controller='review', action='edit_tag')
     map.connect('/review/delete_tag/{tag_id}/{assignment_id}', controller='review', action='delete_tag')
     map.connect('/review/delete_term/{term_id}/{assignment_id}', controller='review', action='delete_term')
+    map.connect('/review/admin/{project_id}', controller='review', action='admin')
     map.connect('/{controller}/{action}/{id}')
     map.connect('/screen/{review_id}/{assignment_id}', controller='review', action='screen')
     map.connect('/screen_next/{review_id}/{assignment_id}', controller='review', action='screen_next')
