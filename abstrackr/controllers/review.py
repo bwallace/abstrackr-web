@@ -14,8 +14,6 @@ import smtplib
 import string
 import subprocess
 
-import numpy as np  # we only use this for plotting...
-
 from abstrackr.lib import xml_to_sql
 from abstrackr.lib.base import BaseController, render
 from abstrackr.lib.helpers import literal
