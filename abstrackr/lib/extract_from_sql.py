@@ -18,13 +18,13 @@ metadata = MetaData(bind=engine)
 # bind the tables
 citations = Table("Citations", metadata, autoload=True)
 labels = Table("Labels", metadata, autoload=True)
-reviews = Table("project", metadata, autoload=True)
+reviews = Table("Projects", metadata, autoload=True)
 users = Table("user", metadata, autoload=True)
-labeled_features = Table("LabelFeatures", metadata, autoload=True)
-encoded_status = Table("EncodedStatuses", metadata, autoload=True)
-prediction_status = Table("PredictionStatuses", metadata, autoload=True)
-predictions = Table("Predictions", metadata, autoload=True)
-priorities = Table("Priority", metadata, autoload=True)
+labeled_features = Table("labeledfeatures", metadata, autoload=True)
+encoded_status = Table("encodedstatuses", metadata, autoload=True)
+prediction_status = Table("predictionstatuses", metadata, autoload=True)
+predictions = Table("predictions", metadata, autoload=True)
+priorities = Table("priorities", metadata, autoload=True)
 
 def get_labels_from_names(review_names):
     r_ids = get_ids_from_names(review_names)
@@ -110,7 +110,7 @@ def citations_to_disk(review_id, base_dir, fields=None):
             os.mkdir(field_path)
 
     for citation in citations_for_review:
-        citation_id = citation['citation_id']
+        citation_id = citation['id']
         
         for field in fields:
             fout = open(os.path.join(base_dir, field, "%s" % citation_id), 'w')
@@ -242,7 +242,7 @@ def _get_predictions_for_review(review_id):
 #       we need to be able to invoke this statically, hence its re-implementation
 ###
 def _re_prioritize(review_id, sort_by_str):
-    citation_ids = [cit.citation_id for cit in _get_citations_for_review(review_id)]
+    citation_ids = [cit.id for cit in _get_citations_for_review(review_id)]
     predictions_for_review = None
     if _do_predictions_exist_for_review(review_id):
         # this will be a dictionary mapping citation ids to
@@ -292,7 +292,7 @@ def _re_prioritize(review_id, sort_by_str):
     # corresponding to this review to reflect
     # the new priorities (above)
     priority_ids_for_review = list(select([priorities.c.id, priorities.c.citation_id], \
-                                    priorities.c.review_id == review_id).execute())
+                                    priorities.c.project_id == review_id).execute())
     for priority_id, citation_id in priority_ids_for_review:
         if citation_id in cit_id_to_new_priority:
             priority_update = \
@@ -310,21 +310,21 @@ if __name__ == "__main__":
     # for each review, get newest label; check this against
     # the last_updated_field
 
-    encoded_reviews = list(select([encoded_status.c.review_id, encoded_status.c.labels_last_updated],\
+    encoded_reviews = list(select([encoded_status.c.project_id, encoded_status.c.labels_last_updated],\
                                  encoded_status.c.is_encoded==True).execute())
    
     for encoded_review in encoded_reviews:
         review_id, labels_last_updated = encoded_review
 
         sort_by_str = \
-            select([reviews.c.sort_by], reviews.c.review_id == review_id).execute()
+            select([reviews.c.sort_by], reviews.c.id == review_id).execute()
         # uh-oh
         if sort_by_str.rowcount == 0:
             print "I can't do anything for review %s -- it doesn't appear to have an entry" % review_id
         else:
             sort_by_str = sort_by_str.fetchone().sort_by
             labels_for_review = select([labels.c.label_last_updated], \
-                        labels.c.review_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
+                        labels.c.project_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
             if labels_for_review.rowcount > 0:
                 most_recent_label = labels_for_review.fetchone().label_last_updated
                 print "checking review %s.." % review_id
