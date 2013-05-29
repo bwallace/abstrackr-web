@@ -20,7 +20,7 @@
 <h1>${c.review.name}: administrivia</h1>
 
 <div class="actions">
-    <a href="${url(controller='review', action='admin', id=c.review.id)}">Manage Participants</a>
+    <a href="${url(controller='review', action='admin', project_id=c.review.id)}">Manage Participants</a>
     <a href="${url(controller='review', action='assignments', id=c.review.id)}">Manage Assignments</a>
     <a href="${url(controller='review', action='edit_review', id=c.review.id)}">Edit Settings</a>
     <a href="${url(controller='review', action='render_add_citations', id=c.review.id)}">Add Citations</a>
@@ -33,15 +33,19 @@
         <h2>Participants</h2>
         <table class="list_table">
         <tr align="center"><th>person</th><th></th></tr>
-        %for participant in c.participating_reviewers:
+        % for participant in c.participating_reviewers:
             <tr>
                 <td>${participant.fullname}</td>
                 <td class="actions">
-                    <a href="/review/remove_from_review/${participant.id}/${c.review.id}")>remove from review</a>
-                    <a href="/review/transfer_admin/${c.review.id}/${participant.id}")>set user as the project lead</a></td>
+                    <a href="/review/remove_from_review/${participant.id}/${c.review.id}">remove from review</a>
+                    % if participant in c.project_leader_list:
+                        <a href="/review/remove_admin/${c.review.id}/${participant.id}">remove user from project leader group</a>
+                    % else:
+                        <a href="/review/add_admin/${c.review.id}/${participant.id}">add user to the project leader group</a></td>
+                    % endif
                 </td>
             </tr>
-        %endfor
+        % endfor
         </table>
         <br/>
     % elif c.admin_msg == "":
@@ -71,7 +75,7 @@
     </div>
 
     <p align="right">
-        Alternatively, they can join the review themselves by following this link: <b>http://abstrackr.tuftscaes.org/join/${c.review.code}</b>
+        Alternatively, they can join the review themselves by following this link: <b>${c.root_path}join/${c.review.code}</b>
     </p>
 
 </div>

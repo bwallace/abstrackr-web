@@ -7,7 +7,9 @@ from nose.plugins.attrib import attr  # Decorator to mark tests
                                       # "nosetests -a '!author=jj" to
                                       # exclude marked tests
 
-from abstrackr.controllers.review import _get_next_priority
+from abstrackr.controllers.review import ReviewController
+
+Session = model.Session
 
 
 class TestReviewController(TestController):
@@ -25,8 +27,9 @@ class TestReviewController(TestController):
 
         # Get the 'create_account' page.
         response = self.app.get(
-                url(controller='account', action='create_account'),
-                status=200)
+            url(controller='account',
+                action='create_account'),
+            status=200)
         # Make sure it has the correct url.
         assert response.request.url.endswith('/account/create_account')
         # Fill out the create account form.
@@ -53,7 +56,6 @@ class TestReviewController(TestController):
         # "Hurray...." message
         assert "hurray, you've no outstanding assignments" in post_login
 
-
     @attr(author='jj', controller='review')
     def test_create_new_review(self):
         """ Anonymous users should be asked to log in
@@ -64,8 +66,8 @@ class TestReviewController(TestController):
         """
 
         response = self.app.get(
-                url(controller='review', action='create_new_review'),
-                status=302)
+            url(controller='review', action='create_new_review'),
+            status=302)
         response = response.follow(status=200)
         form = response.form
         form['login'] = u'tester'
@@ -111,31 +113,47 @@ class TestReviewController(TestController):
         c2.tasks.append(t2)
 
         # Persist the changes.
-        model.Session.add(c1)
-        model.Session.add(c2)
-        model.Session.commit()
+        Session.add(c1)
+        Session.add(c2)
+        Session.commit()
 
         # Verify first that the entries in table CitationTask actually exist
-        assert len(model.Session.query(model.CitationTask_table).all()) == 3
+        assert len(Session.query(model.citations_tasks_table).all()) == 3
 
         # Finally remove one of the citations and check cascade
-        model.Session.delete(c1)
-        model.Session.commit()
-        assert len(model.Session.query(model.CitationTask_table).all()) == 1
+        Session.delete(c1)
+        Session.commit()
+        assert len(Session.query(model.citations_tasks_table).all()) == 1
 
         # Do the same for when the task is removed
-        model.Session.delete(t2)
-        assert len(model.Session.query(model.CitationTask_table).all()) == 0
+        Session.delete(t2)
+        assert len(Session.query(model.citations_tasks_table).all()) == 0
 
-    @attr(author='jj', controller='review')
-    def test_get_next_priority(self):
-        """ Verify return value of _get_next_priority method
+    #@attr(author='jj', controller='review')
+    #def test_get_next_priority(self):
+    #    """ Verify return value of _get_next_priority method
 
-        Verify that _get_next_priority returns the correct type, as well as
-        the fact that it does not query the database unnecessarily.
+    #    Verify that _get_next_priority returns the correct type, as well as
+    #    the fact that it does not query the database unnecessarily.
 
-        """
+    ##    """
 
-        review = model.meta.Session.query(model.Project).filter(model.Project.id == '1')
-        priority = _get_next_priority(review, ignore_my_own_locks=True)
-        pass
+    #    review_controller = ReviewController()
+    #    review = model.meta.Session.query(model.Project).\
+    #        filter(model.Project.id == '1').one()
+    #    priority = review_controller.\
+    #        _get_next_priority(review, ignore_my_own_locks=True)
+    #    assert priority == 1
+
+    #@attr(author='jj', controller='review')
+    #def test_get_ids_for_task(self):
+    #    """ Verify return value of _get_ids_for_task method
+
+    #    Verify that _get_ids_for_task method returns a list of citations
+    #    associated with the given task id
+
+    #    """
+
+    #    review_controller = ReviewController()
+    #    citations_lst = review_controller._get_ids_for_task(1)
+    #    assert citations_lst == ['63L', '69L', '95L', '97L', '106L']
