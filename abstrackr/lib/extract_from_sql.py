@@ -11,7 +11,7 @@ from make_predictions import make_predictions
 import tfidf2 
 
 
-engine = create_engine("mysql://root:xxxx@127.0.0.1:3306/abstrackr")
+engine = create_engine("mysql://abstrackr-user:5xl.z=Uy6d@127.0.0.1:3306/abstrackrDBP01?unix_socket=/var/mysql/mysql.sock")
 metadata = MetaData(bind=engine)
 
 ####
@@ -34,7 +34,7 @@ def get_labels_from_names(review_names):
 
 def get_ids_from_names(review_names):
     s = reviews.select(reviews.c.name.in_(review_names))
-    return [review.review_id for review in s.execute()]
+    return [review.id for review in s.execute()]
 
 def labels_for_review_ids(review_ids):
     # this selects labels and information about the corresponding
@@ -98,7 +98,7 @@ def citations_to_disk(review_id, base_dir, fields=None):
     fields = fields or ["title", "abstract", "keywords", "authors", "journal"]
     none_to_text= lambda x: "none" if x is None else x
 
-    s = citations.select(citations.c.review_id==review_id)
+    s = citations.select(citations.c.project_id==review_id)
     citations_for_review = [x for x in s.execute()]
 
     if not os.path.exists(base_dir):
@@ -127,7 +127,7 @@ def get_lbl_d_for_review(review_id):
 
 def lbls_to_disk(review_ids, base_dir):
     lbl_d = {}
-    s = labels.select(labels.c.review_id.in_(review_ids))
+    s = labels.select(labels.c.project_id.in_(review_ids))
     for lbl in s.execute():
         lbl_d[lbl["study_id"]]=lbl["label"]
     
@@ -138,7 +138,7 @@ def lbls_to_disk(review_ids, base_dir):
     # also get labeled features
     lbl_feature_d = {}
 
-    s =  labeled_features.select(labeled_features.c.review_id.in_(review_ids))   
+    s =  labeled_features.select(labeled_features.c.project_id.in_(review_ids))   
     for lbld_feature in s.execute():
         lbl_feature_d[lbld_feature["term"]] = lbld_feature["label"]
     
@@ -146,7 +146,7 @@ def lbls_to_disk(review_ids, base_dir):
     pickle.dump(lbl_feature_d, fout)                     
     fout.close()
 
-def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
+def encode_review(review_id, base_dir="/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake/data"):
     fields=["title", "abstract", "keywords"]
 
     base_dir = os.path.join(base_dir, str(review_id))
@@ -196,15 +196,15 @@ def check_encoded_status_table():
     that are present but not yet encoded, encode them.
     '''
 
-    unencoded_review_ids = list(select([encoded_status.c.review_id], \
+    unencoded_review_ids = list(select([encoded_status.c.project_id], \
                                     encoded_status.c.is_encoded == False).execute())
     for unencoded_id in unencoded_review_ids:
-        unencoded_id = unencoded_id.review_id
+        unencoded_id = unencoded_id.project_id
         print "encoding review %s.." % unencoded_id
         base_dir = encode_review(unencoded_id)#, base_dir="C:/dev/abstrackr_web/encode_test")
         print "done!"
         # update the record
-        update = encoded_status.update(encoded_status.c.review_id == unencoded_id)
+        update = encoded_status.update(encoded_status.c.project_id == unencoded_id)
         update.execute(is_encoded = True)
         update.execute(labels_last_updated = datetime.datetime.now())
         update.execute(base_path = base_dir)
@@ -212,13 +212,13 @@ def check_encoded_status_table():
 
 def _get_citations_for_review(review_id):
     citation_ids = list(select([citations.c.citation_id], \
-                                    citations.c.review_id == review_id).execute())
+                                    citations.c.project_id == review_id).execute())
     return citation_ids
 
 def _do_predictions_exist_for_review(review_id):
     pred_status = \
-            select([prediction_status.c.review_id, prediction_status.c.predictions_exist],\
-                     prediction_status.c.review_id == review_id).execute().fetchone()
+            select([prediction_status.c.project_id, prediction_status.c.predictions_exist],\
+                     prediction_status.c.project_id == review_id).execute().fetchone()
               
     if pred_status is None or not pred_status.predictions_exist:
         return False
