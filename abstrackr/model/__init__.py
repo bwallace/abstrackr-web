@@ -5,15 +5,11 @@ from hashlib import sha1
 from sqlalchemy import ForeignKey, Column, types, Table
 from sqlalchemy.orm import relationship, backref
 
-from sqlalchemy.types import Unicode, UnicodeText,\
-    Integer, Date, CHAR, Float
-
 # imports from the model
-from abstrackr.model import meta
-from abstrackr.model.meta import Session, Base, metadata
+from abstrackr.model.meta import Session, Base
 
 # authentication
-from abstrackr.model.auth import User, Group, Permission
+#from abstrackr.model.auth import User, Group, Permission
 
 
 def init_model(engine):
@@ -22,34 +18,32 @@ def init_model(engine):
 
 
 ### Association Tables
-citation_task_table = Table('citation_task', Base.metadata,
-        Column('citation_id', Integer, ForeignKey('Citations.citation_id')),
-        Column('task_id', Integer, ForeignKey('Tasks.id'))
-        )
+citations_tasks_table = Table('citations_tasks', Base.metadata,
+        Column('citation_id', types.Integer, ForeignKey('citations.id')),
+        Column('task_id', types.Integer, ForeignKey('tasks.id'))
+)
 
+users_projects_table = Table('users_projects', Base.metadata,
+        Column('user_id', types.Integer, ForeignKey('user.id')),
+        Column('project_id', types.Integer, ForeignKey('projects.id'))
+)
 
-# TODO: remove this table once refactoring is done
-class FixedTask(Base):
-    __tablename__ = "FixedTasks"
-    # the id is meaningless, but we want a primary key to make SQL
-    # happy, so...
-    id = Column(types.Integer, primary_key=True)
-    task_id = Column(types.Integer)
-    citation_id = Column(types.Integer)
-
+projects_leaders_table = Table('projects_leaders', Base.metadata,
+        Column('user_id', types.Integer, ForeignKey('user.id')),
+        Column('project_id', types.Integer, ForeignKey('projects.id'))
+)
 
 ### end of Association Tables
 
-
 class Project(Base):
-    __tablename__ = "project"
+    __tablename__ = "projects"
     #__mapper_args__ = dict(order_by="date desc")
 
     id = Column(types.Integer, primary_key=True)
-    leader_id = Column(types.Integer, ForeignKey('user.id'))
+    #leader_id = Column(types.Integer, ForeignKey('user.id'))
 
     # If initial_round_size > 0, this will point to
-    # the entry in the FixedAssignment table that
+    # the entry in the citations_tasks table that
     # maps to the initial assignment associated with
     # this project.
     initial_assignment_id = Column(types.Integer)
@@ -59,7 +53,7 @@ class Project(Base):
 
     # This is used to identify the project when
     # the leader invites others to the project
-    code = Column(types.Unicode(10))
+    code = Column(types.Unicode(10), index=True, unique=True)
 
     # `single', `double', or `advanced'
     screening_mode = Column(types.Unicode(50))
@@ -84,18 +78,21 @@ class Project(Base):
     date_modified = Column(types.DateTime())
 
     priorities = relationship('Priority', order_by='Priority.id', backref='project')
-    citations = relationship('Citation', order_by='Citation.citation_id', backref='project')
+    citations = relationship('Citation', order_by='Citation.id', backref='project')
     assignments = relationship('Assignment', order_by='Assignment.id', backref='project')
     labels = relationship('Label', order_by='Label.id', backref='project')
+    members = relationship('User', secondary=users_projects_table, backref='member_of_projects')
+    leaders = relationship('User', secondary=projects_leaders_table, backref='leader_of_projects')
+
 
 class Citation(Base):
-    __tablename__ = "Citations"
+    __tablename__ = "citations"
 
     # note that this is independent of pubmed/refman/whatever id!
-    citation_id = Column(types.Integer, primary_key=True)
+    id = Column(types.Integer, primary_key=True)
 
     # associates the citation with the project that owns it
-    project_id = Column(types.Integer, ForeignKey('project.id'))
+    project_id = Column(types.Integer, ForeignKey('projects.id'))
     pmid = Column(types.Integer)
     refman = Column(types.Integer)
 
@@ -107,24 +104,26 @@ class Citation(Base):
     publication_date = Column(types.DateTime())
     keywords = Column(types.Unicode(5000))
 
-    tasks = relationship("Task", secondary=citation_task_table, backref="citations")
+    tasks = relationship("Task", secondary=citations_tasks_table, backref="citations")
     priorities = relationship('Priority', backref="citation")
     labels = relationship("Label", backref="citation")
 
 class Priority(Base):
-    '''
+    """
     This table stores the ordered priority for citation screening, i.e.,
     facilitates active learning. It also attempts to solve the potential
     problem of users labeling the same citation simultaneously by
     containing a `is_out` field and date.
-    '''
-    __tablename__ = "Priority"
+
+    """
+
+    __tablename__ = "priorities"
 
     id = Column(types.Integer, primary_key=True)
 
     # ForeignKey relationship columns
-    project_id = Column(types.Integer, ForeignKey('project.id'))
-    citation_id = Column(types.Integer, ForeignKey('Citations.citation_id'))
+    project_id = Column(types.Integer, ForeignKey('projects.id'))
+    citation_id = Column(types.Integer, ForeignKey('citations.id'))
 
     priority = Column(types.Integer)
 
@@ -140,29 +139,36 @@ class Priority(Base):
     locked_by = Column(types.Integer)
     time_requested = Column(types.DateTime())
 
-class TagTypes(Base):
-    ''' User added tags '''
-    __tablename__ = "TagTypes"
+
+class TagType(Base):
+    """User added tags"""
+
+    __tablename__ = "tagtypes"
+
     id = Column(types.Integer, primary_key=True)
     text = Column(types.Unicode(500))
-    # project for which tag was generated
     project_id = Column(types.Integer)
-    label = Column(types.SmallInteger)
-    # who invented this?
+    #label = Column(types.SmallInteger)
     creator_id = Column(types.Integer)
     color = Column(types.Unicode(50))
 
-class Tags(Base):
-    ''' Stores study/tag pairs '''
-    __tablename__ = "Tags"
+
+class Tag(Base):
+    """Stores study/tag pairs"""
+
+    __tablename__ = "tags"
+
     id = Column(types.Integer, primary_key=True)
     tag_id = Column(types.Integer)
     creator_id = Column(types.Integer)
     citation_id = Column(types.Integer)
 
+
 class Note(Base):
-    ''' Stores notes; both structured and unstructured '''
-    __tablename__ = "Notes"
+    """Stores notes; both structured and unstructured"""
+
+    __tablename__ = "notes"
+
     id = Column(types.Integer, primary_key=True)
     creator_id = Column(types.Integer)
     citation_id = Column(types.Integer)
@@ -171,9 +177,12 @@ class Note(Base):
     ic = Column(types.Unicode(1000)) # intervention/comparator
     outcome = Column(types.Unicode(1000))
 
+
 class LabeledFeature(Base):
-    ''' Stores labeled features, i.e., terms '''
-    __tablename__ = "LabelFeatures"
+    """Stores labeled features, i.e., terms"""
+
+    __tablename__ = "labeledfeatures"
+
     id = Column(types.Integer, primary_key=True)
     term = Column(types.Unicode(500))
     # project for which this term applies
@@ -184,13 +193,16 @@ class LabeledFeature(Base):
     label = Column(types.SmallInteger)
     date_created = Column(types.DateTime())
 
+
 class Label(Base):
-    ''' Stores instances labels '''
-    __tablename__ = "Labels"
+    """Stores instances labels"""
+
+    __tablename__ = "labels"
+
     id = Column(types.Integer, primary_key=True)
     # project for which this document was screened
-    project_id = Column(types.Integer, ForeignKey('project.id'))
-    study_id = Column(types.Integer, ForeignKey('Citations.citation_id')) # TODO: need to rename this to citation_id
+    project_id = Column(types.Integer, ForeignKey('projects.id'))
+    study_id = Column(types.Integer, ForeignKey('citations.id')) # TODO: need to rename this to citation_id
     user_id = Column(types.Integer)
     assignment_id = Column(types.Integer)
     # -1, 0, 1
@@ -200,24 +212,15 @@ class Label(Base):
     first_labeled = Column(types.DateTime())
     label_last_updated = Column(types.DateTime())
 
-class ReviewerProject(Base):
-    '''
-    junction table; maps users to the projects they
-    are on (and vice versa).
-    '''
-    __tablename__ = "ReviewersProjects"
-    id = Column(types.Integer, primary_key=True)
-    project_id = Column(types.Integer)
-    user_id = Column(types.Integer)
 
 class Assignment(Base):
 
-    __tablename__ = "Assignments"
+    __tablename__ = "assignments"
 
     id = Column(types.Integer, primary_key=True)
-    project_id = Column(types.Integer, ForeignKey('project.id'))
+    project_id = Column(types.Integer, ForeignKey('projects.id'))
     user_id = Column(types.Integer, ForeignKey('user.id'))
-    task_id = Column(types.Integer, ForeignKey('Tasks.id'))
+    task_id = Column(types.Integer, ForeignKey('tasks.id'))
     done_so_far = Column(types.Integer)
     date_assigned = Column(types.DateTime())
     date_due = Column(types.DateTime())
@@ -230,8 +233,9 @@ class Assignment(Base):
     # this is the same as `task_type'.
     assignment_type = Column(types.Unicode(50))
 
+
 class Task(Base):
-    '''
+    """
     a Task is a unit of work. Tasks have types;
     some are `perpetual`, i.e., they basically say `allow the
     person to whom this is assigned to keep on labeling, until
@@ -240,8 +244,11 @@ class Task(Base):
     assignees are to label a fixed number of citations. Tasks are
     always associated with exactly one project, but multiple
     users can be assigned the same Task (see the Assignment table).
-    '''
-    __tablename__ = "Tasks"
+
+    """
+
+    __tablename__ = "tasks"
+
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer)
     # this is 'perpetual', 'initial' or 'finite'; the former indicates a 'perpetual'
@@ -255,16 +262,20 @@ class Task(Base):
 
     assignments = relationship("Assignment", order_by='Assignment.id', backref="task")
 
+
 class EncodeStatus(Base):
-    '''
+    """
     This table contains one entry for each dataset, indicating
     its encoded (i.e., for curious_snake/machine learning stuff)
     status. That is, this table contains information regarding:
         1) if the dataset has been encoded
         2) when the labels of this encoded file were last updated
         3) the path to the encoded file
-    '''
-    __tablename__ = "EncodedStatuses" # sticking with the pluralized convention here
+
+    """
+
+    __tablename__ = "encodedstatuses"
+
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer) # associated project
     is_encoded = Column(types.Boolean) # has it been encoded yet?
@@ -272,11 +283,12 @@ class EncodeStatus(Base):
     # the location of the base directory for the encoded project
     base_path = Column(types.Unicode(100))
 
+
 class PredictionsStatus(Base):
-    '''
-    Status of predictions (do they exist? last update, etc.)
-    '''
-    __tablename__ = "PredictionStatuses"
+    """Status of predictions (do they exist? last update, etc.)"""
+
+    __tablename__ = "predictionstatuses"
+
     id = Column(types.Integer, primary_key=True)
     project_id = Column(types.Integer) # associated project
     predictions_exist = Column(types.Boolean) # has it been encoded yet?
@@ -284,11 +296,12 @@ class PredictionsStatus(Base):
     train_set_size = Column(types.Integer) # how many did we train on?
     num_pos_train = Column(types.Integer) # number of positive examples we trained on
 
+
 class Prediction(Base):
-    '''
-    Current inclusion/exclusion predictions for studies
-    '''
-    __tablename__ = "Predictions"
+    """Current inclusion/exclusion predictions for studies"""
+
+    __tablename__ = "predictions"
+
     id = Column(types.Integer, primary_key=True)
     study_id = Column(types.Integer) # the (internal) study id
     project_id = Column(types.Integer) # it makes life easier to have this around
@@ -302,12 +315,15 @@ class Prediction(Base):
 ## these tables for authentication #
 ####################################
 class ResetPassword(Base):
-    '''
+    """
     This table facilitates password recovery. If someone requests to reset
     their password, we generate a random token and insert it into this db.
     We then email them this token, verifying their id.
-    '''
+
+    """
+
     __tablename__ = "ResetPassword"
+
     id = Column(types.Integer, primary_key=True)
     user_email = Column(types.Unicode(80))
     token = Column(types.Unicode(10))
@@ -340,11 +356,11 @@ class User(Base):
     show_authors = Column(types.Boolean, default=True)
     show_keywords = Column(types.Boolean, default=True)
 
-    projects = relationship("Project", backref=backref('leader', order_by=id))
     assignments = relationship("Assignment", backref=backref('user', order_by=id))
 
     def _set_password(self, password):
         """Hash password on the fly."""
+
         hashed_password = password
 
         if isinstance(password, unicode):
@@ -368,6 +384,7 @@ class User(Base):
 
     def _get_password(self):
         """Return the password hashed"""
+
         return self.password
 
     def validate_password(self, password):
@@ -382,6 +399,7 @@ class User(Base):
         :rtype: bool
 
         """
+
         hashed_pass = sha1()
         hashed_pass.update(password + self.password[:40])
         return self.password[40:] == hashed_pass.hexdigest()
@@ -399,6 +417,6 @@ class GroupPermission(Base):
 # groups and users
 class UserGroup(Base):
     __tablename__ = "user_group"
-    id  = Column(types.Integer, primary_key=True)
+    id = Column(types.Integer, primary_key=True)
     user_id = Column(types.Integer)
     group_id = Column(types.Integer)

@@ -19,24 +19,29 @@ def make_map(config):
     map.connect('/error/{action}/{id}', controller='error')
 
     # CUSTOM ROUTES HERE
+    map.connect('/help/', controller='static_pages', action='help')
+    map.connect('/citing/', controller='static_pages', action='citing')
+
     map.connect('/{controller}/{action}')
     map.connect('/review/add_notes/{study_id}', controller='review', action='add_notes')
     map.connect('/review/delete_assignment/{review_id}/{assignment_id}', controller='review', action='delete_assignment')
-    map.connect('/review/transfer_admin/{review_id}/{user_id}', controller='review', action='transfer_admin')
+    map.connect('/review/add_admin/{project_id}/{user_id}', controller='review', action='add_admin')
+    map.connect('/review/remove_admin/{project_id}/{user_id}', controller='review', action='remove_admin')
     map.connect('/review/get_fields/{review_id}', controller='review', action='get_fields')
-    
+
     map.connect('/review/update_tags/{study_id}/{tag_privacy}', controller='review', action='update_tags')
-    
+
     map.connect('/review/update_tag_types/{review_id}/{study_id}', controller='review', action='update_tag_types')
     map.connect('/review/edit_tags/{review_id}/{assignment_id}', controller='review', action='edit_tags')
-    map.connect('/review/edit_tag/{tag_id}/{assignment_id}', controller='review', action='edit_tag')   
-    map.connect('/review/delete_tag/{tag_id}/{assignment_id}', controller='review', action='delete_tag') 
+    map.connect('/review/edit_tag/{tag_id}/{assignment_id}', controller='review', action='edit_tag')
+    map.connect('/review/delete_tag/{tag_id}/{assignment_id}', controller='review', action='delete_tag')
     map.connect('/review/delete_term/{term_id}/{assignment_id}', controller='review', action='delete_term')
+    map.connect('/review/admin/{project_id}', controller='review', action='admin')
     map.connect('/{controller}/{action}/{id}')
     map.connect('/screen/{review_id}/{assignment_id}', controller='review', action='screen')
     map.connect('/screen_next/{review_id}/{assignment_id}', controller='review', action='screen_next')
     map.connect('/label/{review_id}/{assignment_id}/{study_id}/{seconds}/{label}', controller='review', action='label_citation')
-    
+
     map.connect('/next_citation/{review_id}/{assignment_id}', controller='review', action='get_next_citation_fragment')
 
     map.connect('/markup/{id}/{assignment_id}/{citation_id}', controller='review', action='markup_citation')
@@ -48,7 +53,7 @@ def make_map(config):
     map.connect('/show_label/{review_id}/{citation_id}/{assignment_id}', controller='review', action='show_labeled_citation')
     map.connect('/review/remove_from_review/{reviewer_id}/{review_id}', controller='review', action='remove_from_review')
     map.connect('/review/tag_citation/{review_id}/{study_id}', controller='review', action='tag_citation')
-    
+
     map.connect('/join/{review_code}', controller='review', action='join')
     map.connect('/', controller='trackr', action='start')
     return map

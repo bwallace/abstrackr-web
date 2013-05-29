@@ -49,7 +49,7 @@ Awesome, you're ready to start screening.
 Or, send this link directly to participants:
 
 <center>
-<h2><a href="http://abstrackr.tuftscaes.org/join/${c.review.code}">http://abstrackr.tuftscaes.org/join/${c.review.code}</a></h2>
+<h2><a href="${c.root_path}join/${c.review.code}">${c.root_path}join/${c.review.code}</a></h2>
 </center>
 
 

@@ -22,7 +22,7 @@
 <body>
 
 
-<a id="floating_link" href="http://abstrackr.tuftscaes.org">&larr; go back to <b>abstrackr</b></a>
+<a id="floating_link" href="${c.root_path}">&larr; go back to <b>abstrackr</b></a>
 
 <div class="content">
 <h1>welcome to abstrackr help.</h1>
@@ -61,7 +61,7 @@
 <h1><a name="joining">Joining a Review</a></h1>
 <p>To join a review in <b>abstrackr</b>, you'll need a join link (URL). This URL should have been sent to your e-mail, either by the <b>abstrackr</b> system or by your project lead. The URL will look like this: 
 
-<center>http://abstrackr.tuftscaes.org/join/IQT1KAI0LJ</center><br/>
+<center>https://abstrackr.cebm.brown.edu/join/IQT1KAI0LJ</center><br/>
 
 Where the last part of the URL will depend on the review. Simply follow this link in your web browser and you will be automatically joined to the corresponding review.</p>
 

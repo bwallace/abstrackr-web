@@ -10,13 +10,13 @@ import random
 import string
 
 # third party
-import Bio
-from Bio import Entrez
+#import Bio
+#from Bio import Entrez
 
-import elementtree
+#import elementtree
 from elementtree.ElementTree import ElementTree
 
-import sqlite3
+#import sqlite3
 
 # homegrown
 import pubmedpy
@@ -142,12 +142,12 @@ def _field_index_d(headers):
     for field in OBLIGATORY_FIELDS:
         # we know these exist
         field_index_d[field] = headers.index(field)
-    
+
     # now let's see if they've optional headers
     for field in OPTIONAL_FIELDS:
         if field in headers:
             field_index_d[field] = headers.index(field)
-    
+
     return field_index_d
 
 def xml_to_sql(xml_path, review):
@@ -159,7 +159,7 @@ def xml_to_sql(xml_path, review):
     return len(d)
 
 
-def dict_to_sql(xml_d, review): 
+def dict_to_sql(xml_d, review):
     cit_num = 0
     # issue #31: explicitly randomize ordering
     xml_d_items = xml_d.items()
@@ -189,12 +189,12 @@ def insert_citation(review_id, ref_id, citation_d):
     citation.authors = " and ".join(citation_d['authors'])
     citation.keywords = ','.join(citation_d['keywords'])
     citation.journal = citation_d['journal']
-    
+
     model.Session.add(citation)
     model.Session.commit()
 
-    return citation.citation_id
- 
+    return citation.id
+
 def insert_priority_entry(review_id, citation_id, \
                             init_priority_num, num_times_labeled=0):
     priority = model.Priority()
@@ -204,7 +204,7 @@ def insert_priority_entry(review_id, citation_id, \
     priority.num_times_labeled = num_times_labeled
     priority.is_out = False
     model.Session.add(priority)
-    
+
 
 def xml_to_dict(fpath):
     '''
@@ -215,9 +215,9 @@ def xml_to_dict(fpath):
     ref_ids_to_abs = {}
     num_no_abs = 0
     tree = ElementTree(file=fpath)
-    
+
     num_failed = 0
-    
+
     for record in tree.findall('.//record'):
         pubmed_id, refmanid = None, None
 
@@ -251,13 +251,13 @@ def xml_to_dict(fpath):
                 print "problem getting pmid ..."
                 print ex
                 print("\n")
-    
+
             ab_text = record.findtext('.//abstract/style')
             if ab_text is None:
                 num_no_abs += 1
-    
+
             title_text = record.findtext('.//titles/title/style')
-    
+
             # Also grab keywords
             keywords = [keyword.text.strip().lower() for keyword in record.findall(".//keywords/keyword/style")]
 
@@ -270,7 +270,7 @@ def xml_to_dict(fpath):
             ref_ids_to_abs[refmanid] = {"title": title_text, "abstract": ab_text, "journal": journal,\
                         "keywords": keywords, "pmid": pubmed_id, "authors": authors}
 
-    
+
     print "\nFinished. Returning %s title/abstract/keyword sets, %s of which have no abstracts.\n" \
                     % (len(ref_ids_to_abs.keys()), num_no_abs)
     return ref_ids_to_abs
