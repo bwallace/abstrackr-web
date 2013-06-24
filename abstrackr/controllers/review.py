@@ -634,7 +634,7 @@ class ReviewController(BaseController):
         old_project = Session.query(model.Project).filter(model.Project.id == old_review_id).one()
         new_project = Session.query(model.Project).filter(model.Project.id == new_review_id).one()
         users_to_move = Session.query(model.User).\
-                filter(model.User.projects.any(id=old_review_id)).all()
+                filter(model.User.member_of_projects.any(id=old_review_id)).all()
         for user_to_move in users_to_move:
             new_project.members.append(user_to_move)
 
@@ -1783,7 +1783,8 @@ class ReviewController(BaseController):
                 # TODO add more explanation here / return an actual page
                 return "nothing to see here (i.e., not conflicting labels and/or no maybe labels). hit back?"
             else:
-                assignment.done = True
+                #TODO
+                assignment.done = self._is_assignment_done(review, assignment)
                 Session.commit()
                 redirect(url(controller="account", action="welcome"))
 
@@ -1868,7 +1869,9 @@ class ReviewController(BaseController):
 
         # but wait -- are we finished?
         if assignment.done or c.cur_citation is None:
-            assignment.done = True
+            #TODO
+            #assignment.done = True
+            assignment.done = self._is_assignment_done(review, assignment)
             Session.commit()
             return render("/assignment_complete.mako")
 
@@ -2330,7 +2333,7 @@ class ReviewController(BaseController):
             filter(model.Assignment.assignment_type=='perpetual').\
             filter(and_(or_(model.Label.user_id!=me, model.Label.user_id==None))).\
             order_by(model.Priority.priority).\
-            limit(3)
+            limit(6)
 
         # now filter the priorities, excluding those that are locked
         # note that we also will remove locks here if a citation has
@@ -2455,7 +2458,8 @@ class ReviewController(BaseController):
         q = Session.query(model.Task)
         citations = q.filter_by(id=task_id).one().citations
         eligible_ids = [cite.id for cite in citations]
-        eligible_ids.sort()
+        #eligible_ids.sort()
+        eligible_ids = sorted(eligible_ids)
         return eligible_ids
 
     def _get_already_labeled_ids(self, review_id, reviewer_id=None):
@@ -2782,5 +2786,67 @@ class ReviewController(BaseController):
                 citation.marked_up_abstract = ""
         citation.marked_up_title = literal(citation.marked_up_title)
         citation.marked_up_abstract = literal(citation.marked_up_abstract)
-
         return citation
+
+    def _get_user(self):
+        current_user = request.environ.get('repoze.who.identity')['user']
+        return controller_globals._get_user_from_email(current_user.email)
+
+    def _is_assignment_done(self, review, assignment):
+        user = self._get_user()
+        review_id = review.id
+        reviewer_id = user.id
+
+        if assignment.assignment_type in ("initial", "conflict"):
+            # in the case of initial assignments, we never remove the citations,
+            # thus we need to ascertain that we haven't already screened it
+            eligible_pool = self._get_ids_for_task(assignment.task_id)
+            reviewer_id = None
+            if assignment.assignment_type == "conflict":
+                # the 0th user is the omniscient consensus reviewer,
+                # by convention. in the case that we're reviewing conflicts
+                # we use this special user.
+                reviewer_id = 0
+
+            already_labeled = self._get_already_labeled_ids(review.id, reviewer_id=reviewer_id)
+            eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
+            return len(eligible_pool) == 0
+        elif assignment.assignment_type in ("perpetual"):
+            citations_in_priority_queue = self._get_citations_in_priority_queue(review)
+            if len(citations_in_priority_queue) == 0:
+                return True
+            else:
+                labels= self._get_labels_for_user(review, assignment, user)
+                labeled_citation_ids = [label.study_id for label in labels]
+                citations_in_priority_queue = [cit.citation_id for cit in citations_in_priority_queue]
+                import pdb; pdb.set_trace()
+                citations_not_yet_labeled = [x for x in citations_in_priority_queue if x not in labeled_citation_ids]
+                if len(citations_not_yet_labeled) == 0:
+                    return True
+                else:
+                    return sorted(labeled_citation_ids) == sorted(citations_in_priority_queue)
+        else:
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("WARNING")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            import pdb; pdb.set_trace()
+
+    def _get_citations_in_priority_queue(self, project):
+        Session.commit()
+        priority_q = Session.query(model.Priority)
+        priority_list = priority_q.filter_by(project_id=project.id).all()
+        return priority_list
+
+    def _get_labels_for_user(self, project, assignment, user):
+        return Session.query(model.Label).filter(and_(model.Label.user_id==user.id, model.Label.project_id==project.id, model.Label.assignment_id==assignment.id)).all()

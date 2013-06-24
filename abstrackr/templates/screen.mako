@@ -463,6 +463,6 @@ $(document).ready(function() {
     if (!(we_are_reviewing_a_label())) {
         get_next_citation(); // fetch the *next* citation
     }
-    $("#hidden_div").hide();
+    ##$("#hidden_div").hide();
 });
 </script>
