@@ -134,10 +134,11 @@ function setup_js(){
     $("#close_btn").unbind();
     $("#tag_btn").unbind();
 
-    $("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.id)}", function() {
-        setup_submit();
-        populate_notes();
-    });
+    ##alert("About to cache: ${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.id)}");
+    ##$("#dialog").load("${'/review/update_tag_types/%s/%s' % (c.review_id, c.cur_citation.id)}", function() {
+    ##    setup_submit();
+    ##    populate_notes();
+    ##});
 
     $("#tags").load("${'/review/update_tags/%s/%s' % (c.cur_citation.id, c.tag_privacy)}");
 
@@ -145,12 +146,20 @@ function setup_js(){
     reset_timer();
 
     function markup_current() {
+        var cur_citation_id = $('#citation.content span#cur_citation_id').text();
+        var next_citation_id = $('#hidden_div.content span#cur_citation_id').text();
         // reload the current citation, with markup
-        //alert(${c.cur_citation.id});
+        ##alert("${'/markup/%s/%s/' % (c.review_id, c.assignment_id)}" + cur_citation_id);
         $("#wait").text("marking up the current citation..")
         $("#citation").fadeOut('slow', function() {
-            alert(${c.cur_citation.id});
-            $("#citation").load("${'/markup/%s/%s/%s' % (c.review_id, c.assignment_id, c.cur_citation.id)}", function() {
+            $("#citation").load("${'/markup/%s/%s/' % (c.review_id, c.assignment_id)}" + cur_citation_id, function() {
+                $("#citation").fadeIn('slow');
+                $("#wait").text("");
+            });
+        });
+        ##alert("${'/markup/%s/%s/' % (c.review_id, c.assignment_id)}" + next_citation_id);
+        $("#citation").fadeOut('fast', function() {
+            $("#hidden_div").load("${'/markup/%s/%s/' % (c.review_id, c.assignment_id)}" + next_citation_id, function() {
                 $("#citation").fadeIn('slow');
                 $("#wait").text("");
             });
@@ -158,6 +167,8 @@ function setup_js(){
     };
 
     function label_cur_citation(lbl_str){
+        var cur_citation_id = $('#citation.content span#cur_citation_id').text();
+
         $("#citation").fadeOut('fast', function() {
             if (!(we_are_reviewing_a_label()) && is_perpetual_assignment()){
                 // try to load the next citation
@@ -165,7 +176,7 @@ function setup_js(){
                 // once loading is complete
                 load_next_citation();
             };
-            $.post("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.id)}" + seconds + "/" + lbl_str, function(data){
+            $.post("${'/label/%s/%s/' % (c.review_id, c.assignment_id)}" + cur_citation_id + "/" + seconds + "/" + lbl_str, function(data) {
                 if (we_are_reviewing_a_label()){
                     // in the case that we are re-labeling a citation,
                     // this the label method will return the citation fragment.
@@ -178,7 +189,7 @@ function setup_js(){
                     load_next_citation();
                 }
                 else {
-                    //alert(data);
+                    ##alert('fragment: ' + data);
                     $('#progress').html(data);
                 };
             });
@@ -260,5 +271,6 @@ function setup_js(){
         $("#progress").html("");
     % endif
 };
+
 </script>
 

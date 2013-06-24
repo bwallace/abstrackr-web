@@ -11,20 +11,20 @@ from make_predictions import make_predictions
 import tfidf2 
 
 
-engine = create_engine("mysql://root:xxxx@127.0.0.1:3306/abstrackr")
+engine = create_engine("mysql://abstrackr-user:5xl.z=Uy6d@127.0.0.1:3306/abstrackrDBP01?unix_socket=/var/mysql/mysql.sock")
 metadata = MetaData(bind=engine)
 
 ####
 # bind the tables
 citations = Table("Citations", metadata, autoload=True)
 labels = Table("Labels", metadata, autoload=True)
-reviews = Table("project", metadata, autoload=True)
+reviews = Table("Projects", metadata, autoload=True)
 users = Table("user", metadata, autoload=True)
-labeled_features = Table("LabelFeatures", metadata, autoload=True)
-encoded_status = Table("EncodedStatuses", metadata, autoload=True)
-prediction_status = Table("PredictionStatuses", metadata, autoload=True)
-predictions = Table("Predictions", metadata, autoload=True)
-priorities = Table("Priority", metadata, autoload=True)
+labeled_features = Table("labeledfeatures", metadata, autoload=True)
+encoded_status = Table("encodedstatuses", metadata, autoload=True)
+prediction_status = Table("predictionstatuses", metadata, autoload=True)
+predictions = Table("predictions", metadata, autoload=True)
+priorities = Table("priorities", metadata, autoload=True)
 
 def get_labels_from_names(review_names):
     r_ids = get_ids_from_names(review_names)
@@ -34,7 +34,7 @@ def get_labels_from_names(review_names):
 
 def get_ids_from_names(review_names):
     s = reviews.select(reviews.c.name.in_(review_names))
-    return [review.review_id for review in s.execute()]
+    return [review.id for review in s.execute()]
 
 def labels_for_review_ids(review_ids):
     # this selects labels and information about the corresponding
@@ -98,7 +98,7 @@ def citations_to_disk(review_id, base_dir, fields=None):
     fields = fields or ["title", "abstract", "keywords", "authors", "journal"]
     none_to_text= lambda x: "none" if x is None else x
 
-    s = citations.select(citations.c.review_id==review_id)
+    s = citations.select(citations.c.project_id==review_id)
     citations_for_review = [x for x in s.execute()]
 
     if not os.path.exists(base_dir):
@@ -110,7 +110,7 @@ def citations_to_disk(review_id, base_dir, fields=None):
             os.mkdir(field_path)
 
     for citation in citations_for_review:
-        citation_id = citation['citation_id']
+        citation_id = citation['id']
         
         for field in fields:
             fout = open(os.path.join(base_dir, field, "%s" % citation_id), 'w')
@@ -127,7 +127,7 @@ def get_lbl_d_for_review(review_id):
 
 def lbls_to_disk(review_ids, base_dir):
     lbl_d = {}
-    s = labels.select(labels.c.review_id.in_(review_ids))
+    s = labels.select(labels.c.project_id.in_(review_ids))
     for lbl in s.execute():
         lbl_d[lbl["study_id"]]=lbl["label"]
     
@@ -138,7 +138,7 @@ def lbls_to_disk(review_ids, base_dir):
     # also get labeled features
     lbl_feature_d = {}
 
-    s =  labeled_features.select(labeled_features.c.review_id.in_(review_ids))   
+    s =  labeled_features.select(labeled_features.c.project_id.in_(review_ids))   
     for lbld_feature in s.execute():
         lbl_feature_d[lbld_feature["term"]] = lbld_feature["label"]
     
@@ -146,7 +146,7 @@ def lbls_to_disk(review_ids, base_dir):
     pickle.dump(lbl_feature_d, fout)                     
     fout.close()
 
-def encode_review(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
+def encode_review(review_id, base_dir="/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake/data"):
     fields=["title", "abstract", "keywords"]
 
     base_dir = os.path.join(base_dir, str(review_id))
@@ -196,15 +196,15 @@ def check_encoded_status_table():
     that are present but not yet encoded, encode them.
     '''
 
-    unencoded_review_ids = list(select([encoded_status.c.review_id], \
+    unencoded_review_ids = list(select([encoded_status.c.project_id], \
                                     encoded_status.c.is_encoded == False).execute())
     for unencoded_id in unencoded_review_ids:
-        unencoded_id = unencoded_id.review_id
+        unencoded_id = unencoded_id.project_id
         print "encoding review %s.." % unencoded_id
         base_dir = encode_review(unencoded_id)#, base_dir="C:/dev/abstrackr_web/encode_test")
         print "done!"
         # update the record
-        update = encoded_status.update(encoded_status.c.review_id == unencoded_id)
+        update = encoded_status.update(encoded_status.c.project_id == unencoded_id)
         update.execute(is_encoded = True)
         update.execute(labels_last_updated = datetime.datetime.now())
         update.execute(base_path = base_dir)
@@ -212,13 +212,13 @@ def check_encoded_status_table():
 
 def _get_citations_for_review(review_id):
     citation_ids = list(select([citations.c.citation_id], \
-                                    citations.c.review_id == review_id).execute())
+                                    citations.c.project_id == review_id).execute())
     return citation_ids
 
 def _do_predictions_exist_for_review(review_id):
     pred_status = \
-            select([prediction_status.c.review_id, prediction_status.c.predictions_exist],\
-                     prediction_status.c.review_id == review_id).execute().fetchone()
+            select([prediction_status.c.project_id, prediction_status.c.predictions_exist],\
+                     prediction_status.c.project_id == review_id).execute().fetchone()
               
     if pred_status is None or not pred_status.predictions_exist:
         return False
@@ -242,7 +242,7 @@ def _get_predictions_for_review(review_id):
 #       we need to be able to invoke this statically, hence its re-implementation
 ###
 def _re_prioritize(review_id, sort_by_str):
-    citation_ids = [cit.citation_id for cit in _get_citations_for_review(review_id)]
+    citation_ids = [cit.id for cit in _get_citations_for_review(review_id)]
     predictions_for_review = None
     if _do_predictions_exist_for_review(review_id):
         # this will be a dictionary mapping citation ids to
@@ -292,7 +292,7 @@ def _re_prioritize(review_id, sort_by_str):
     # corresponding to this review to reflect
     # the new priorities (above)
     priority_ids_for_review = list(select([priorities.c.id, priorities.c.citation_id], \
-                                    priorities.c.review_id == review_id).execute())
+                                    priorities.c.project_id == review_id).execute())
     for priority_id, citation_id in priority_ids_for_review:
         if citation_id in cit_id_to_new_priority:
             priority_update = \
@@ -310,21 +310,21 @@ if __name__ == "__main__":
     # for each review, get newest label; check this against
     # the last_updated_field
 
-    encoded_reviews = list(select([encoded_status.c.review_id, encoded_status.c.labels_last_updated],\
+    encoded_reviews = list(select([encoded_status.c.project_id, encoded_status.c.labels_last_updated],\
                                  encoded_status.c.is_encoded==True).execute())
    
     for encoded_review in encoded_reviews:
         review_id, labels_last_updated = encoded_review
 
         sort_by_str = \
-            select([reviews.c.sort_by], reviews.c.review_id == review_id).execute()
+            select([reviews.c.sort_by], reviews.c.id == review_id).execute()
         # uh-oh
         if sort_by_str.rowcount == 0:
             print "I can't do anything for review %s -- it doesn't appear to have an entry" % review_id
         else:
             sort_by_str = sort_by_str.fetchone().sort_by
             labels_for_review = select([labels.c.label_last_updated], \
-                        labels.c.review_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
+                        labels.c.project_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
             if labels_for_review.rowcount > 0:
                 most_recent_label = labels_for_review.fetchone().label_last_updated
                 print "checking review %s.." % review_id

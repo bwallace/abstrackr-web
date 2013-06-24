@@ -343,10 +343,18 @@ function setup_js() {
     });
 
     function markup_current() {
+        var cur_citation_id = $('#citation.content span#cur_citation_id').text();
+        var next_citation_id = $('#hidden_div.content span#cur_citation_id').text();
         // reload the current citation, with markup
         $("#wait").text("marking up the current citation..")
         $("#citation").fadeOut('slow', function() {
-            $("#citation").load("${'/markup/%s/%s/%s' % (c.review_id, c.assignment_id, c.cur_citation.id)}", function() {
+            $("#citation").load("${'/markup/%s/%s/' % (c.review_id, c.assignment_id)}" + cur_citation_id, function() {
+                $("#citation").fadeIn('slow');
+                $("#wait").text("");
+            });
+        });
+        $("#citation").fadeOut('fast', function() {
+            $("#hidden_div").load("${'/markup/%s/%s/' % (c.review_id, c.assignment_id)}" + next_citation_id, function() {
                 $("#citation").fadeIn('slow');
                 $("#wait").text("");
             });
@@ -354,6 +362,8 @@ function setup_js() {
     };
 
     function label_cur_citation(lbl_str) {
+        var cur_citation_id = $('#citation.content span#cur_citation_id').text();
+
         $("#citation").fadeOut('fast', function() {
             if (!(we_are_reviewing_a_label()) && is_perpetual_assignment()) {
                 // try to load the next citation
@@ -361,7 +371,7 @@ function setup_js() {
                 // once loading is complete
                 load_next_citation();
             };
-            $.post("${'/label/%s/%s/%s/' % (c.review_id, c.assignment_id, c.cur_citation.id)}" + seconds + "/" + lbl_str, function(data) {
+            $.post("${'/label/%s/%s/' % (c.review_id, c.assignment_id)}" + cur_citation_id + "/" + seconds + "/" + lbl_str, function(data) {
                 if (we_are_reviewing_a_label()) {
                     // in the case that we are re-labeling a citation,
                     // this the label method will return the citation fragment.
@@ -372,7 +382,6 @@ function setup_js() {
                 } else if (!(is_perpetual_assignment())) {
                     load_next_citation();
                 } else {
-                    //alert(data);
                     $('#progress').html(data);
                 };
             });
@@ -454,6 +463,6 @@ $(document).ready(function() {
     if (!(we_are_reviewing_a_label())) {
         get_next_citation(); // fetch the *next* citation
     }
-    $("#hidden_div").hide();
+    ##$("#hidden_div").hide();
 });
 </script>

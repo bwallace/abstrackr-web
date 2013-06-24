@@ -305,8 +305,9 @@ to see which OperationalError is being raised ''')
     def show_merge_review_screen(self):
         person = request.environ.get('repoze.who.identity')['user']
         c.person = person
+        user = controller_globals._get_user_from_email(person.email)
 
-        projects_person_leads = self._get_projects_person_leads(person)
+        projects_person_leads = self._get_projects_person_leads(user)
         c.reviews = projects_person_leads
 
         return render('/reviews/merge_reviews.mako')
@@ -366,8 +367,9 @@ to see which OperationalError is being raised ''')
 
 
     def _get_projects_person_leads(self, person):
-        project_q = Session.query(model.Project)
-        leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
+        #project_q = Session.query(model.Project)
+        #leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
+        leading_projects = person.leader_of_projects
         return leading_projects
 
     def _get_review_ids_to_names_d(self, reviews):

@@ -13,7 +13,8 @@ sys.path.append("curious_snake/learners/libsvm/python")
 
 import curious_snake # magic!
 
-engine = create_engine("mysql://root:homer@127.0.0.1:3306/abstrackr")
+engine = create_engine("mysql://abstrackr-user:5xl.z=Uy6d@127.0.0.1:3306/abstrackrDBP01?unix_socket=/var/mysql/mysql.sock")
+
 conn = engine.connect()
 metadata = MetaData(bind=engine)
 
@@ -22,7 +23,8 @@ prediction_status = Table("PredictionStatuses", metadata, autoload=True)
 predictions_table = Table("Predictions", metadata, autoload=True)
 
 #base_dir="/home/byron/abstrackr-web/curious_snake/data"
-base_dir="C:/dev/abstrackr_web/encode_test"
+#base_dir="C:/dev/abstrackr_web/encode_test"
+base_dir = "/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake/data"
 fields=["title", "abstract", "keywords"]
 
 
