@@ -146,8 +146,10 @@ function setup_js(){
 
     function markup_current() {
         // reload the current citation, with markup
+        //alert(${c.cur_citation.id});
         $("#wait").text("marking up the current citation..")
         $("#citation").fadeOut('slow', function() {
+            alert(${c.cur_citation.id});
             $("#citation").load("${'/markup/%s/%s/%s' % (c.review_id, c.assignment_id, c.cur_citation.id)}", function() {
                 $("#citation").fadeIn('slow');
                 $("#wait").text("");
