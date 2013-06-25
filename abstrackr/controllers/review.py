@@ -200,6 +200,7 @@ class ReviewController(BaseController):
             [int(review_id) for review_id in request.params.getall("merge_review")]
 
         merged_review = self._make_new_review()
+        import pdb; pdb.set_trace()
         merged_review.name = request.params['name']
         merged_review.description = request.params['description']
         merged_review.sort_by = request.params['order']
@@ -750,7 +751,7 @@ class ReviewController(BaseController):
         priorities = priority_q.filter(\
                     model.Priority.project_id == old_review_id).all()
         for priority in priorities:
-            priority.review_id = new_review_id
+            priority.project_id = new_review_id
             Session.commit()
 
         # ok -- that's it. now we're going to *delete* the old review!
@@ -779,6 +780,9 @@ class ReviewController(BaseController):
 
         new_review.initial_round_size = 0
         new_review.tag_privacy = True
+
+        Session.add(new_review)
+        Session.commit()
 
         return new_review
 
@@ -2819,7 +2823,6 @@ class ReviewController(BaseController):
                 labels= self._get_labels_for_user(review, assignment, user)
                 labeled_citation_ids = [label.study_id for label in labels]
                 citations_in_priority_queue = [cit.citation_id for cit in citations_in_priority_queue]
-                import pdb; pdb.set_trace()
                 citations_not_yet_labeled = [x for x in citations_in_priority_queue if x not in labeled_citation_ids]
                 if len(citations_not_yet_labeled) == 0:
                     return True
