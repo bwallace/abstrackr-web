@@ -31,7 +31,7 @@ MAX_TITLE_LENGTH = 480
 START_FILE_MARKER = "\xef\xbb\xbf" # AKA BOM
 
 def looks_like_tsv(file_path):
-    header_line = open(file_path, 'r').readline()
+    header_line = open(file_path, 'rU').readline()
     headers = [x.lower().strip().replace(START_FILE_MARKER, "") for x in header_line.split("\t")]
     if len(headers) == 0:
         return False
@@ -90,7 +90,7 @@ def pmid_list_to_sql(pmids_path, review):
 
 def ris_to_sql(ris_path, review):
     print "building a dictionary from %s..." % ris_path
-    d = ris_to_d(open(ris_path).readlines())
+    d = ris_to_d(open(ris_path, 'rU').readlines())
     print "ok. now inserting into sql..."
     dict_to_sql(d, review)
     print "ok."
@@ -174,7 +174,7 @@ def tsv_to_d(citations, field_index_d):
 def tsv_to_sql(tsv_path, review):
     # figure out the indices
     #citations = open(tsv_path).readlines()
-    open_f = open(tsv_path)
+    open_f = open(tsv_path, 'rU')
     citations = csv.reader(open_f, delimiter="\t")
     # map field names to the corresponding indices
     # in the tsv, as indicated by the header
