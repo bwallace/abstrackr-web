@@ -812,7 +812,7 @@ class ReviewController(BaseController):
         """ % (project.name, \
                "%sjoin/%s" % (url('/', qualified=True), project.code))
 
-        server = smtplib.SMTP("localhost")
+        server = smtplib.SMTP("mail-relay.brown.edu")
         to = email
         sender = "noreply@abstrackr.cebm.brown.edu"
         body = string.join((
