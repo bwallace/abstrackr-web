@@ -260,14 +260,14 @@ def dict_to_sql(xml_d, review):
     xml_d_items = xml_d.items()
     random.shuffle(xml_d_items)
     for ref_id, citation_d in xml_d_items:
-        cit_id = insert_citation(review.review_id, ref_id, citation_d)
-        insert_priority_entry(review.review_id, cit_id, cit_num)
+        cit_id = insert_citation(review.project_id, ref_id, citation_d)
+        insert_priority_entry(review.project_id, cit_id, cit_num)
         cit_num += 1
     model.Session.commit()
 
 def insert_citation(review_id, ref_id, citation_d):
     citation = model.Citation()
-    citation.review_id = review_id
+    citation.project_id = review_id
     try:
         ref_id = int(ref_id)
     except:
@@ -293,7 +293,7 @@ def insert_citation(review_id, ref_id, citation_d):
 def insert_priority_entry(review_id, citation_id, \
                             init_priority_num, num_times_labeled=0):
     priority = model.Priority()
-    priority.review_id = review_id
+    priority.project_id = review_id
     priority.citation_id = citation_id
     priority.priority = init_priority_num
     priority.num_times_labeled = num_times_labeled
