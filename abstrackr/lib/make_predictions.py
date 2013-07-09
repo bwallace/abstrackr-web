@@ -45,10 +45,10 @@ def make_predictions(review_id):
         return None # fail
 
     # otherwise unpack the results
-    predictions, train_size, num_pos = pred_results #curious_snake.abstrackr_predict(data_paths)
+    predictions, train_size, num_pos = pred_results 
     # 5/4/12 -- predictions now include probability estimates!
     # just need to add these to the database.
-    #pdb.set_trace()
+
 
     ####
     # update the database

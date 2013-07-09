@@ -31,7 +31,7 @@ MAX_TITLE_LENGTH = 480
 START_FILE_MARKER = "\xef\xbb\xbf" # AKA BOM
 
 def looks_like_tsv(file_path):
-    header_line = open(file_path, 'r').readline()
+    header_line = open(file_path, 'rU').readline()
     headers = [x.lower().strip().replace(START_FILE_MARKER, "") for x in header_line.split("\t")]
     if len(headers) == 0:
         return False
@@ -174,7 +174,7 @@ def tsv_to_d(citations, field_index_d):
 def tsv_to_sql(tsv_path, review):
     # figure out the indices
     #citations = open(tsv_path).readlines()
-    open_f = open(tsv_path)
+    open_f = open(tsv_path, 'rU')
     citations = csv.reader(open_f, delimiter="\t")
     # map field names to the corresponding indices
     # in the tsv, as indicated by the header
@@ -185,7 +185,52 @@ def tsv_to_sql(tsv_path, review):
     open_f.close()
     return len(d)
 
+def ris_to_d(ris_data):
+    ris_d = {}
+    cur_id = 1
+    cur_authors, cur_keywords = [], []
+    current_citation = {"title":"", "abstract":"", "journal":"",\
+                                "keywords":"", "pmid":"", "authors":""}
 
+    # drop garbage/blank lines
+    ris_data = [line for line in ris_data if "-" in line]
+
+    # we skip the first line which just starts the
+    # first citation (citation 1)
+    for line in ris_data[1:]:
+        field, value = line.split("-")[0], "-".join(line.split("-")[1:])
+        field, value = field.strip(), value.strip()
+
+        if field == "TY":
+            # new citation
+            current_citation["authors"] = list(set(cur_authors))
+            current_citation["keywords"] = list(cur_keywords)
+            ris_d[cur_id] = current_citation
+
+            ###
+            # now create a new (empty) citation
+            # to be overwritten
+            current_citation = {"title":"", "abstract":"", "journal":"",\
+                                "keywords":"", "pmid":"", "authors":""}
+            cur_authors, cur_keywords = [], []
+            cur_id += 1
+        elif field in ("AU", "A1"):
+            # author
+            #pdb.set_trace()
+            cur_authors.append(value)
+        elif field in ("T1", "TI"):
+            current_citation["title"] = value[:MAX_TITLE_LENGTH]
+        elif field.startswith("J"):
+            current_citation["journal"] = value
+        elif field == "KW":
+            cur_keywords.append(value)
+        elif field in ("N2", "AB"):
+            current_citation["abstract"] = value
+    # add the last citation
+    ris_d[cur_id] = current_citation
+    
+    return ris_d
+    
 def _field_index_d(headers):
     field_index_d = {}
     for field in OBLIGATORY_FIELDS:
