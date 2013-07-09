@@ -260,8 +260,8 @@ def dict_to_sql(xml_d, review):
     xml_d_items = xml_d.items()
     random.shuffle(xml_d_items)
     for ref_id, citation_d in xml_d_items:
-        cit_id = insert_citation(review.project_id, ref_id, citation_d)
-        insert_priority_entry(review.project_id, cit_id, cit_num)
+        cit_id = insert_citation(review.id, ref_id, citation_d)
+        insert_priority_entry(review.id, cit_id, cit_num)
         cit_num += 1
     model.Session.commit()
 
