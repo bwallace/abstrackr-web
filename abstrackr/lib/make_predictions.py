@@ -35,7 +35,19 @@ def make_predictions(review_id):
     for field in fields:
         data_paths.append(os.path.join(review_base_dir, field, "encoded", "%s_encoded" % field))
     
-    predictions, train_size, num_pos = curious_snake.abstrackr_predict(data_paths)
+    pred_results = None
+    try:
+        pred_results = curious_snake.abstrackr_predict(data_paths)
+    except:
+        print "!!!! failed to predict results for " + review_base_dir
+
+    if pred_results is None:
+        return None # fail
+
+    # otherwise unpack the results
+    predictions, train_size, num_pos = pred_results 
+    # 5/4/12 -- predictions now include probability estimates!
+    # just need to add these to the database.
 
     ####
     # update the database
@@ -49,7 +61,8 @@ def make_predictions(review_id):
     # now re-insert them, reflecting the new prediction
     for study_id, pred_d in predictions.items():
         conn.execute(predictions_table.insert().values(study_id=study_id, review_id=review_id, \
-                    prediction=pred_d["prediction"], num_yes_votes=pred_d["num_yes_votes"]))
+                    prediction=pred_d["prediction"], num_yes_votes=pred_d["num_yes_votes"]),
+                    predicted_probability=pred_d["pred_prob"])
     
     
     # delete any existing prediction status entries, should they exist
