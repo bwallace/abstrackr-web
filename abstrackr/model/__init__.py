@@ -309,8 +309,6 @@ class Prediction(Base):
     num_yes_votes = Column(types.Float) # number of ensemble members that voted yes
     predicted_probability = Column(types.Float) # predicted probability
 
-
-
 ####################################
 ## these tables for authentication #
 ####################################

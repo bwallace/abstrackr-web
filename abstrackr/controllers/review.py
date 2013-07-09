@@ -66,8 +66,6 @@ class ReviewController(BaseController):
     def predictions_about_remaining_citations(self, id):
         if not self._current_user_leads_review(id):
             return "yeah, I don't think so."
-
-
         predictions_q = Session.query(model.Prediction)
         c.predictions_for_review = predictions_q.filter(model.Prediction.project_id == id).all()
         c.probably_included = len([x for x in c.predictions_for_review if x.num_yes_votes > 5])
@@ -159,9 +157,12 @@ class ReviewController(BaseController):
 
         # now parse the uploaded file; dispatch on type
         num_articles = None
-        if xml_file.filename.endswith(".xml"):
+        if xml_file.filename.lower().endswith(".xml"):
             print "parsing uploaded xml..."
             num_articles = xml_to_sql.xml_to_sql(local_file_path, new_review)
+        elif xml_file.filename.lower().endswith(".ris"):
+            print "parsing RIS file..."
+            num_articles = xml_to_sql.ris_to_sql(local_file_path, new_review)
         elif xml_to_sql.looks_like_tsv(local_file_path):
             num_articles = xml_to_sql.tsv_to_sql(local_file_path, new_review)
         else:
@@ -900,6 +901,11 @@ class ReviewController(BaseController):
         # map citation ids to dictionaries that, in turn, map
         # usernames to labels
         citation_to_lbls_dict = {}
+        
+        all_citations = [cit.citation_id for cit in self._get_citations_for_review(review.review_id)]
+	citations_labeled_dict = {}
+        for cit in all_citations:
+          citations_labeled_dict[cit]=False
 
         # likewise, for notes
         citation_to_notes_dict = {}
@@ -919,6 +925,8 @@ class ReviewController(BaseController):
               filter(model.Label.project_id==id).order_by(model.Citation.id).all():
                 # the above gives you all labeled citations for this review
                 # i.e., citations that have at least one label
+                citations_labeled_dict[citation.citation_id]=True
+
                 if lbl_filter_f(label):
                     cur_citation_id = citation.id
                     if last_citation_id != cur_citation_id:
@@ -1033,7 +1041,12 @@ class ReviewController(BaseController):
                                 cur_line.append(cur_note.ic)
 
             labels.append(",".join(cur_line))
-
+     
+        # exporting *all* (including unlabeled!) citations, per Ethan's request 
+        #-- may want to make this optional
+        unlabeled_citations = [cit for cit in citations_labeled_dict if not citations_labeled_dict[cit]]
+        labels.append("citations that are not yet labeled by anyone")
+        labels.extend([str(cit_id) for cit_id in unlabeled_citations])
 
         fout = open(os.path.join(\
                 "abstrackr", "public", "exports", "labels_%s.csv" % review.id), 'w')
@@ -1041,7 +1054,6 @@ class ReviewController(BaseController):
         lbls_str = lbls_str.encode("utf-8", "ignore")
         fout.write(lbls_str)
         fout.close()
-
         c.download_url = "%sexports/labels_%s.csv" % (url('/', qualified=True), review.id)
         return render("/reviews/download_labels.mako")
 
@@ -2635,6 +2647,12 @@ class ReviewController(BaseController):
         initial_task = self._get_initial_task_for_review(review.id)
         initial_task.num_assigned = n
         Session.commit()
+
+        # update the assignment object
+        initial_task = self._get_initial_task_for_review(review.review_id)
+        initial_task.num_assigned = n
+        model.Session.commit()
+      
 
         # finally, update the initial round size field
         # onthe review object

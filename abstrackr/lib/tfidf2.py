@@ -86,9 +86,6 @@ except:
 
 import copy
 
-
-
-
 #stop_list_path=os.getcwd() + "/abstrackr/lib/stop_list.txt"
 stop_list_path = "/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/stop_list.txt"
 
