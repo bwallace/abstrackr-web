@@ -120,7 +120,7 @@ def citations_to_disk(review_id, base_dir, fields=None):
 
 def get_lbl_d_for_review(review_id):
     lbl_d = {}
-    s = labels.select(labels.c.review_id==review_id)
+    s = labels.select(labels.c.project_id==review_id)
     for lbl in s.execute():
         lbl_d[lbl["study_id"]]=lbl["label"]  
     return lbl_d
@@ -172,7 +172,7 @@ def encode_review(review_id, base_dir="/Users/abstrackr-user/Hive/abstrackr/abst
     # ***which we assume exists!***
     return base_dir
 
-def update_labels(review_id, base_dir="/home/byron/abstrackr-web/abstrackr/lib/curious_snake/data"):
+def update_labels(review_id, base_dir="/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake/data"):
     new_lbls = get_lbl_d_for_review(review_id)
     fields = ["title", "abstract", "keywords"]
     for field in fields:
@@ -187,7 +187,7 @@ def update_labels(review_id, base_dir="/home/byron/abstrackr-web/abstrackr/lib/c
         print "done"
     print "ok, all updated."
     # update the database
-    update = encoded_status.update(encoded_status.c.review_id==review_id)
+    update = encoded_status.update(encoded_status.c.project_id==review_id)
     update.execute(labels_last_updated = datetime.datetime.now())
 
 def check_encoded_status_table():
@@ -211,7 +211,7 @@ def check_encoded_status_table():
 
 
 def _get_citations_for_review(review_id):
-    citation_ids = list(select([citations.c.citation_id], \
+    citation_ids = list(select([citations.c.id], \
                                     citations.c.project_id == review_id).execute())
     return citation_ids
 

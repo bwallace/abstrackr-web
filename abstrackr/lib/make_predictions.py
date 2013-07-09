@@ -7,9 +7,9 @@ import os, pdb, pickle
 import datetime
 import sys
 
-sys.path.append("/home/byron/abstrackr-web/abstrackr/lib/curious_snake")
+sys.path.append("/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake")
 # for libsvm
-sys.path.append("/home/byron/abstrackr-web/abstrackr/lib/curious_snake/learners/libsvm/python")
+sys.path.append("/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake/learners/libsvm/python")
 
 import curious_snake # magic!
 
