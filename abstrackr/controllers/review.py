@@ -1945,6 +1945,7 @@ class ReviewController(BaseController):
             already_labeled = \
                 self._get_already_labeled_ids(review.id, reviewer_id=reviewer_id)
 
+            pdb.set_trace()
             eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
             next_id = None
             # here we handle the case of fetching the *next* citation, i.e.,
@@ -1955,6 +1956,7 @@ class ReviewController(BaseController):
 
             if len(eligible_pool) > offset:
                 next_id = eligible_pool[offset]
+
         else:
             priority = self._get_next_priority(review, ignore_my_own_locks=ignore_my_own_locks)
             if priority is not None:
