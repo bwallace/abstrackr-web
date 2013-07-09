@@ -1,4 +1,4 @@
-import os, pdb, pickle
+import os, pdb, pickle, random
 from operator import itemgetter
 import datetime
 
@@ -8,8 +8,7 @@ from sqlalchemy.sql import select
 from sqlalchemy.sql import and_, or_
 
 from make_predictions import make_predictions
-import tfidf2 
-
+import tfidf2
 
 engine = create_engine("mysql://abstrackr-user:5xl.z=Uy6d@127.0.0.1:3306/abstrackrDBP01?unix_socket=/var/mysql/mysql.sock")
 metadata = MetaData(bind=engine)
@@ -105,6 +104,7 @@ def citations_to_disk(review_id, base_dir, fields=None):
         os.mkdir(base_dir)
 
     for field in fields:
+        print "(citations_to_disk) on field: %s" % field
         field_path = os.path.join(base_dir, field)
         if not os.path.exists(field_path):
             os.mkdir(field_path)
@@ -148,7 +148,7 @@ def lbls_to_disk(review_ids, base_dir):
 
 def encode_review(review_id, base_dir="/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake/data"):
     fields=["title", "abstract", "keywords"]
-
+    
     base_dir = os.path.join(base_dir, str(review_id))
     
     # write the abstracts to disk
@@ -172,7 +172,7 @@ def encode_review(review_id, base_dir="/Users/abstrackr-user/Hive/abstrackr/abst
     # ***which we assume exists!***
     return base_dir
 
-def update_labels(review_id, base_dir="/home/byron/abstrackr-web/curious_snake/data"):
+def update_labels(review_id, base_dir="/home/byron/abstrackr-web/abstrackr/lib/curious_snake/data"):
     new_lbls = get_lbl_d_for_review(review_id)
     fields = ["title", "abstract", "keywords"]
     for field in fields:
@@ -277,15 +277,14 @@ def _re_prioritize(review_id, sort_by_str):
         
         # now we will sort by *descending* order; those with the most yes-votes first
         sorted_cit_ids = sorted(cits_to_preds.iteritems(), key=itemgetter(1), reverse=True)
-    
+
         # now just assign priorities that reflect the ordering w.r.t. the predictions
         for i, cit in enumerate(sorted_cit_ids):
             cit_id_to_new_priority[cit[0]] = i
-       
+
     #####
     #   TODO -- ambiguous case (i.e., uncertainty sampling)
     ###
-
 
     ####
     # now update the priority table for the entries
@@ -298,8 +297,8 @@ def _re_prioritize(review_id, sort_by_str):
             priority_update = \
                 priorities.update(priorities.c.id == priority_id)
 
-        priority_update.execute(priority = cit_id_to_new_priority[citation_id])
-
+            priority_update.execute(priority = cit_id_to_new_priority[citation_id])
+        
 
 if __name__ == "__main__":
     print "checking the EncodedStatus table for new reviews..."
@@ -324,20 +323,21 @@ if __name__ == "__main__":
         else:
             sort_by_str = sort_by_str.fetchone().sort_by
             labels_for_review = select([labels.c.label_last_updated], \
-                        labels.c.project_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
+			labels.c.project_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
             if labels_for_review.rowcount > 0:
+                print "checking review %s..." % review_id
                 most_recent_label = labels_for_review.fetchone().label_last_updated
-                print "checking review %s.." % review_id
+                print "the most recent label for review %s is dated: %s" % (review_id, most_recent_label)
                 if most_recent_label > labels_last_updated:
                     # then there's been at least one new label, update encoded files!
                     print "updating labels for review %s..." % review_id
-                    update_labels(review_id)#, base_dir="C:/dev/abstrackr_web/encode_test")
-                
+                    update_labels(review_id)
+            
                     # now make predictions for updated reviews.
                     print "making predictions"
                     make_predictions(review_id)
-                    # now re-prioritize abstracts
-                    
+
+                    # now re-prioritize
                     print "re-prioritizing..."
                     _re_prioritize(review_id, sort_by_str)
                 else:

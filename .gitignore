@@ -1,8 +1,25 @@
-*.pyc
-*.ini
 *.swp
 *.DS_Store
 .ropeproject/
 data/
-uploads/
 tags
+=======
+# Ignore all files within the uploads/ folder #
+###############################################
+uploads/
+
+# Ignore all .pyc files from python #
+#####################################
+*.pyc
+
+# Ignore all logs and database files #
+######################################
+*.log
+*.sql
+*.sqlite
+
+# Ignore ini files. We do not want these tracked #
+# as they include passwords and configuration    #
+# information                                    #
+##################################################
+*.ini

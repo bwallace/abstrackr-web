@@ -5,27 +5,26 @@ basically, this contains code to map data from a given format
 '''
 
 # std libs
+import pdb
+import string 
 import csv
 import random
-import string
 
 # third party
-#import Bio
-#from Bio import Entrez
-
-#import elementtree
+import sqlite3
+import elementtree
 from elementtree.ElementTree import ElementTree
+import Bio
+from Bio import Entrez
 
-#import sqlite3
-
-# homegrown
+# homegrown 
 import pubmedpy
-import abstrackr.model as model  # for access to sqlalchemy
+import abstrackr.model as model # for access to sqlalchemy
 
 pubmedpy.set_email("byron.wallace@gmail.com")
 
-# for tsv importing
-OBLIGATORY_FIELDS = ["id", "title", "abstract"]  # these have to be there
+# for tsv importing 
+OBLIGATORY_FIELDS = ["id", "title", "abstract"] # these have to be there
 OPTIONAL_FIELDS = ["authors", "keywords", "journal", "pmid"]
 
 MAX_TITLE_LENGTH = 480
@@ -43,13 +42,11 @@ def looks_like_tsv(file_path):
     
     return False
 
-
 def _field_in(field, headers):
     # we'll only enforce that a string *start* with
     # the field; this avoids issues with, e.g.,
     # pluralization and new lines.
     return any([x.startswith(field) for x in headers])
-
 
 def _parse_pmids(pmids_path):
     pmids = []
@@ -67,24 +64,22 @@ def pubmed_ids_to_d(pmids):
     articles = pubmedpy.batch_fetch(pmids)
     print "ok."
 
-    articles = [article for article in articles if len(article) >= 3]
-
+    articles = [article for article in articles if len(article)>=3]
+    
     pmids_d = {}
     none_to_str = lambda x: x if x is not None else ""
-
+    
     for article in articles:
         title_text = article.get("TI")
-        ab_text = article.get("AB")
+        ab_text = article.get("AB")    
         authors = none_to_str(article.get("AU"))
         journal = none_to_str(article.get("JT"))
         keywords = none_to_str(article.get("MH"))
-        pmid = int(article["PMID"])
-        pmids_d[pmid] = {"title": title_text, "abstract": ab_text,
-                    "journal": journal, "keywords": keywords, "pmid": pmid,
-                    "authors": authors}
+        pmid = int(article["PMID"]) 
+        pmids_d[pmid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
+                                             "keywords":keywords, "pmid":pmid, "authors":authors}
     return pmids_d
-
-
+                                
 def pmid_list_to_sql(pmids_path, review):
     pmids = _parse_pmids(pmids_path)
     d = pubmed_ids_to_d(pmids)
@@ -92,6 +87,60 @@ def pmid_list_to_sql(pmids_path, review):
     dict_to_sql(d, review)
     print "ok."
     return len(d)
+
+def ris_to_sql(ris_path, review):
+    print "building a dictionary from %s..." % ris_path
+    d = ris_to_d(open(ris_path).readlines())
+    print "ok. now inserting into sql..."
+    dict_to_sql(d, review)
+    print "ok."
+    return len(d)
+    
+def ris_to_d(ris_data):
+    ris_d = {}
+    cur_id = 1
+    cur_authors, cur_keywords = [], []
+    current_citation = {"title":"", "abstract":"", "journal":"",\
+                                "keywords":"", "pmid":"", "authors":""}
+
+    # drop garbage/blank lines
+    ris_data = [line for line in ris_data if "-" in line]
+
+    # we skip the first line which just starts the
+    # first citation (citation 1)
+    for line in ris_data[1:]:
+        field, value = line.split("-")[0], "-".join(line.split("-")[1:])
+        field, value = field.strip(), value.strip()
+
+        if field == "TY":
+            # new citation
+            current_citation["authors"] = list(set(cur_authors))
+            current_citation["keywords"] = list(cur_keywords)
+            ris_d[cur_id] = current_citation
+
+            ###
+            # now create a new (empty) citation
+            # to be overwritten
+            current_citation = {"title":"", "abstract":"", "journal":"",\
+                                "keywords":"", "pmid":"", "authors":""}
+            cur_authors, cur_keywords = [], []
+            cur_id += 1
+        elif field in ("AU", "A1"):
+            # author
+            #pdb.set_trace()
+            cur_authors.append(value)
+        elif field in ("T1", "TI"):
+            current_citation["title"] = value[:MAX_TITLE_LENGTH]
+        elif field.startswith("J"):
+            current_citation["journal"] = value
+        elif field == "KW":
+            cur_keywords.append(value)
+        elif field in ("N2", "AB"):
+            current_citation["abstract"] = value
+    # add the last citation
+    ris_d[cur_id] = current_citation
+    
+    return ris_d
 
 
 def tsv_to_d(citations, field_index_d):
@@ -103,24 +152,21 @@ def tsv_to_d(citations, field_index_d):
         for field in OPTIONAL_FIELDS:
             if field in field_index_d:
                     tsv_d[cur_id][field] = \
-                            citation[field_index_d[field]].decode('utf8',
-                                    'replace')
-
-                    # issue 2 -- if this is the authors field, we expect
-                    # author names to be separated by commas. later in the
-                    # pipeline, we'll expect a *list* here, so we create
-                    # that now.
-                    if field == "authors" or field == "keywords":
+                            citation[field_index_d[field]].decode('utf8', 'replace')
+        
+                    # issue 2 -- if this is the authors field, we expect author names
+                    # to be separated by commas. later in the pipeline, we'll expect
+                    # a *list* here, so we create that now.
+                    if field == "authors" or field=="keywords":
                         tsv_d[cur_id][field] = tsv_d[cur_id][field].split(",")
-
+                    
             else:
                 # just insert a blank string
                 tsv_d[cur_id][field] = ""
-
+        
         # now add the obligatory fields
         for field in OBLIGATORY_FIELDS:
-            tsv_d[cur_id][field] = \
-                    citation[field_index_d[field]].decode('utf8', 'replace')
+            tsv_d[cur_id][field] = citation[field_index_d[field]].decode('utf8', 'replace')
 
     return tsv_d
 
@@ -132,7 +178,7 @@ def tsv_to_sql(tsv_path, review):
     citations = csv.reader(open_f, delimiter="\t")
     # map field names to the corresponding indices
     # in the tsv, as indicated by the header
-    headers = [header.strip() for header in citations.next()]
+    headers = [header.strip().replace(START_FILE_MARKER, "") for header in citations.next()]
     field_index_d = _field_index_d(headers)
     d = tsv_to_d(citations, field_index_d)
     dict_to_sql(d, review)
@@ -190,12 +236,12 @@ def _field_index_d(headers):
     for field in OBLIGATORY_FIELDS:
         # we know these exist
         field_index_d[field] = headers.index(field)
-
+    
     # now let's see if they've optional headers
     for field in OPTIONAL_FIELDS:
         if field in headers:
             field_index_d[field] = headers.index(field)
-
+    
     return field_index_d
 
 def xml_to_sql(xml_path, review):
@@ -207,52 +253,53 @@ def xml_to_sql(xml_path, review):
     return len(d)
 
 
-def dict_to_sql(xml_d, review):
+    
+def dict_to_sql(xml_d, review): 
     cit_num = 0
     # issue #31: explicitly randomize ordering
     xml_d_items = xml_d.items()
     random.shuffle(xml_d_items)
     for ref_id, citation_d in xml_d_items:
-        cit_id = insert_citation(review.id, ref_id, citation_d)
-        insert_priority_entry(review.id, cit_id, cit_num)
+        cit_id = insert_citation(review.review_id, ref_id, citation_d)
+        insert_priority_entry(review.review_id, cit_id, cit_num)
         cit_num += 1
     model.Session.commit()
 
 def insert_citation(review_id, ref_id, citation_d):
     citation = model.Citation()
-    citation.project_id = review_id
+    citation.review_id = review_id
     try:
         ref_id = int(ref_id)
     except:
         ref_id = None
 
-    citation.refman = ref_id
+    citation.refman_id = ref_id
     pmid = citation_d['pmid']
-    citation.pmid =  pmid if (pmid is not None and pmid != '') else 0
+    citation.pmid_id =  pmid if (pmid is not None and pmid != '') else 0
     # we truncate the citation if it's too long!
-    citation.title = citation_d['title'][:480] if \
+    citation.title = citation_d['title'][:MAX_TITLE_LENGTH] if \
                                 citation_d['title'] is not None else "(no title found)"
     citation.abstract = citation_d['abstract'][:9980] if \
                                 citation_d['abstract'] is not None else None
     citation.authors = " and ".join(citation_d['authors'])
     citation.keywords = ','.join(citation_d['keywords'])
     citation.journal = citation_d['journal']
-
+    
     model.Session.add(citation)
     model.Session.commit()
 
-    return citation.id
-
+    return citation.citation_id
+ 
 def insert_priority_entry(review_id, citation_id, \
                             init_priority_num, num_times_labeled=0):
     priority = model.Priority()
-    priority.project_id = review_id
+    priority.review_id = review_id
     priority.citation_id = citation_id
     priority.priority = init_priority_num
     priority.num_times_labeled = num_times_labeled
     priority.is_out = False
     model.Session.add(priority)
-
+    
 
 def xml_to_dict(fpath):
     '''
@@ -263,9 +310,9 @@ def xml_to_dict(fpath):
     ref_ids_to_abs = {}
     num_no_abs = 0
     tree = ElementTree(file=fpath)
-
+    
     num_failed = 0
-
+    
     for record in tree.findall('.//record'):
         pubmed_id, refmanid = None, None
 
@@ -299,13 +346,13 @@ def xml_to_dict(fpath):
                 print "problem getting pmid ..."
                 print ex
                 print("\n")
-
+    
             ab_text = record.findtext('.//abstract/style')
             if ab_text is None:
                 num_no_abs += 1
-
+    
             title_text = record.findtext('.//titles/title/style')
-
+    
             # Also grab keywords
             keywords = [keyword.text.strip().lower() for keyword in record.findall(".//keywords/keyword/style")]
 
@@ -315,10 +362,10 @@ def xml_to_dict(fpath):
             # journal
             journal = record.findtext(journal_path_str)
 
-            ref_ids_to_abs[refmanid] = {"title": title_text, "abstract": ab_text, "journal": journal,\
-                        "keywords": keywords, "pmid": pubmed_id, "authors": authors}
+            ref_ids_to_abs[refmanid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
+                        "keywords":keywords, "pmid":pubmed_id, "authors":authors}
 
-
+    
     print "\nFinished. Returning %s title/abstract/keyword sets, %s of which have no abstracts.\n" \
                     % (len(ref_ids_to_abs.keys()), num_no_abs)
     return ref_ids_to_abs

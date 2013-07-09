@@ -7,9 +7,9 @@ import os, pdb, pickle
 import datetime
 import sys
 
-sys.path.append("curious_snake")
+sys.path.append("/home/byron/abstrackr-web/abstrackr/lib/curious_snake")
 # for libsvm
-sys.path.append("curious_snake/learners/libsvm/python")
+sys.path.append("/home/byron/abstrackr-web/abstrackr/lib/curious_snake/learners/libsvm/python")
 
 import curious_snake # magic!
 
@@ -49,6 +49,7 @@ def make_predictions(review_id):
     # 5/4/12 -- predictions now include probability estimates!
     # just need to add these to the database.
 
+
     ####
     # update the database
     ####
@@ -63,7 +64,6 @@ def make_predictions(review_id):
         conn.execute(predictions_table.insert().values(study_id=study_id, review_id=review_id, \
                     prediction=pred_d["prediction"], num_yes_votes=pred_d["num_yes_votes"]),
                     predicted_probability=pred_d["pred_prob"])
-    
     
     # delete any existing prediction status entries, should they exist
     conn.execute(prediction_status.delete().where(prediction_status.c.review_id == review_id))
