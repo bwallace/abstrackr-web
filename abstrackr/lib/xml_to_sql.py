@@ -288,7 +288,7 @@ def insert_citation(review_id, ref_id, citation_d):
     model.Session.add(citation)
     model.Session.commit()
 
-    return citation.citation_id
+    return citation.id
  
 def insert_priority_entry(review_id, citation_id, \
                             init_priority_num, num_times_labeled=0):
