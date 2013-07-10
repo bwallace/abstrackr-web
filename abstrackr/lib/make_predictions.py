@@ -9,7 +9,7 @@ import sys
 
 sys.path.append("/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake")
 # for libsvm
-sys.path.append("/Users/abstrackr-user/Hive/abstrackr/abstrackr/lbi/curious_snake/learners/libsvm/python")
+sys.path.append("/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake/learners/libsvm/python")
 
 import curious_snake # magic!
 
@@ -61,7 +61,7 @@ def make_predictions(review_id):
    
     # now re-insert them, reflecting the new prediction
     for study_id, pred_d in predictions.items():
-        conn.execute(predictions_table.insert().values(study_id=study_id, review_id=review_id, \
+        conn.execute(predictions_table.insert().values(study_id=study_id, project_id=review_id, \
                     prediction=pred_d["prediction"], num_yes_votes=pred_d["num_yes_votes"]),
                     predicted_probability=pred_d["pred_prob"])
     
