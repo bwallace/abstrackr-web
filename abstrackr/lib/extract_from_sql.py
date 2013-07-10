@@ -40,7 +40,7 @@ def labels_for_review_ids(review_ids):
     # labelers.
     s = select([labels, users, citations.c.abstract], \
                         and_(labels.c.reviewer_id == users.c.id,
-                             labels.c.review_id.in_(review_ids),
+                             labels.c.project_id.in_(review_ids),
                              citations.c.citation_id == labels.c.study_id),
                         use_labels=True)
 
@@ -229,7 +229,7 @@ def _get_predictions_for_review(review_id):
     map citation ids to predictions (num_yes_votes)
     '''
     preds = list(select([predictions.c.study_id, predictions.c.num_yes_votes],\
-                    predictions.c.review_id == review_id).execute())
+                    predictions.c.project_id == review_id).execute())
       
     preds_d = {}              
     for study_id, yes_votes in preds:
