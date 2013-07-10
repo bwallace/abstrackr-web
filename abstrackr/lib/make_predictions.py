@@ -9,7 +9,7 @@ import sys
 
 sys.path.append("/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake")
 # for libsvm
-sys.path.append("/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/curious_snake/learners/libsvm/python")
+sys.path.append("/Users/abstrackr-user/Hive/abstrackr/abstrackr/lbi/curious_snake/learners/libsvm/python")
 
 import curious_snake # magic!
 
@@ -56,7 +56,7 @@ def make_predictions(review_id):
 
     # first, delete all prediction entries associated with this
     # review (these are presumably 'stale' now)
-    conn.execute(predictions_table.delete().where(predictions_table.c.review_id == review_id))
+    conn.execute(predictions_table.delete().where(predictions_table.c.project_id == review_id))
 
    
     # now re-insert them, reflecting the new prediction
@@ -66,10 +66,10 @@ def make_predictions(review_id):
                     predicted_probability=pred_d["pred_prob"])
     
     # delete any existing prediction status entries, should they exist
-    conn.execute(prediction_status.delete().where(prediction_status.c.review_id == review_id))
+    conn.execute(prediction_status.delete().where(prediction_status.c.project_id == review_id))
 
     # finally, update the prediction status
-    conn.execute(prediction_status.insert().values(review_id=review_id, predictions_exist=True,\
+    conn.execute(prediction_status.insert().values(project_id=review_id, predictions_exist=True,\
          predictions_last_made=datetime.datetime.now(), train_set_size=train_size,\
          num_pos_train=num_pos))
 
