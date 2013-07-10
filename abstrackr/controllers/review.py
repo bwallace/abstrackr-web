@@ -114,10 +114,10 @@ class ReviewController(BaseController):
                     row_str = [citation.id, citation.title, pred.predicted_probability, pred.prediction]
                     csv_out.writerow(row_str)
 
-            csv_out.writerow([])
-            csv_out.writerow([
-                "* due to implementation details the 'hard' prediction may diverge somewhat from the more fine-grained probability prediction."])
-            
+                csv_out.writerow([])
+                csv_out.writerow([
+                    "* due to implementation details the 'hard' prediction may diverge somewhat from the more fine-grained probability prediction."])
+                
             c.preds_download_url = "%sexports/predictions_%s.csv" % (
                                         url('/', qualified=True), id)
            
