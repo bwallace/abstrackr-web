@@ -899,7 +899,7 @@ class ReviewController(BaseController):
         # map citation ids to dictionaries that, in turn, map
         # usernames to labels
         citation_to_lbls_dict = {}
-        
+
         all_citations = [cit.citation_id for cit in self._get_citations_for_review(review.review_id)]
 	citations_labeled_dict = {}
         for cit in all_citations:
@@ -1039,8 +1039,8 @@ class ReviewController(BaseController):
                                 cur_line.append(cur_note.ic)
 
             labels.append(",".join(cur_line))
-     
-        # exporting *all* (including unlabeled!) citations, per Ethan's request 
+
+        # exporting *all* (including unlabeled!) citations, per Ethan's request
         #-- may want to make this optional
         unlabeled_citations = [cit for cit in citations_labeled_dict if not citations_labeled_dict[cit]]
         labels.append("citations that are not yet labeled by anyone")
@@ -1960,7 +1960,6 @@ class ReviewController(BaseController):
             already_labeled = \
                 self._get_already_labeled_ids(review.id, reviewer_id=reviewer_id)
 
-            pdb.set_trace()
             eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
             next_id = None
             # here we handle the case of fetching the *next* citation, i.e.,
@@ -2652,7 +2651,7 @@ class ReviewController(BaseController):
         initial_task = self._get_initial_task_for_review(review.review_id)
         initial_task.num_assigned = n
         model.Session.commit()
-      
+
 
         # finally, update the initial round size field
         # onthe review object
