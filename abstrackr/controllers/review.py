@@ -107,13 +107,17 @@ class ReviewController(BaseController):
                 "abstrackr", "public", "exports", "predictions_%s.csv" % id)
             with open(path_to_preds_out, 'w') as fout:
                 csv_out = csv.writer(fout)
-                preds_file_headers = ["citation_id", "title", "predicted p of being relevant"]
+                preds_file_headers = ["citation_id", "title", "predicted p of being relevant", "'hard' screening prediction*"]
                 csv_out.writerow(preds_file_headers)
                 for pred in c.predictions_for_review:
                     citation = self._get_citation_from_id(pred.study_id)
-                    row_str = [citation.id, citation.title, pred.predicted_probability]
+                    row_str = [citation.id, citation.title, pred.predicted_probability, pred.prediction]
                     csv_out.writerow(row_str)
 
+            csv_out.writerow([])
+            csv_out.writerow([
+                "* due to implementation details the 'hard' prediction may diverge somewhat from the more fine-grained probability prediction."])
+            
             c.preds_download_url = "%sexports/predictions_%s.csv" % (
                                         url('/', qualified=True), id)
            
