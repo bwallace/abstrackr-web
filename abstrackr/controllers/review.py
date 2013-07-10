@@ -109,7 +109,11 @@ class ReviewController(BaseController):
                 csv_out = csv.writer(fout)
                 preds_file_headers = ["citation_id", "title", "predicted p of being relevant", "'hard' screening prediction*"]
                 csv_out.writerow(preds_file_headers)
-                for pred in c.predictions_for_review:
+                
+                all_preds = c.predictions_for_review
+                all_preds.sort(key=lambda pred: pred.predicted_probability, reverse=True)
+
+                for pred in all_preds:
                     citation = self._get_citation_from_id(pred.study_id)
                     row_str = [citation.id, citation.title, pred.predicted_probability, pred.prediction]
                     csv_out.writerow(row_str)
@@ -117,7 +121,7 @@ class ReviewController(BaseController):
                 csv_out.writerow([])
                 csv_out.writerow([
                     "* due to implementation details the 'hard' prediction may diverge somewhat from the more fine-grained probability prediction."])
-                
+
             c.preds_download_url = "%sexports/predictions_%s.csv" % (
                                         url('/', qualified=True), id)
            
