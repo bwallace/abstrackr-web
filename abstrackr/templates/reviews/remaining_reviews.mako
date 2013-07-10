@@ -53,6 +53,14 @@
         <img src= "${c.prob_plot_url}">
       </center>
     % endif
+
+     hello world
+    % if ${c.preds_download_url} is not None:
+      <right>
+      <a href = "${c.preds_download_url}">download predictions</a>
+      </right>
+    % endif
+    
     </div></center>
   </div>
   </body>
