@@ -54,10 +54,10 @@
       </center>
     % endif
 
-     hello world
+    
     % if c.preds_download_url is not None:
       <right>
-      <a href = "${c.preds_download_url}">download predictions</a>
+      <a href = "${c.preds_download_url}"><img src = "../../export_sm.png"/> download predictions</a>
       </right>
     % endif
 
