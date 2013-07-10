@@ -68,7 +68,11 @@ class ReviewController(BaseController):
         c.predictions_for_review = predictions_q.filter(model.Prediction.project_id == id).all()
         c.probably_included = len([x for x in c.predictions_for_review if x.num_yes_votes > 5])
 
-        has_prob_estimates = not any([pred.predicted_probability is None for pred in c.predictions_for_review])
+        has_prob_estimates = not any(
+            [pred.predicted_probability is None for pred in c.predictions_for_review])
+
+        ### allow exporting of predictions
+        c.preds_download_url = None # populated below, at least when we have predicted probs.
         num_bins = 20
         if has_prob_estimates:
             prob_estimates = [pred.predicted_probability for pred in c.predictions_for_review]
@@ -95,6 +99,24 @@ class ReviewController(BaseController):
                        &chtt=Probabilities+of+remaining+studies+being+relevant''' % \
                             (int(float(num_preds)/2.0), num_preds, prob_counts_str)
             c.prob_plot_url = c.prob_plot_url.replace(" ", "").replace("\n", "")
+
+            '''
+            dump predictions to a file, too (@TODO factor this out?)
+            '''
+            path_to_preds_out = os.path.join(
+                "abstrackr", "public", "exports", "predictions_%s.csv" % review.id)
+            with open(path_to_preds_out) as fout:
+                csv_out = csv.csv_writer()
+                preds_file_headers = ["citation_id", "title", "predicted p of being relevant"]
+                csv_out.writerow(preds_file_headers)
+                for pred in c.predictions_for_review:
+                    citation = self._get_citation_from_id(pred.study_id)
+                    row_str = [citation.id, citation.title, pred.predicted_probability]
+                    csv_out.writerow(row_str)
+
+            c.preds_download_url = "%sexports/predictions_%s.csv" % (
+                                        url('/', qualified=True), review.id)
+           
         else:
             # this will be phased out
             c.frequencies = [] # This is the list of frequencies of the number of 'yes' votes.
@@ -901,7 +923,8 @@ class ReviewController(BaseController):
         citation_to_lbls_dict = {}
 
         all_citations = [cit.citation_id for cit in self._get_citations_for_review(review.review_id)]
-	citations_labeled_dict = {}
+	    
+        citations_labeled_dict = {}
         for cit in all_citations:
           citations_labeled_dict[cit]=False
 

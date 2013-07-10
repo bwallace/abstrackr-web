@@ -42,5 +42,13 @@
     ${c.probably_included} citations are probably relevant.<br /><br />
 
     <center><div id="chart_div" style="width: 1000px; height: 700px;"></div></center>
+
+     hello world
+    % if ${c.preds_download_url} is not None:
+      <right>
+      <a href = "${c.preds_download_url}">download predictions</a>
+      </right>
+    % endif
+
   </div>
   </body>
