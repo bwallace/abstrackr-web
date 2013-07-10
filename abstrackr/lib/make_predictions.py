@@ -58,11 +58,15 @@ def make_predictions(review_id):
     # review (these are presumably 'stale' now)
     conn.execute(predictions_table.delete().where(predictions_table.c.project_id == review_id))
 
-   
+    # map -1's to 0's; this is because the ORM (sql-alchemy)
+    # expects boolean fields to be either 0 or 1, which is apparently
+    # a new thing in later releases (oh, well).
+    neg_one_to_0 = lambda x : 0 if x < 0 else x
+
     # now re-insert them, reflecting the new prediction
     for study_id, pred_d in predictions.items():
         conn.execute(predictions_table.insert().values(study_id=study_id, review_id=review_id, \
-                    prediction=pred_d["prediction"], num_yes_votes=pred_d["num_yes_votes"]),
+                    prediction=neg_one_to_0(pred_d["prediction"]), num_yes_votes=pred_d["num_yes_votes"]),
                     predicted_probability=pred_d["pred_prob"])
     
     # delete any existing prediction status entries, should they exist
