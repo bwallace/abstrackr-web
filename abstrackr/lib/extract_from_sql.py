@@ -228,12 +228,14 @@ def _get_predictions_for_review(review_id):
     '''
     map citation ids to predictions (num_yes_votes)
     '''
-    preds = list(select([predictions.c.study_id, predictions.c.num_yes_votes],\
+    #preds = list(select([predictions.c.study_id, predictions.c.num_yes_votes],\
+    #                predictions.c.project_id == review_id).execute())
+    preds = list(select([predictions.c.study_id, predictions.c.predicted_probability],\
                     predictions.c.project_id == review_id).execute())
-      
+
     preds_d = {}              
-    for study_id, yes_votes in preds:
-        preds_d[study_id] = yes_votes
+    for study_id, prob in preds:
+        preds_d[study_id] = prob
     return preds_d
 
 
@@ -270,10 +272,11 @@ def _re_prioritize(review_id, sort_by_str):
         # e.g., a review may have been merged (?) -- citations for which
         # we have predictions will simply be overwritten, below
         for citation_id in citation_ids:
-            cits_to_preds[citation_id] = 11
+            #cits_to_preds[citation_id] = 11
+            cits_to_preds[citation_id] = 1.0
 
-        for study_id, num_yes_votes in predictions_for_review.items():
-            cits_to_preds[study_id] = num_yes_votes
+        for study_id, prob in predictions_for_review.items():
+            cits_to_preds[study_id] = prob
         
         # now we will sort by *descending* order; those with the most yes-votes first
         sorted_cit_ids = sorted(cits_to_preds.iteritems(), key=itemgetter(1), reverse=True)
