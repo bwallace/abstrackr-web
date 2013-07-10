@@ -105,7 +105,7 @@ class ReviewController(BaseController):
             '''
             path_to_preds_out = os.path.join(
                 "abstrackr", "public", "exports", "predictions_%s.csv" % id)
-            with open(path_to_preds_out) as fout:
+            with open(path_to_preds_out, 'w') as fout:
                 csv_out = csv.csv_writer()
                 preds_file_headers = ["citation_id", "title", "predicted p of being relevant"]
                 csv_out.writerow(preds_file_headers)
