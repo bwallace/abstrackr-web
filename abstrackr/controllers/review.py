@@ -104,7 +104,7 @@ class ReviewController(BaseController):
             dump predictions to a file, too (@TODO factor this out?)
             '''
             path_to_preds_out = os.path.join(
-                "abstrackr", "public", "exports", "predictions_%s.csv" % review.id)
+                "abstrackr", "public", "exports", "predictions_%s.csv" % id)
             with open(path_to_preds_out) as fout:
                 csv_out = csv.csv_writer()
                 preds_file_headers = ["citation_id", "title", "predicted p of being relevant"]
@@ -115,7 +115,7 @@ class ReviewController(BaseController):
                     csv_out.writerow(row_str)
 
             c.preds_download_url = "%sexports/predictions_%s.csv" % (
-                                        url('/', qualified=True), review.id)
+                                        url('/', qualified=True), id)
            
         else:
             # this will be phased out
