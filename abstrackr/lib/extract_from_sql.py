@@ -166,7 +166,7 @@ def encode_review(review_id, base_dir="/Users/abstrackr-user/Hive/abstrackr/abst
         out_f_name = "%s_encoded" % field
         tfidf2.encode_docs(dir_path, out_path, out_f_name, \
                     lbl_dict=lbl_d, clean_first=True, binary=True, \
-                    min_word_count=3, bi_grams_too=True)
+                    min_word_count=3, bi_grams_too=True, delete_files_after=True)
 
     # fetch the encoded status entry for this review, 
     # ***which we assume exists!***

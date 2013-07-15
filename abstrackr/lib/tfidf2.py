@@ -169,14 +169,13 @@ def abstrackr_encode(dir_path, out_dir, label_d=None, \
                 lbl_dict=label_d, clean_first=False, bi_grams_too=bi_grams_too,\
                 min_word_count=min_word_count)
 
-def encode_docs(dir_path, out_path, out_f_name, \
-                lbl_dict=None, clean_first=True, binary=True, \
-                min_word_count=3, bi_grams_too=False):
+def encode_docs(dir_path, out_path, out_f_name, 
+                lbl_dict=None, clean_first=True, binary=True, 
+                min_word_count=3, bi_grams_too=False, delete_files_after=False):
     '''
     Given a directory path, this method cleans, then encodes and writes out all text files therein.
     '''
     
-    #tfidf_to_file_for_lib_SVM(encoded_docs, lbl_dict.keys(), os.path.join(out_path, out_f_name))
     if lbl_dict is not None and len(lbl_dict)>0:
         if not isinstance(lbl_dict.values()[0], str):
             print "\n\n\n*****labels are *not* strings, but they need to be!\n going to force this, MAKE SURE THIS IS SANE\n\n"
@@ -189,7 +188,7 @@ def encode_docs(dir_path, out_path, out_f_name, \
         clean_docs_path = os.path.join(dir_path, "Cleaned")
         if not os.path.exists(clean_docs_path):
             _mkdir(clean_docs_path)
-        clean_up_docs(dir_path, out_dir = clean_docs_path)
+        clean_up_docs(dir_path, out_dir=clean_docs_path)
         print "done cleaning."
     else:
         clean_docs_path = dir_path
@@ -199,8 +198,8 @@ def encode_docs(dir_path, out_path, out_f_name, \
 
     # now build tf/idf representation
     print "encoding..."
-    encoded_docs = build_bag_of_words_over_dir(\
-          clean_docs_path, binary_encode=binary, \
+    encoded_docs = build_bag_of_words_over_dir(
+          clean_docs_path, binary_encode=binary, 
           min_word_count=min_word_count, bi_grams_too=bi_grams_too,
           word_index_path=os.path.join(out_path, "word_index.txt"))
     print "done encoding."
@@ -217,8 +216,34 @@ def encode_docs(dir_path, out_path, out_f_name, \
 
     tfidf_to_file_for_lib_SVM_multi_label(encoded_docs, pos_ids, neg_ids,
                                                             None, os.path.join(out_path, out_f_name))
+    
+    if delete_files_after:
+        # then we wipe out the files from disk
+        print "removing files from disk..."
+        # remove the original files
+        clean_up(dir_path)
+        # and the 'clean' files
+        clean_up(clean_docs_path)
+        print "all clean."
+
     print "done."
     
+def clean_up(dir_path, word_file_name="word_index.txt"):
+    
+    #word_index_path = os.path.join(dir_path, "word_index.txt")
+
+    files_to_del = [f for f in os.listdir(dir_path) 
+                        if f != word_file_name and 
+                        not os.path.isdir(os.path.join(dir_path, f))]
+
+    for p in files_to_del:
+        full_file_path = os.path.join(dir_path, p)
+        try:
+            os.remove(full_file_path)
+        except:
+            print "failed to delete file %s!" % p
+
+
 def bag_of_authors(ids_to_authors):
     all_authors = []
     for author_list in ids_to_authors.values():
