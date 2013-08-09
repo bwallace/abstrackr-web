@@ -3,7 +3,9 @@
 .ropeproject/
 data/
 tags
+
 =======
+
 # Ignore all files within the uploads/ folder #
 ###############################################
 uploads/
@@ -12,9 +14,9 @@ uploads/
 #####################################
 *.pyc
 
-# Ignore all logs and database files #
+# Database files #
 ######################################
-*.log
+*.bak
 *.sql
 *.sqlite
 
@@ -23,3 +25,8 @@ uploads/
 # information                                    #
 ##################################################
 *.ini
+
+# Paste server runtime files #
+##############################
+*.pid
+*.log
