@@ -9,6 +9,7 @@ import pdb
 import string 
 import csv
 import random
+import os
 
 # third party
 import sqlite3
@@ -49,14 +50,16 @@ def _field_in(field, headers):
     return any([x.startswith(field) for x in headers])
 
 def _parse_pmids(pmids_path):
+    parsing_errors = []
     pmids = []
     for pmid in [x.strip() for x in open(pmids_path, 'rU').readlines()]:
         if pmid != "":
             try:
                 pmids.append(int(pmid))
             except:
-                print "couldn't parse this line; %s" % pmid
-    return pmids
+                error = "Unable to parse '%s' in '%s'. This does not appear to be a valid Pubmed ID" % (pmid, os.path.basename(pmids_path))
+                parsing_errors.append(error)
+    return pmids, {"import-errors": parsing_errors}
 
 
 def pubmed_ids_to_d(pmids):
@@ -81,12 +84,12 @@ def pubmed_ids_to_d(pmids):
     return pmids_d
                                 
 def pmid_list_to_sql(pmids_path, review):
-    pmids = _parse_pmids(pmids_path)
+    pmids, dict_misc = _parse_pmids(pmids_path)
     d = pubmed_ids_to_d(pmids)
     print "ok. now inserting into sql..."
     dict_to_sql(d, review)
     print "ok."
-    return len(d)
+    return len(d), dict_misc
 
 def ris_to_sql(ris_path, review):
     print "building a dictionary from %s..." % ris_path
@@ -145,30 +148,46 @@ def ris_to_d(ris_data):
 
 def tsv_to_d(citations, field_index_d):
     tsv_d = {}
+    parsing_errors = []
 
     for citation in citations:
+        ## Make sure that the fields we are interested in are within range first
+        ## If the line is misformed then we don't want to even consider when committing
+        ## any data to the database and so we skip to the next citation without adding
+        ## anything to tsv_d dictionary but we record the error for reporting
+        try:
+            for field in OPTIONAL_FIELDS:
+                if field in field_index_d:
+                    citation[field_index_d[field]].decode('utf8', 'replace')
+            for field in OBLIGATORY_FIELDS:
+                citation[field_index_d[field]].decode('utf8', 'replace')
+        except (IndexError, KeyError) as e:
+            error = "Problem with %s. This line is misformed and missing critical fields" % (citation)
+            parsing_errors.append(error)
+            continue
+        ## Now build the tsv_d dictionary. If we did this earlier then we
+        ## will get into trouble for having an entry with missing fields and it
+        ## will throw errors later in the program
         cur_id = citation[field_index_d["id"]]
         tsv_d[cur_id] = {}
         for field in OPTIONAL_FIELDS:
             if field in field_index_d:
-                    tsv_d[cur_id][field] = \
-                            citation[field_index_d[field]].decode('utf8', 'replace')
-        
-                    # issue 2 -- if this is the authors field, we expect author names
-                    # to be separated by commas. later in the pipeline, we'll expect
-                    # a *list* here, so we create that now.
-                    if field == "authors" or field=="keywords":
-                        tsv_d[cur_id][field] = tsv_d[cur_id][field].split(",")
-                    
+                tsv_d[cur_id][field] = \
+                    citation[field_index_d[field]].decode('utf8', 'replace')
+    
+            # issue 2 -- if this is the authors field, we expect author names
+            # to be separated by commas. later in the pipeline, we'll expect
+            # a *list* here, so we create that now.
+            if field == "authors" or field=="keywords":
+                tsv_d[cur_id][field] = tsv_d[cur_id][field].split(",")
             else:
                 # just insert a blank string
                 tsv_d[cur_id][field] = ""
-        
+    
         # now add the obligatory fields
         for field in OBLIGATORY_FIELDS:
             tsv_d[cur_id][field] = citation[field_index_d[field]].decode('utf8', 'replace')
-
-    return tsv_d
+    return tsv_d, {"import-errors": parsing_errors}
 
 
 def tsv_to_sql(tsv_path, review):
@@ -180,56 +199,56 @@ def tsv_to_sql(tsv_path, review):
     # in the tsv, as indicated by the header
     headers = [header.strip().replace(START_FILE_MARKER, "") for header in citations.next()]
     field_index_d = _field_index_d(headers)
-    d = tsv_to_d(citations, field_index_d)
+    d, dict_misc = tsv_to_d(citations, field_index_d)
     dict_to_sql(d, review)
     open_f.close()
-    return len(d)
+    return len(d), dict_misc
 
-def ris_to_d(ris_data):
-    ris_d = {}
-    cur_id = 1
-    cur_authors, cur_keywords = [], []
-    current_citation = {"title":"", "abstract":"", "journal":"",\
-                                "keywords":"", "pmid":"", "authors":""}
-
-    # drop garbage/blank lines
-    ris_data = [line for line in ris_data if "-" in line]
-
-    # we skip the first line which just starts the
-    # first citation (citation 1)
-    for line in ris_data[1:]:
-        field, value = line.split("-")[0], "-".join(line.split("-")[1:])
-        field, value = field.strip(), value.strip()
-
-        if field == "TY":
-            # new citation
-            current_citation["authors"] = list(set(cur_authors))
-            current_citation["keywords"] = list(cur_keywords)
-            ris_d[cur_id] = current_citation
-
-            ###
-            # now create a new (empty) citation
-            # to be overwritten
-            current_citation = {"title":"", "abstract":"", "journal":"",\
-                                "keywords":"", "pmid":"", "authors":""}
-            cur_authors, cur_keywords = [], []
-            cur_id += 1
-        elif field in ("AU", "A1"):
-            # author
-            #pdb.set_trace()
-            cur_authors.append(value)
-        elif field in ("T1", "TI"):
-            current_citation["title"] = value[:MAX_TITLE_LENGTH]
-        elif field.startswith("J"):
-            current_citation["journal"] = value
-        elif field == "KW":
-            cur_keywords.append(value)
-        elif field in ("N2", "AB"):
-            current_citation["abstract"] = value
-    # add the last citation
-    ris_d[cur_id] = current_citation
-    
-    return ris_d
+#def ris_to_d(ris_data):
+#    ris_d = {}
+#    cur_id = 1
+#    cur_authors, cur_keywords = [], []
+#    current_citation = {"title":"", "abstract":"", "journal":"",\
+#                                "keywords":"", "pmid":"", "authors":""}
+#
+#    # drop garbage/blank lines
+#    ris_data = [line for line in ris_data if "-" in line]
+#
+#    # we skip the first line which just starts the
+#    # first citation (citation 1)
+#    for line in ris_data[1:]:
+#        field, value = line.split("-")[0], "-".join(line.split("-")[1:])
+#        field, value = field.strip(), value.strip()
+#
+#        if field == "TY":
+#            # new citation
+#            current_citation["authors"] = list(set(cur_authors))
+#            current_citation["keywords"] = list(cur_keywords)
+#            ris_d[cur_id] = current_citation
+#
+#            ###
+#            # now create a new (empty) citation
+#            # to be overwritten
+#            current_citation = {"title":"", "abstract":"", "journal":"",\
+#                                "keywords":"", "pmid":"", "authors":""}
+#            cur_authors, cur_keywords = [], []
+#            cur_id += 1
+#        elif field in ("AU", "A1"):
+#            # author
+#            #pdb.set_trace()
+#            cur_authors.append(value)
+#        elif field in ("T1", "TI"):
+#            current_citation["title"] = value[:MAX_TITLE_LENGTH]
+#        elif field.startswith("J"):
+#            current_citation["journal"] = value
+#        elif field == "KW":
+#            cur_keywords.append(value)
+#        elif field in ("N2", "AB"):
+#            current_citation["abstract"] = value
+#    # add the last citation
+#    ris_d[cur_id] = current_citation
+#    
+#    return ris_d
     
 def _field_index_d(headers):
     field_index_d = {}
@@ -246,11 +265,11 @@ def _field_index_d(headers):
 
 def xml_to_sql(xml_path, review):
     print "building a dictionary from %s..." % xml_path
-    d = xml_to_dict(xml_path)
+    d, dict_misc = xml_to_dict(xml_path)
     print "ok. now inserting into sql..."
     dict_to_sql(d, review)
     print "ok."
-    return len(d)
+    return len(d), dict_misc
 
 
     
@@ -308,6 +327,7 @@ def xml_to_dict(fpath):
     title of the nth paper and a_n is the abstract
     '''
     ref_ids_to_abs = {}
+    parsing_errors = []
     num_no_abs = 0
     tree = ElementTree(file=fpath)
     
@@ -330,7 +350,9 @@ def xml_to_dict(fpath):
         try:
             refmanid = int(record.findtext(path_str))
         except:
-            print "failed to parse refman document"
+            error = "Unable to parse record '%s' in '%s'" % (record, os.path.basename(fpath))
+            #print "failed to parse refman document"
+            parsing_errors.append(error)
 
         if refmanid is not None:
             # attempt to grab the pubmed id
@@ -343,9 +365,11 @@ def xml_to_dict(fpath):
                         pubmed_str = pubmed[i+1].strip()
                         pubmed_id = int("".join([x for x in pubmed_str if x in string.digits]))
             except Exception, ex:
-                print "problem getting pmid ..."
-                print ex
-                print("\n")
+                error = "Problem getting pmid from '%s' in '%s'" % (record, os.path.basename(fpath))
+                parsing_errors.append(error)
+                #print "problem getting pmid ..."
+                #print ex
+                #print("\n")
     
             ab_text = record.findtext('.//abstract/style')
             if ab_text is None:
@@ -368,7 +392,7 @@ def xml_to_dict(fpath):
     
     print "\nFinished. Returning %s title/abstract/keyword sets, %s of which have no abstracts.\n" \
                     % (len(ref_ids_to_abs.keys()), num_no_abs)
-    return ref_ids_to_abs
+    return ref_ids_to_abs, {"import-errors": parsing_errors}
 
 
 

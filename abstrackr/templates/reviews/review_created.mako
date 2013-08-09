@@ -27,6 +27,20 @@ jQuery(document).ready(function(){
 
 <div class="content">
 
+Well done! ${c.num_articles} of ${c.num_articles + len(c.flash["import-errors"])} abstracts have been imported
+
+% if len(c.flash["import-errors"])>0:
+<div class=flash>
+    We encountered the following problems:
+    <ul>
+    % for error in c.flash["import-errors"]:
+        <div class=import-errors><li>${error}</li></div>
+    % endfor
+    </ul>
+</div>
+% endif
+
+<br>
 Awesome, you're ready to start screening.
 
 <br/><br/>

@@ -135,6 +135,10 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def create_review_handler(self):
+        ## Clear c.flash
+        c.flash = {"import-errors": []}
+        dict_misc = {}
+
         # first upload the xml file
         xml_file = request.POST['db']
 
@@ -185,15 +189,15 @@ class ReviewController(BaseController):
         num_articles = None
         if xml_file.filename.lower().endswith(".xml"):
             print "parsing uploaded xml..."
-            num_articles = xml_to_sql.xml_to_sql(local_file_path, new_review)
+            num_articles, dict_misc = xml_to_sql.xml_to_sql(local_file_path, new_review)
         elif xml_file.filename.lower().endswith(".ris"):
             print "parsing RIS file..."
             num_articles = xml_to_sql.ris_to_sql(local_file_path, new_review)
         elif xml_to_sql.looks_like_tsv(local_file_path):
-            num_articles = xml_to_sql.tsv_to_sql(local_file_path, new_review)
+            num_articles, dict_misc = xml_to_sql.tsv_to_sql(local_file_path, new_review)
         else:
             print "assuming this is a list of pubmed ids"
-            num_articles = xml_to_sql.pmid_list_to_sql(local_file_path, new_review)
+            num_articles, dict_misc = xml_to_sql.pmid_list_to_sql(local_file_path, new_review)
         print "done."
 
 
@@ -219,6 +223,7 @@ class ReviewController(BaseController):
         # the documents comprising the review for consumption by the
         # machine learning stuff.
         c.root_path = url('/', qualified=True)
+        c.flash = dict(c.flash.items() + dict_misc.items())
         return render("/reviews/review_created.mako")
 
     @ActionProtector(not_anonymous())
