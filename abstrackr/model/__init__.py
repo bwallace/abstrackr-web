@@ -73,6 +73,10 @@ class Project(Base):
     # screened by everyone on the project
     initial_round_size = Column(types.Integer)
 
+    # Minimum and maximum number of citations a user should screen for this project
+    min_citations = Column(types.Integer)
+    max_citations = Column(types.Integer)
+
     # Bookkeeping
     date_created = Column(types.DateTime())
     date_modified = Column(types.DateTime())
@@ -308,6 +312,9 @@ class Prediction(Base):
     prediction = Column(types.Boolean) # true = include; false = exclude
     num_yes_votes = Column(types.Float) # number of ensemble members that voted yes
     predicted_probability = Column(types.Float) # predicted probability
+
+    
+
 
 ####################################
 ## these tables for authentication #

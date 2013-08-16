@@ -154,6 +154,8 @@ class ReviewController(BaseController):
         new_review.name = request.params['name']
         new_review.description = request.params['description']
         new_review.sort_by = request.params['order']
+        new_review.min_citations = request.params['min_citations']
+        new_review.max_citations = request.params['max_citations']
         screening_mode_str = request.params['screen_mode']
         tag_privacy_str = request.params['tag_visibility']
 
@@ -2903,3 +2905,4 @@ class ReviewController(BaseController):
 
     def _get_labels_for_user(self, project, assignment, user):
         return Session.query(model.Label).filter(and_(model.Label.user_id==user.id, model.Label.project_id==project.id, model.Label.assignment_id==assignment.id)).all()
+
