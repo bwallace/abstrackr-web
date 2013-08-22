@@ -30,7 +30,7 @@ from pygooglechart import Axis
 from pygooglechart import PieChart3D, StackedHorizontalBarChart,\
     StackedVerticalBarChart
 
-from pylons import request, response, session, tmpl_context as c, url
+from pylons import config, request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 
 from repoze.what.plugins.pylonshq import ActionProtector
@@ -846,9 +846,11 @@ class ReviewController(BaseController):
         """ % (project.name, \
                "%sjoin/%s" % (url('/', qualified=True), project.code))
 
-        server = smtplib.SMTP("mail-relay.brown.edu")
+        host = config['smtp_host']
+        port = config['smtp_port']
+        sender = config['sender']
+        server = smtplib.SMTP(host=host, port=port)
         to = email
-        sender = "noreply@abstrackr.cebm.brown.edu"
         body = string.join((
             "From: %s" % sender,
             "To: %s" % to,

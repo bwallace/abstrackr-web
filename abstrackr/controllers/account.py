@@ -1,6 +1,6 @@
 import logging
 
-from pylons import request, response, session, tmpl_context as c, url
+from pylons import config, request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 from pylons.controllers.util import redirect
 
@@ -118,9 +118,11 @@ class AccountController(BaseController):
         return cur_token
 
     def send_email_to_user(self, user, subject, message):
-        server = smtplib.SMTP("localhost")
+        host = config['smtp_host']
+        port = config['smtp_port']
+        sender = config['sender']
+        server = smtplib.SMTP(host=host, port=port)
         to = user.email
-        sender = "noreply@abstrackr.cebm.brown.edu"
         body = string.join((
             "From: %s" % sender,
             "To: %s" % to,
