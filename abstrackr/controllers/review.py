@@ -42,7 +42,7 @@ from sqlalchemy.sql import select
 from random import shuffle
 
 # this is the path where uploaded databases will be written to
-permanent_store = "/uploads/"
+PERMANENT_STORE = "/uploads/"
 
 log = logging.getLogger(__name__)
 
@@ -142,12 +142,17 @@ class ReviewController(BaseController):
         # first upload the xml file
         xml_file = request.POST['db']
 
-        local_file_path = "." + os.path.join(permanent_store,
+        local_file_path = "." + os.path.join(PERMANENT_STORE,
                           xml_file.filename.lstrip(os.sep))
-        local_file = open(local_file_path, 'w')
-        shutil.copyfileobj(xml_file.file, local_file)
-        xml_file.file.close()
-        local_file.close()
+        try:
+            local_file = open(local_file_path, 'w')
+        except IOError:
+            os.makedirs(os.path.dirname(local_file_path))
+            local_file = open(local_file_path, 'w')
+        finally:
+            shutil.copyfileobj(xml_file.file, local_file)
+            xml_file.file.close()
+            local_file.close()
 
         new_review = self._make_new_review() # some defaults
         # now pull out user-specified settings
@@ -343,11 +348,16 @@ class ReviewController(BaseController):
 
         # Get the file from the user and upload it:
         xml_file = request.POST['db']
-        local_file_path = "." + os.path.join(permanent_store, xml_file.filename.lstrip(os.sep))
-        local_file = open(local_file_path, 'w')
-        shutil.copyfileobj(xml_file.file, local_file)
-        xml_file.file.close()
-        local_file.close()
+        local_file_path = "." + os.path.join(PERMANENT_STORE, xml_file.filename.lstrip(os.sep))
+        try:
+            local_file = open(local_file_path, 'w')
+        except IOError:
+            os.makedirs(os.path.dirname(local_file_path))
+            local_file = open(local_file_path, 'w')
+        finally:
+            shutil.copyfileobj(xml_file.file, local_file)
+            xml_file.file.close()
+            local_file.close()
 
         # Extract the citations and add them to the database:
         num_articles = None
