@@ -713,7 +713,7 @@ class ReviewController(BaseController):
         citations = citations_q.filter(\
                     model.Citation.project_id == old_review_id).all()
         for citation in citations:
-            citation.review_id = new_review_id
+            citation.project_id = new_review_id
             Session.commit()
 
         ###
@@ -722,7 +722,7 @@ class ReviewController(BaseController):
         labels = labels_q.filter(\
                     model.Label.project_id == old_review_id).all()
         for label in labels:
-            label.review_id = new_review_id
+            label.project_id = new_review_id
             # we remove the associated assignment id
             # because this assignment will no longer exist
             label.assignment_id = None
@@ -735,7 +735,7 @@ class ReviewController(BaseController):
         lfs = lfs_q.filter(\
                     model.LabeledFeature.project_id == old_review_id).all()
         for lf in lfs:
-            lf.review_id = new_review_id
+            lf.project_id = new_review_id
             Session.commit()
 
 
@@ -763,7 +763,7 @@ class ReviewController(BaseController):
             if not tag_to_move.text.lower() in tag_texts_to_ids.keys():
                 # ok -- it's a new tag, simply changed its associated
                 # review to the new one
-                tag_to_move.review_id = new_review_id
+                tag_to_move.project_id = new_review_id
                 Session.commit()
             else:
                 # then we've already got a tag with the same
@@ -1232,7 +1232,7 @@ class ReviewController(BaseController):
         ### now create an assignment to review these
         conflict_task = model.Task()
         conflict_task.task_type = "conflict"
-        conflict_task.review_id = review_id
+        conflict_task.project_id = review_id
         conflict_task.num_assigned = len(citation_ids)
         for conflicting_id in citation_ids:
             obj_citation = Session.query(model.Citation).\

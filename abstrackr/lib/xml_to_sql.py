@@ -294,7 +294,7 @@ def insert_citation(review_id, ref_id, citation_d):
 
     citation.refman_id = ref_id
     pmid = citation_d['pmid']
-    citation.pmid_id =  pmid if (pmid is not None and pmid != '') else 0
+    citation.pmid =  pmid if (pmid is not None and pmid != '') else 0
     # we truncate the citation if it's too long!
     citation.title = citation_d['title'][:MAX_TITLE_LENGTH] if \
                                 citation_d['title'] is not None else "(no title found)"
