@@ -947,7 +947,7 @@ class ReviewController(BaseController):
         # usernames to labels
         citation_to_lbls_dict = {}
 
-        all_citations = [cit.citation_id for cit in self._get_citations_for_review(review.review_id)]
+        all_citations = [cit.id for cit in self._get_citations_for_review(review.id)]
 	    
         citations_labeled_dict = {}
         for cit in all_citations:
@@ -971,7 +971,7 @@ class ReviewController(BaseController):
               filter(model.Label.project_id==id).order_by(model.Citation.id).all():
                 # the above gives you all labeled citations for this review
                 # i.e., citations that have at least one label
-                citations_labeled_dict[citation.citation_id]=True
+                citations_labeled_dict[citation.id]=True
 
                 if lbl_filter_f(label):
                     cur_citation_id = citation.id
@@ -2696,7 +2696,7 @@ class ReviewController(BaseController):
         Session.commit()
 
         # update the assignment object
-        initial_task = self._get_initial_task_for_review(review.review_id)
+        initial_task = self._get_initial_task_for_review(review.id)
         initial_task.num_assigned = n
         model.Session.commit()
 
@@ -2886,7 +2886,7 @@ class ReviewController(BaseController):
             else:
                 labels= self._get_labels_for_user(review, assignment, user)
                 labeled_citation_ids = [label.study_id for label in labels]
-                citations_in_priority_queue = [cit.citation_id for cit in citations_in_priority_queue]
+                citations_in_priority_queue = [cit.id for cit in citations_in_priority_queue]
                 citations_not_yet_labeled = [x for x in citations_in_priority_queue if x not in labeled_citation_ids]
                 if len(citations_not_yet_labeled) == 0:
                     return True
