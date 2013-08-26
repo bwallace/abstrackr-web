@@ -56,4 +56,5 @@ def make_map(config):
 
     map.connect('/join/{review_code}', controller='review', action='join')
     map.connect('/', controller='trackr', action='start')
+
     return map

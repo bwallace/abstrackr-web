@@ -41,8 +41,12 @@ from sqlalchemy.sql import select
 
 from random import shuffle
 
+## GLOBALS
+ROOT_PATH = config['pylons.paths']['root']
+STATIC_FILES_PATH = config['pylons.paths']['static_files']
+
 # this is the path where uploaded databases will be written to
-PERMANENT_STORE = "/uploads/"
+PERMANENT_STORE = STATIC_FILES_PATH + "/uploads"
 
 log = logging.getLogger(__name__)
 
@@ -103,8 +107,8 @@ class ReviewController(BaseController):
             '''
             dump predictions to a file, too (@TODO factor this out?)
             '''
-            path_to_preds_out = os.path.join(
-                "abstrackr", "public", "exports", "predictions_%s.csv" % id)
+
+            path_to_preds_out = os.path.join(STATIC_FILES_PATH, "exports", "predictions_%s.csv" % id)
             with open(path_to_preds_out, 'w') as fout:
                 csv_out = csv.writer(fout)
                 preds_file_headers = ["citation_id", "title", "predicted p of being relevant", "'hard' screening prediction*"]
@@ -142,7 +146,7 @@ class ReviewController(BaseController):
         # first upload the xml file
         xml_file = request.POST['db']
 
-        local_file_path = "." + os.path.join(PERMANENT_STORE,
+        local_file_path = os.path.join(PERMANENT_STORE,
                           xml_file.filename.lstrip(os.sep))
         try:
             local_file = open(local_file_path, 'w')
@@ -348,7 +352,7 @@ class ReviewController(BaseController):
 
         # Get the file from the user and upload it:
         xml_file = request.POST['db']
-        local_file_path = "." + os.path.join(PERMANENT_STORE, xml_file.filename.lstrip(os.sep))
+        local_file_path = os.path.join(PERMANENT_STORE, xml_file.filename.lstrip(os.sep))
         try:
             local_file = open(local_file_path, 'w')
         except IOError:
@@ -1094,8 +1098,7 @@ class ReviewController(BaseController):
         labels.append("citations that are not yet labeled by anyone")
         labels.extend([str(cit_id) for cit_id in unlabeled_citations])
 
-        path_to_export = os.path.join(\
-                "abstrackr", "public", "exports", "labels_%s.csv" % review.id)
+        path_to_export = os.path.join(STATIC_FILES_PATH, "exports", "labels_%s.csv" % review.id)
         try:
             fout = open(path_to_export, 'w')
         except IOError:
@@ -1105,7 +1108,7 @@ class ReviewController(BaseController):
         lbls_str = lbls_str.encode("utf-8", "ignore")
         fout.write(lbls_str)
         fout.close()
-        c.download_url = "%sexports/labels_%s.csv" % (url('/', qualified=False), review.id)
+        c.download_url = "%sexports/labels_%s.csv" % (url('/', qualified=True), review.id)
         return render("/reviews/download_labels.mako")
 
     @ActionProtector(not_anonymous())
