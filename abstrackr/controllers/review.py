@@ -1094,13 +1094,18 @@ class ReviewController(BaseController):
         labels.append("citations that are not yet labeled by anyone")
         labels.extend([str(cit_id) for cit_id in unlabeled_citations])
 
-        fout = open(os.path.join(\
-                "abstrackr", "public", "exports", "labels_%s.csv" % review.id), 'w')
+        path_to_export = os.path.join(\
+                "abstrackr", "public", "exports", "labels_%s.csv" % review.id)
+        try:
+            fout = open(path_to_export, 'w')
+        except IOError:
+            os.makedirs(os.path.dirname(path_to_export))
+            fout = open(path_to_export, 'w')
         lbls_str = "\n".join(labels)
         lbls_str = lbls_str.encode("utf-8", "ignore")
         fout.write(lbls_str)
         fout.close()
-        c.download_url = "%sexports/labels_%s.csv" % (url('/', qualified=True), review.id)
+        c.download_url = "%sexports/labels_%s.csv" % (url('/', qualified=False), review.id)
         return render("/reviews/download_labels.mako")
 
     @ActionProtector(not_anonymous())
