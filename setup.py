@@ -7,7 +7,7 @@ except ImportError:
 
 setup(
     name='abstrackr',
-    version='0.2.2',
+    version='0.2.3',
     description='Web-based Citation Screening Tool',
     author='Byron Wallace',
     author_email='byron_wallace@brown.edu',
@@ -20,7 +20,6 @@ setup(
         "repoze.what_pylons>=1.0,<=1.0.99",
         "MySQL-python>=1.2.3,<=1.2.99",
         "elementtree>=1.2.7,<=1.2.99",
-        "biopython>=1.57,<=1.57.99",
         "WebTest>=1.2.3,<=1.2.99",
         "WebOb>=1.0.7,<=1.0.99",
     ],
