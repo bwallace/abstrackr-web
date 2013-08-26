@@ -7,8 +7,8 @@ except ImportError:
 
 setup(
     name='abstrackr',
-    version='0.2.1',
-    description='',
+    version='0.2.2',
+    description='Web-based Citation Screening Tool',
     author='Byron Wallace',
     author_email='byron_wallace@brown.edu',
     url='https://research.brown.edu/myresearch/Byron_Wallace',
