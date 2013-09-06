@@ -6,7 +6,6 @@
         <link rel="stylesheet" href="/stylesheet.css">
         <link rel="stylesheet" href="/jquery-ui-1.8.15.custom.css">
         <link rel="stylesheet" href="/intro.js/introjs.css">
-        <link rel="stylesheet" href="/intro.js/introjs-ie.css">
 
         <script type="text/javascript" src="/scripts/jquery-1.6.2.min.js"></script>
         <script type="text/javascript" src="/scripts/jquery-ui-1.8.15.custom.min.js"></script>
