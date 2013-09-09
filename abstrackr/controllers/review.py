@@ -2403,12 +2403,12 @@ class ReviewController(BaseController):
             filter(model.Assignment.assignment_type=='perpetual').\
             filter(and_(or_(model.Label.user_id!=me, model.Label.user_id==None))).\
             order_by(model.Priority.priority).\
-            limit(6)
+            limit(20)
 
         # now filter the priorities, excluding those that are locked
         # note that we also will remove locks here if a citation has
         # been out for > 2 hours.
-        EXPIRE_TIME = 72000 # 72000 *seconds*: i.e., 2 hours
+        EXPIRE_TIME = 3600 # 3600 *seconds*: i.e., 1 hours
 
         already_labeled_by_me = \
             self._get_already_labeled_ids(review_id, reviewer_id=me)
@@ -2427,7 +2427,8 @@ class ReviewController(BaseController):
                     if priority.locked_by != me:
                         # currently locked by someone else; here we check
                         # if the lock should be 'expired'
-                        time_locked = (datetime.datetime.now()-priority.time_requested).seconds
+                        td = datetime.datetime.now()-priority.time_requested
+                        time_locked = (td).seconds + (td).days*86400
                         if time_locked > EXPIRE_TIME:
                             priority.is_out = False
                             priority.locked_by = None
