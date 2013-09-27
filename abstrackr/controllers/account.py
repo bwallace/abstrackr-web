@@ -265,6 +265,9 @@ to see which OperationalError is being raised ''')
         assignment_q = Session.query(model.Assignment)
         all_assignments = assignment_q.filter(model.Assignment.user_id == person.id).all()
 
+        # Build assignment completion status dictionary
+        c.d_completion_status = self._get_assignment_completion_status(all_assignments)
+
         c.outstanding_assignments = [a for a in all_assignments if not a.done]
         # if there's an initial assignment, we'll only show that.
         assignment_types = [assignment.assignment_type for assignment in \
@@ -418,3 +421,33 @@ to see which OperationalError is being raised ''')
         c.account_msg_citation_settings = "Citation Settings changes have been applied."
 
         return render("/accounts/account.mako")
+
+    def _get_assignment_completion_status(self, assignments):
+        """Returns how many labels have been recorded for each assignment ID.
+
+        The returned object is a dictionary with the assignment ID as key
+        and the number of citations screened for this assignment as the
+        value
+
+        """
+
+        status_summary = {}
+
+        for a in assignments:
+            project_id = a.project_id
+            user_id = a.user_id
+            lof_labels_for_assignment = self._get_users_labels_for_assignment(project_id,
+                                                                              user_id,
+                                                                              a.id)
+
+            status_summary[a.id] = len(lof_labels_for_assignment)
+        return status_summary
+
+    def _get_users_labels_for_assignment(self, project_id, user_id, assignment_id):
+        """Returns a user's list of labels across a specific project"""
+        labels_q = Session.query(model.Label)
+        labels = labels_q.filter_by(project_id=project_id,
+                                    user_id=user_id,
+                                    assignment_id=assignment_id).all()
+        return labels
+

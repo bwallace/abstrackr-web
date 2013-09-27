@@ -1349,6 +1349,8 @@ class ReviewController(BaseController):
 
         assignments = assignments_q.filter(model.Assignment.project_id == id).all()
 
+        c.d_completion_status = self._get_assignment_completion_status(assignments)
+
         # note that we don't show the 'conflict' assignments here.
         non_conflict_assignments = \
             [assignment for assignment in assignments if \
@@ -1642,6 +1644,9 @@ class ReviewController(BaseController):
         # pull the associated assignment object
         assignment = self._get_assignment_from_id(assignment_id)
 
+        # Create assignment status dictionary
+        c.d_completion_status = self._get_assignment_completion_status([assignment])
+
         existing_label = None
         if assignment.assignment_type == "conflict":
             existing_label = label_q.filter(and_(
@@ -1717,8 +1722,8 @@ class ReviewController(BaseController):
                 new_label.user_id = current_user.id
             new_label.first_labeled = new_label.label_last_updated = datetime.datetime.now()
             Session.add(new_label)
-            Session.commit()
-            assignment.done_so_far += 1
+            assignment.done_so_far = c.d_completion_status[assignment.id] + 1
+            Session.add(assignment)
             Session.commit()
 
 
@@ -2925,5 +2930,40 @@ class ReviewController(BaseController):
         return priority_list
 
     def _get_labels_for_user(self, project, assignment, user):
-        return Session.query(model.Label).filter(and_(model.Label.user_id==user.id, model.Label.project_id==project.id, model.Label.assignment_id==assignment.id)).all()
+        """Returns a user's list of labels for this assignment"""
+        return Session.query(model.Label).filter(and_(model.Label.user_id==user.id,
+                                                      model.Label.project_id==project.id,
+                                                      model.Label.assignment_id==assignment.id)).all()
+
+    def _get_assignment_completion_status(self, assignments):
+        """Returns how many labels have been recorded for each assignment ID.
+
+        The returned object is a dictionary with the assignment ID as key
+        and the number of citations screened for this assignment as the
+        value
+
+        """
+
+        status_summary = {}
+
+        for a in assignments:
+            project_id = a.project_id
+            user_id = a.user_id
+            lof_labels_for_assignment = self._get_users_labels_for_assignment(project_id,
+                                                                              user_id,
+                                                                              a.id)
+            status_summary[a.id] = len(lof_labels_for_assignment)
+        return status_summary
+
+    def _get_users_labels_for_assignment(self, project_id, user_id, assignment_id):
+        """Returns a user's list of labels across a specific project"""
+        labels_q = Session.query(model.Label)
+        labels = labels_q.filter_by(project_id=project_id,
+                                    user_id=user_id,
+                                    assignment_id=assignment_id).all()
+        return labels
+
+
+
+
 

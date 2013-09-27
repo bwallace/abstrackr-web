@@ -25,8 +25,7 @@
 </script>
 
 
-<div id="export" class="dialog">
-</div>
+<div id="export" class="dialog"></div>
 
 <button type="button" onclick="introJs().start()">Quick Tour!</button>
 	
@@ -157,7 +156,7 @@
                         <td>--</td>
                     %endif
                     
-                    <td>${assignment.done_so_far}</td>
+                    <td>${c.d_completion_status[assignment.id]}</td>
                     <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
                     %if not assignment.assignment_type == "perpetual" and assignment.date_due is not None:
                         <td>${assignment.date_due.month}/${assignment.date_due.day}/${assignment.date_due.year}</td>

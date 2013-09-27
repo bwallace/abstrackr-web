@@ -36,7 +36,7 @@
                 % else:
                     <td>${assignment.num_assigned}</td>
                 % endif     
-                <td>${assignment.done_so_far}</td>
+                <td>${c.d_completion_status[assignment.id]}</td>
                 % if assignment.date_assigned is not None:
                     <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
                 % endif
