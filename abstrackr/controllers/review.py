@@ -1207,10 +1207,10 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def review_maybes(self, id):
-        review_id = id
-        maybe_ids = controller_globals._get_maybes(review_id)
+        project_id = id
+        maybe_ids = controller_globals._get_maybes(project_id)
         # TODO rename method
-        self._create_conflict_task_with_ids(review_id, maybe_ids)
+        self._create_conflict_task_with_ids(project_id, maybe_ids)
 
     @ActionProtector(not_anonymous())
     def review_conflicts(self, id):
@@ -1237,7 +1237,18 @@ class ReviewController(BaseController):
             Session.delete(conflicts_task_for_this_review[0])
             Session.commit()
 
-        ### now create an assignment to review these
+        assignment_q = Session.query(model.Assignment)
+        conflict_assignments_for_this_review = \
+            assignment_q.filter(and_(model.Assignment.project_id == review_id,\
+                               model.Assignment.assignment_type == "conflict")).all()
+
+        # we delete any existing conflict Assignments for this review
+        if len(conflict_assignments_for_this_review) > 0:
+            for c in conflict_assignments_for_this_review:
+                Session.delete(c)
+                Session.commit()
+
+        ### now create an task to review these
         conflict_task = model.Task()
         conflict_task.task_type = "conflict"
         conflict_task.project_id = review_id
@@ -1637,29 +1648,26 @@ class ReviewController(BaseController):
 
         current_user = request.environ.get('repoze.who.identity')['user']
 
-        # check if we've already labeled this; if so, handle
-        # appropriately
-        label_q = Session.query(model.Label)
+        # check if we've already labeled this; if so, handle appropriately
+        existing_label = None
 
         # pull the associated assignment object
         assignment = self._get_assignment_from_id(assignment_id)
 
-        # Create assignment status dictionary
-        c.d_completion_status = self._get_assignment_completion_status([assignment])
-
-        existing_label = None
+        label_q = Session.query(model.Label)
         if assignment.assignment_type == "conflict":
-            existing_label = label_q.filter(and_(
-                        model.Label.project_id == review_id,
-                        model.Label.study_id == study_id,
-                        model.Label.user_id == CONSENSUS_USER)).all()
-            #c.consensus_review = True
+            user_id = CONSENSUS_USER
         else:
-            existing_label = label_q.filter(and_(
-                        model.Label.project_id == review_id,
-                        model.Label.study_id == study_id,
-                        model.Label.user_id == current_user.id)).all()
+            user_id = current_user.id
 
+        # Based on the assignment type we now look for any existing
+        # label. When assignment type is "conflict" we look for a label
+        # by CONSENSUS_USER (ID=0), else by current_user ID
+        existing_label = label_q.filter(and_(model.Label.project_id == review_id,
+                                             model.Label.study_id == study_id,
+                                             model.Label.user_id == user_id)).all()
+
+        # Case when we re-label a citation
         if len(existing_label) > 0:
             # then this person has already labeled this example
             print "(RE-)labeling citation %s with label %s" % (study_id, label)
@@ -1677,6 +1685,7 @@ class ReviewController(BaseController):
             # label. we put the single consensus label in a singleton list for the
             # client in the case that this is a 'conflict' assignment.
             c.cur_lbl = existing_label if assignment.assignment_type != "conflict" else [existing_label]
+
             c.assignment_id = assignment_id
             citation_q = Session.query(model.Citation)
             c.assignment_type = assignment.assignment_type
@@ -1698,6 +1707,9 @@ class ReviewController(BaseController):
             # depending on which option the project leader selected.
             c.tag_privacy = self._get_review_from_id(review_id).tag_privacy
             c.user_id = user.id
+
+            # Create assignment status dictionary
+            c.d_completion_status = self._get_assignment_completion_status([assignment])
 
             return render("/citation_fragment.mako")
 
@@ -1722,10 +1734,10 @@ class ReviewController(BaseController):
                 new_label.user_id = current_user.id
             new_label.first_labeled = new_label.label_last_updated = datetime.datetime.now()
             Session.add(new_label)
-            assignment.done_so_far = c.d_completion_status[assignment.id] + 1
+
+            assignment.done_so_far += 1
             Session.add(assignment)
             Session.commit()
-
 
             ###
             # for finite assignments, we need to check if we're through.
@@ -1770,14 +1782,18 @@ class ReviewController(BaseController):
                         assignment.done = True
                         Session.commit()
 
+            # Create assignment status dictionary
+            c.d_completion_status = self._get_assignment_completion_status([assignment])
+
             progress_html_str = None
             if assignment.num_assigned and assignment.num_assigned > 0:
                 progress_html_str = \
-                    "you've screened <b>%s</b> out of <b>%s</b> so far (nice going!)" % (assignment.done_so_far, assignment.num_assigned)
+                    "you've screened <b>%s</b> out of <b>%s</b> so far (nice going!)" % (c.d_completion_status[assignment.id], assignment.num_assigned)
             else:
                 progress_html_str = \
-                    "you've screened <b>%s</b> abstracts thus far (keep it up!)"  % assignment.done_so_far
+                    "you've screened <b>%s</b> abstracts thus far (keep it up!)"  % c.d_completion_status[assignment.id]
             print "returning progress html str %s" % progress_html_str
+
             return progress_html_str
 
     @ActionProtector(not_anonymous())

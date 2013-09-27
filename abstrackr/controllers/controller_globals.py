@@ -71,6 +71,32 @@ def _get_conflicts(review_id):
     return citation_ids_to_conflicting_labels
 
 
+def _get_maybes(review_id):
+    labels_marked_maybe = _get_maybe_labels(review_id)
+    study_ids_marked_maybe = [l.study_id for l in labels_marked_maybe]
+
+    labels_by_consensus_user = _get_labels_by_consensus_user(review_id)
+    study_ids_by_consensus_user = [l.study_id for l in labels_by_consensus_user]
+
+    study_ids_not_resolved = [x for x in study_ids_marked_maybe if x not in study_ids_by_consensus_user]
+
+    return study_ids_not_resolved
+
+
+def _get_maybe_labels(project_id):
+    labels_q = Session.query(model.Label)
+    labels_marked_maybe = labels_q.filter_by(project_id=project_id,
+                                             label=0).all()
+    return labels_marked_maybe
+
+
+def _get_labels_by_consensus_user(project_id):
+    labels_q = Session.query(model.Label)
+    labels_by_consensus_user = labels_q.filter_by(project_id=project_id,
+                                                  user_id=0).all()
+    return labels_by_consensus_user
+
+
 def _get_labels_dict_for_review(review_id):
     citation_ids_to_labels = {}
     for citation, label in _get_all_citations_for_review(review_id):
@@ -80,18 +106,6 @@ def _get_labels_dict_for_review(review_id):
                 citation_ids_to_labels[citation.id] = [label]
 
     return citation_ids_to_labels
-
-
-def _get_maybes(review_id):
-    citation_ids_to_labels = _get_labels_dict_for_review(review_id)
-
-    # which have 'maybe' labels?
-    citation_ids_to_maybe_labels = {}
-    for citation_id, labels_for_citation in citation_ids_to_labels.items():
-        if 0 in [label.label for label in labels_for_citation]:
-            citation_ids_to_maybe_labels[citation_id] = labels_for_citation
-
-    return citation_ids_to_maybe_labels
 
 
 def _get_all_citations_for_review(review_id, return_query_obj=False):
