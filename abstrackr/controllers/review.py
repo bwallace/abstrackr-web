@@ -2415,6 +2415,7 @@ class ReviewController(BaseController):
         '''
         review_id = review.id
         me = request.environ.get('repoze.who.identity')['user'].id
+        project_member_count = len(review.members)
 
         ranked_priorities = Session.query(model.Priority).\
             join(model.Assignment, model.Priority.project_id==model.Assignment.project_id).\
@@ -2424,7 +2425,7 @@ class ReviewController(BaseController):
             filter(model.Assignment.assignment_type=='perpetual').\
             filter(and_(or_(model.Label.user_id!=me, model.Label.user_id==None))).\
             order_by(model.Priority.priority).\
-            limit(20)
+            limit(project_member_count*10)
 
         # now filter the priorities, excluding those that are locked
         # note that we also will remove locks here if a citation has
@@ -2665,7 +2666,8 @@ class ReviewController(BaseController):
 
             if len(task_citations_to_remove) > 0:
                 for citation in task_citations_to_remove:
-                    Session.delete(citation)
+                    cur_init_task.citations.remove(citation)
+                    Session.add(cur_init_task)
                     Session.commit()
                     ###
                     # crucial -- we need to add this guy back onto
