@@ -1604,14 +1604,12 @@ class ReviewController(BaseController):
             if user_tag not in existing_tag_types:
                 self.add_tag(review_id, user_tag)
 
-        '''
         # ok -- now, get tags for this citation; we're going to
         # untag everything first
         cur_tags = self._get_tags_for_citation(study_id, texts_only=False)
         for tag in cur_tags:
             Session.delete(tag)
             Session.commit()
-        '''
 
         # now add all the new tags
         for tag in list(set(tags)):
