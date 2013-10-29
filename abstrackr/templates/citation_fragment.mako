@@ -75,7 +75,7 @@ function setup_submit(){
 
         $.post("${'/review/tag_citation/%s/' % (c.review_id)}" + cur_citation_id, {tags: tags}, function() {
             $("#tags").fadeOut('slow', function() {
-                $("#tags").load("/review/update_tags/" + cur_citation_id + "/${'%s' % (c.tag_privacy)}", function() {
+                $("#tags").load("/review/update_tags/" + cur_citation_id + "/${'%s/%s' % (c.tag_privacy, c.assignment_type)}", function() {
                     $("#tags").fadeIn('slow');
                 });
             });
@@ -140,7 +140,7 @@ function setup_js(){
     ##    populate_notes();
     ##});
 
-    $("#tags").load("${'/review/update_tags/%s/%s' % (c.cur_citation.id, c.tag_privacy)}");
+    $("#tags").load("${'/review/update_tags/%s/%s/%s' % (c.cur_citation.id, c.tag_privacy, c.assignment_type)}");
 
     // reset the timer
     reset_timer();

@@ -277,7 +277,7 @@ function setup_submit() {
 
         $.post("${'/review/tag_citation/%s/' % (c.review_id)}" + cur_citation_id, {tags: tags}, function() {
             $("#tags").fadeOut('slow', function() {
-                $("#tags").load("/review/update_tags/" + cur_citation_id + "/${'%s/%s' % (c.tag_privacy, c.assignment.assignment_type)}", function() {
+                $("#tags").load("/review/update_tags/" + cur_citation_id + "/${'%s/%s' % (c.tag_privacy, c.assignment_type)}", function() {
                     $("#tags").fadeIn('slow');
                 });
             });
