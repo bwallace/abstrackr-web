@@ -290,6 +290,12 @@ class ReviewController(BaseController):
         if message is not None:
             c.msg = message
 
+        c.screening_mode = {"single": "Single-screen",
+                            "double": "Double-screen",
+                            "advanced": "Advanced"}[c.review.screening_mode]
+        c.order_abstracts = c.review.sort_by
+        c.tag_privacy = {True: "Private", False: "Public"}[c.review.tag_privacy]
+
         return render("/reviews/edit_review.mako")
 
     @ActionProtector(not_anonymous())
@@ -1835,7 +1841,8 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def screen(self, review_id, assignment_id):
-        current_user = request.environ.get('repoze.who.identity')['user']
+        user = self._get_user()
+
         assignment = self._get_assignment_from_id(assignment_id)
         if assignment is None:
             redirect(url(controller="review", action="screen", \
@@ -1854,9 +1861,6 @@ class ReviewController(BaseController):
         c.assignment_id = assignment_id
         c.assignment_type = assignment.assignment_type
         c.assignment = assignment
-
-        # Get user object from db.
-        user = controller_globals._get_user_from_email(current_user.email)
 
         # The following help determine which fields of the citation are shown.
         c.show_journal = user.show_journal
@@ -1882,28 +1886,24 @@ class ReviewController(BaseController):
         if assignment.assignment_type == "conflict":
             c.cur_lbl = self._get_labels_for_citation(c.cur_citation.id)
             c.reviewer_ids_to_names_d = self._labels_to_reviewer_name_d(c.cur_lbl)
+            c.tags = set(self._get_tags_for_citation(c.cur_citation.id))
+        else:
+            c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=user.id)
 
-
-        # now get tags for this citation
-        # issue #34; only show tags that *this* user has provided
-        #
-        # Changes made on 4/30/2012: The tag visibility setting has been added.
+        # Now get tags for this citation
         # First check to make sure tag_privacy is not 'null' in the database.
         if review.tag_privacy==None:
-            review.tag_privacy = True
-
-        c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=current_user.id)
+            review.tag_privacy = False
 
         if review.tag_privacy:
             # Only get tags that *this* reviewer has created
-            c.tag_types = self._get_tag_types_for_review(review_id, only_for_user_id=current_user.id)
+            c.tag_types = self._get_tag_types_for_review(review_id, only_for_user_id=user.id)
         else:
             # Get tags that anyone in this project has created
-            #c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=current_user.id)
             c.tag_types = self._get_tag_types_for_review(review_id)
 
         # now get any associated notes
-        notes = self._get_notes_for_citation(c.cur_citation.id, current_user.id)
+        notes = self._get_notes_for_citation(c.cur_citation.id, user.id)
         c.notes = notes
 
         # These help keep tags public/private, depending on project lead's selection.
@@ -1915,24 +1915,30 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def update_tags(self, study_id, tag_privacy):
+        user = self._get_user()
+
         # get tags for this citation and maintain the tag-privacy setting
         c.tag_privacy = tag_privacy
-        current_user = request.environ.get('repoze.who.identity')['user']
-        user = controller_globals._get_user_from_email(current_user.email)
         c.tags = self._get_tags_for_citation(study_id, only_for_user_id=user.id)
         return render("/tag_fragment.mako")
 
     @ActionProtector(not_anonymous())
     def update_tag_types(self, review_id, study_id):
+        user = self._get_user()
+
         # now get tags for this citation
-        c.tag_types = self._get_tag_types_for_review(review_id)
-        c.tags = self._get_tags_for_citation(study_id)
         c.tag_privacy = self._get_review_from_id(review_id).tag_privacy
+        c.tags = self._get_tags_for_citation(study_id, only_for_user_id=user.id)
+        if c.tag_privacy:
+            c.tag_types = self._get_tag_types_for_review(review_id, only_for_user_id=user.id)
+        else:
+            c.tag_types = self._get_tag_types_for_review(review_id)
+
         return render("/tag_dialog_fragment.mako")
 
     @ActionProtector(not_anonymous())
     def get_next_citation_fragment(self, review_id, assignment_id):
-        current_user = request.environ.get('repoze.who.identity')['user']
+        user = self._get_user()
         assignment = self._get_assignment_from_id(assignment_id)
         review = self._get_review_from_id(review_id)
 
@@ -1942,7 +1948,6 @@ class ReviewController(BaseController):
         c.assignment_type = assignment.assignment_type
         c.assignment = assignment
 
-        user = controller_globals._get_user_from_email(current_user.email)
         # Need the above line because the first line of this function gives
         #   a model.auth.User object
         # as opposed to
@@ -1979,18 +1984,19 @@ class ReviewController(BaseController):
         # now get tags for this citation
         # Make sure tag_privacy is not 'null' in the database.
         if review.tag_privacy==None:
-            review.tag_privacy = True
-        # If tag visibility is set to be public, then obtain all tags regardless of who the user is.
-        if not review.tag_privacy:
-            c.tags = self._get_tags_for_citation(c.cur_citation.id)
-        else:
-            c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=current_user.id)
+            review.tag_privacy = False
 
-        # and these are all available tags
-        c.tag_types = self._get_tag_types_for_review(review_id)
+        # You should only see your own citation tags
+        c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=user.id)
+
+        # Get tag_types by visibility setting
+        if review.tag_privacy:
+            c.tag_types = self._get_tag_types_for_review(review_id, only_for_user_id=user.id)
+        else:
+            c.tag_types = self._get_tag_types_for_review(review_id)
 
         # now get any associated notes
-        notes = self._get_notes_for_citation(c.cur_citation.id, current_user.id)
+        notes = self._get_notes_for_citation(c.cur_citation.id, user.id)
         c.notes = notes
 
         # These help in the execution of the tag-privacy option:
@@ -2086,7 +2092,7 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def edit_tags(self, review_id, assignment_id):
-        current_user = request.environ.get('repoze.who.identity')['user']
+        user = self._get_user()
 
         tag_q = Session.query(model.TagType)
         tags = None
@@ -2098,7 +2104,7 @@ class ReviewController(BaseController):
         else:
             tags = tag_q.filter(
                 and_(model.TagType.project_id == review_id,\
-                     model.TagType.creator_id == current_user.id
+                     model.TagType.creator_id == user.id
                      )).all()
         c.tags = tags
         c.assignment_id = assignment_id
@@ -2115,21 +2121,23 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def edit_tag_text(self, id):
+        user = self._get_user()
+
         tag_q = Session.query(model.TagType)
-        current_user = request.environ.get('repoze.who.identity')['user']
         tag = tag_q.filter(model.TagType.id == id).one()
-        if current_user.id == tag.creator_id or self._current_user_leads_review(tag.project_id):
+        if user.id == tag.creator_id or self._current_user_leads_review(tag.project_id):
             tag.text = request.params['new_text']
             Session.commit()
 
 
     @ActionProtector(not_anonymous())
     def delete_tag(self, tag_id, assignment_id):
+        user = self._get_user()
+
         tag_q = Session.query(model.TagType)
-        current_user = request.environ.get('repoze.who.identity')['user']
         tag = tag_q.filter(model.TagType.id == tag_id).one()
         review_id = tag.project_id
-        if current_user.id == tag.creator_id:
+        if user.id == tag.creator_id:
             Session.delete(tag)
             Session.commit()
 
@@ -2282,12 +2290,17 @@ class ReviewController(BaseController):
 
         # First check to make sure tag_privacy is not 'null' in the database.
         if review.tag_privacy==None:
-            review.tag_privacy = True
+            review.tag_privacy = False
 
-        c.tag_types = self._get_tag_types_for_review(review_id)
+        if review.tag_privacy:
+            c.tag_types = self._get_tag_types_for_review(review_id, only_for_user_id=current_user.id)
+        else:
+            c.tag_types = self._get_tag_types_for_review(review_id)
+
         c.tags = None
-        # ... unless either we're in review conflicts mode or tag visibility has been set to public
-        if (c.assignment_type == "conflict") or (not review.tag_privacy):
+        # ... unless either we're in review conflicts mode
+        #if (c.assignment_type == "conflict") or (not review.tag_privacy):
+        if c.assignment_type=="conflict":
             c.tags = self._get_tags_for_citation(citation_id)
         else:
             c.tags = self._get_tags_for_citation(citation_id, only_for_user_id=current_user.id)
@@ -2503,8 +2516,7 @@ class ReviewController(BaseController):
             # then filter on the study and the user
             tags = tag_q.filter(and_(\
                     model.Tag.citation_id == citation_id,\
-                    model.Tag.creator_id == only_for_user_id
-             )).all()
+                    model.Tag.creator_id == only_for_user_id)).all()
         else:
             # all tags for this citation, regardless of user
             tags = tag_q.filter(model.Tag.citation_id == citation_id).all()

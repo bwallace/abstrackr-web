@@ -29,9 +29,7 @@
                 % if tag in c.tags:
                     <li class="ui-selected">${tag}</li>
                 % else:
-                    % if not c.tag_privacy:
-                        <li>${tag}</li>
-                    % endif
+                    <li>${tag}</li>
                 % endif
             % endfor
         </ul>
