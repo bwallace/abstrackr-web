@@ -1606,7 +1606,7 @@ class ReviewController(BaseController):
 
         # ok -- now, get tags for this citation; we're going to
         # untag everything first
-        cur_tags = self._get_tags_for_citation(study_id, texts_only=False)
+        cur_tags = self._get_tags_for_citation(study_id, texts_only=False, only_for_user_id=current_user.id)
         for tag in cur_tags:
             Session.delete(tag)
             Session.commit()
@@ -1891,14 +1891,16 @@ class ReviewController(BaseController):
         # First check to make sure tag_privacy is not 'null' in the database.
         if review.tag_privacy==None:
             review.tag_privacy = True
-        # If tag visibility is set to be public, then obtain all tags regardless of who the user is.
-        if not review.tag_privacy:
-            c.tags = self._get_tags_for_citation(c.cur_citation.id)
-        else:
-            c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=current_user.id)
 
-        # and these are all available tags
-        c.tag_types = self._get_tag_types_for_review(review_id)
+        c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=current_user.id)
+
+        if review.tag_privacy:
+            # Only get tags that *this* reviewer has created
+            c.tag_types = self._get_tag_types_for_review(review_id, only_for_user_id=current_user.id)
+        else:
+            # Get tags that anyone in this project has created
+            #c.tags = self._get_tags_for_citation(c.cur_citation.id, only_for_user_id=current_user.id)
+            c.tag_types = self._get_tag_types_for_review(review_id)
 
         # now get any associated notes
         notes = self._get_notes_for_citation(c.cur_citation.id, current_user.id)
@@ -2535,9 +2537,16 @@ class ReviewController(BaseController):
 
         return tags
 
-    def _get_tag_types_for_review(self, review_id):
+    def _get_tag_types_for_review(self, review_id, only_for_user_id=None):
         tag_q = Session.query(model.TagType)
-        tag_types = tag_q.filter(model.TagType.project_id == review_id).all()
+
+        if only_for_user_id:
+            tag_types = tag_q.filter(and_(\
+                        model.TagType.project_id == review_id,\
+                        model.TagType.creator_id == only_for_user_id
+                )).all()
+        else:
+            tag_types = tag_q.filter(model.TagType.project_id == review_id).all()
         return [tag_type.text for tag_type in tag_types]
 
     def _get_ids_for_task(self, task_id):
