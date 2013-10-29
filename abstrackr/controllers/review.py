@@ -1914,12 +1914,16 @@ class ReviewController(BaseController):
         return render("/screen.mako")
 
     @ActionProtector(not_anonymous())
-    def update_tags(self, study_id, tag_privacy):
+    def update_tags(self, study_id, tag_privacy, assignment_type=None):
         user = self._get_user()
 
         # get tags for this citation and maintain the tag-privacy setting
         c.tag_privacy = tag_privacy
-        c.tags = self._get_tags_for_citation(study_id, only_for_user_id=user.id)
+
+        if assignment_type=='conflict':
+            c.tags = set(self._get_tags_for_citation(study_id))
+        else:
+            c.tags = self._get_tags_for_citation(study_id, only_for_user_id=user.id)
         return render("/tag_fragment.mako")
 
     @ActionProtector(not_anonymous())

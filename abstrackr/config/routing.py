@@ -29,7 +29,7 @@ def make_map(config):
     map.connect('/review/remove_admin/{project_id}/{user_id}', controller='review', action='remove_admin')
     map.connect('/review/get_fields/{review_id}', controller='review', action='get_fields')
 
-    map.connect('/review/update_tags/{study_id}/{tag_privacy}', controller='review', action='update_tags')
+    map.connect('/review/update_tags/{study_id}/{tag_privacy}/{assignment_type}', controller='review', action='update_tags')
 
     map.connect('/review/update_tag_types/{review_id}/{study_id}', controller='review', action='update_tag_types')
     map.connect('/review/edit_tags/{review_id}/{assignment_id}', controller='review', action='edit_tags')
