@@ -292,7 +292,7 @@ def insert_citation(review_id, ref_id, citation_d):
     except:
         ref_id = None
 
-    citation.refman_id = ref_id
+    citation.refman = ref_id
     pmid = citation_d['pmid']
     citation.pmid =  pmid if (pmid is not None and pmid != '') else 0
     # we truncate the citation if it's too long!

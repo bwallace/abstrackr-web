@@ -16,8 +16,8 @@
             % for i, label in enumerate(c.given_labels):
                 <tr>
                 <td>${label.study_id}</td>
-                <td>${c.citations_d[label.study_id].refman_id}</td>
-                <td>${c.citations_d[label.study_id].pmid_id}</td>
+                <td>${c.citations_d[label.study_id].refman}</td>
+                <td>${c.citations_d[label.study_id].pmid}</td>
                 <td>
                 <a href="${url(controller='review', action='show_labeled_citation', review_id=label.review_id, citation_id=label.study_id)}">
                 ${c.citations_d[label.study_id].title}</a></td>
