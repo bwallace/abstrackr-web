@@ -197,7 +197,7 @@ def tsv_to_sql(tsv_path, review):
     citations = csv.reader(open_f, delimiter="\t")
     # map field names to the corresponding indices
     # in the tsv, as indicated by the header
-    headers = [header.strip().replace(START_FILE_MARKER, "") for header in citations.next()]
+    headers = [header.lower().strip().replace(START_FILE_MARKER, "") for header in citations.next()]
     field_index_d = _field_index_d(headers)
     d, dict_misc = tsv_to_d(citations, field_index_d)
     dict_to_sql(d, review)
