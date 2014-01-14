@@ -13,6 +13,22 @@
         <script type="text/javascript" src="/scripts/CalendarPopup.js"></script>
         <script type="text/javascript" src="/scripts/jquery.ui.selectable.js"></script>
         <script type="text/javascript" src="/intro.js/intro.js"></script>
+
+        <style type="text/css">
+            #flash {
+                background: #ffc;
+                padding: 5px;
+                border: 1px dotted #000;
+                margin-bottom: 20px;
+            }
+            #flash p { margin: 0px; padding: 0px; }
+            #announcement {
+                background: #FFCC00;
+                padding: 5px;
+                border: 1px solid #000;
+                margin-bottom: 20px;
+            }
+        </style>
   
         <title>abstrackr: ${self.title()}</title>
     </head>
@@ -26,7 +42,14 @@
                                 Please enjoy this short introduction.'
                     data-step='1'></img>
         </p>
-       
+
+      <!-- You can place announcements here
+        <div id="announcement">
+        </div>
+      -->
+
+        ${self.flash()}
+
 	<div id="login-header"
         data-intro='You may navigate the website via these controls.'
         data-step='4'>
@@ -43,3 +66,13 @@ ${self.body()}
 
     </body>
 </html>
+
+<%def name="flash()">
+    % if session.has_key('flash'):
+    <div id="flash"><p>${session.get('flash')}</p></div>
+    <%
+        del session['flash']
+        session.save()
+    %>
+    % endif
+</%def>

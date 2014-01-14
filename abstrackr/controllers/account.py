@@ -35,6 +35,8 @@ class AccountController(BaseController):
         came_from = str(request.GET.get('came_from', '')) or \
                      url(controller='account', action='welcome')
         if identity:
+            session['flash'] = 'Login successful.'
+            session.save()
             redirect(url(came_from))
         else:
             c.came_from = came_from
