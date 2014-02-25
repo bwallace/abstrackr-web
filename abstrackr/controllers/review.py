@@ -117,7 +117,8 @@ class ReviewController(BaseController):
 
                 for pred in sorted_preds:
                     citation = self._get_citation_from_id(pred.study_id)
-                    row_str = [citation.id, citation.title, pred.predicted_probability, pred.prediction]
+                    citation_title = citation.title.encode('ascii', 'ignore')
+                    row_str = [citation.id, citation_title, pred.predicted_probability, pred.prediction]
                     csv_out.writerow(row_str)
 
                 csv_out.writerow([])
