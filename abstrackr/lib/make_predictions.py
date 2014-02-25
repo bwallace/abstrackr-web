@@ -36,10 +36,10 @@ def make_predictions(review_id):
         data_paths.append(os.path.join(review_base_dir, field, "encoded", "%s_encoded" % field))
     
     pred_results = None
-    try:
-        pred_results = curious_snake.abstrackr_predict(data_paths)
-    except:
-        print "!!!! failed to predict results for " + review_base_dir
+    #try:
+    pred_results = curious_snake.abstrackr_predict(data_paths)
+    #except:
+    #    print "!!!! failed to predict results for " + review_base_dir
 
     if pred_results is None:
         return None # fail

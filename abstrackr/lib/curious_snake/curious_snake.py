@@ -99,12 +99,14 @@ def pred_prob(committee, X):
     for learner in committee:
       probs_sum = 0.0 # from the different views
       for i, x_i in enumerate(X):
-        probs_sum += learner.models[i].predict_probability(x_i)[1][1]
-     
-      committee_sum += probs_sum/float(len(X)) # average over views 
+        if i < len(learner.models):
+          probs_sum += learner.models[i].predict_probability(x_i)[1][1]
+        
+      committee_sum += probs_sum/float(len(learner.models)) # average over views 
     return committee_sum/float(len(committee))
    
 def abstrackr_predict(data_paths, committee_size=11):
+    print ("--- abstrckr_predict ---")
     # first figure out which instances are and are not labeled
     a_dataset = dataset.build_dataset_from_file(data_paths[0])
 
@@ -117,6 +119,7 @@ def abstrackr_predict(data_paths, committee_size=11):
     unlabeled_ids = [xid for xid in a_dataset.instances.keys() if not xid in labeled_ids]
 
     if len(labeled_ids) < 100 or len(unlabeled_ids) == 0:
+        print ("Not enough training data for review. Path: %s", data_paths[0])
         return None
 
     # now build our datasets.
@@ -124,6 +127,7 @@ def abstrackr_predict(data_paths, committee_size=11):
     
     # make sure we have at least one positive (minority)
     if train_datasets[0].number_of_minority_examples() == 0:
+        print ("no minority instances! returning None (path: %s)" % data_paths[0])
         return None
 
     test_datasets = [dataset.build_dataset_from_file(f, only_these = unlabeled_ids) for f in data_paths]
