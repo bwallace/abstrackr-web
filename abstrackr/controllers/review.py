@@ -1,11 +1,12 @@
 # Imports..
+import abstrackr.lib.helpers as h
+
 import controller_globals
 import copy
 import csv
 import datetime
 import logging
 import os
-import pdb
 import pygooglechart
 import random
 import re
@@ -1556,9 +1557,17 @@ class ReviewController(BaseController):
             return "<font color='red'>tsk, tsk. you're not the project lead, %s.</font>" % current_user.fullname
 
         assignment_q = Session.query(model.Assignment)
-        assignment = assignment_q.filter(model.Assignment.id == assignment_id).one()
+        assignment = assignment_q.filter(model.Assignment.id == assignment_id).first()
+        task_id = assignment.task_id
         Session.delete(assignment)
         Session.commit()
+
+        # If this was the last assignment referencing this task, then we need to delete the task also
+        assignment = Session.query(model.Assignment).filter_by(id=assignment_id).all()
+        if len(assignment)==0:
+            task = Session.query(model.Task).filter_by(id=task_id).first()
+            Session.delete(task)
+            Session.commit()
 
         redirect(url(controller="review", action="assignments",
                             id=review_id))
@@ -2031,7 +2040,7 @@ class ReviewController(BaseController):
         # if the current assignment is a 'fixed' assignment (i.e.,
         # comprises a finite set of ids to be screened -- an initial round,
         # or conflicting round, e.g.) then we pull from the FixedAssignments table
-        if assignment.assignment_type in ("initial", "conflict"):
+        if assignment.assignment_type in ["initial", "conflict"]:
             # in the case of initial assignments, we never remove the citations,
             # thus we need to ascertain that we haven't already screened it
             eligible_pool = self._get_ids_for_task(assignment.task_id)
@@ -2060,7 +2069,9 @@ class ReviewController(BaseController):
                 next_id = eligible_pool[offset]
 
         else:
-            priority = self._get_next_priority(review, ignore_my_own_locks=ignore_my_own_locks)
+            priority = self._get_next_priority(review, assignment, ignore_my_own_locks=ignore_my_own_locks)
+            #import pdb; pdb.set_trace()
+
             if priority is not None:
                 # 8/29/11 -- remedy for issue wherein antiquated
                 # (deployed) code was not popping priority items
@@ -2075,7 +2086,7 @@ class ReviewController(BaseController):
                 while (priority.num_times_labeled >= num_times_to_label):
                     Session.delete(priority)
                     Session.commit()
-                    priority = self._get_next_priority(review, ignore_my_own_locks=ignore_my_own_locks)
+                    priority = self._get_next_priority(review, assignment, ignore_my_own_locks=ignore_my_own_locks)
 
                 next_id = priority.citation_id
                 ## 'check out' / lock the citation
@@ -2335,29 +2346,77 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def create_assignment(self, id):
         assign_to = request.params.getall("assign_to")
-        due_date = None
+        due_date = request.params['due_date']
+        #p_rescreen = float(request.params['p_rescreen'])
+
+        # Validate parameters
+        if assign_to==[]:
+            self._set_flash_redirect(
+                    "You did not choose a user to assign a task to. Please correct and try again",
+                     url(controller="review", action="assignments", id=id))
+
+        if not due_date=="":
+            try:
+                m,d,y = [int(x) for x in request.params['due_date'].split("/")]
+                due_date = datetime.date(y,m,d)
+            except:
+                self._set_flash_redirect(
+                        "Problem with due date format. Please correct and try again.",
+                         url(controller="review", action="assignments", id=id))
+        else:
+            due_date = None
+
         try:
-            m,d,y = [int(x) for x in request.params['due_date'].split("/")]
-            due_date = datetime.date(y,m,d)
-        except:
-            pass
-        p_rescreen = float(request.params['p_rescreen'])
-        n = int(request.params['n'])
+            n_assigned = int(request.params['n'])
+        except ValueError as e:
+            self._set_flash_redirect(
+                    "Invalid value for number of citations assigned. Please correct and try again",
+                    url(controller="review", action="assignments", id=id))
+
+        if n_assigned<=0:
+            self._set_flash_redirect(
+                    "Please choose an integer greater than 0 for number of citations for each assignee to screen.",
+                     url(controller="review", action="assignments", id=id))
+
+        citations_cnt = len(self._get_citations_for_review(id))
+
+        if n_assigned > citations_cnt:
+            self._set_flash_redirect(
+                    "You cannot assign more citations to a user than the total number of citations in the project (" + str(citations_cnt) + ")",
+                     url(controller="review", action="assignments", id=id))
+
+        task = model.Task()
+        task.project_id = id
+        task.task_type = "assigned"
+        task.num_assigned = n_assigned
+
+        Session.add(task)
+        Session.commit()
+
         assign_to_ids = [self._get_id_from_username(username) for username in assign_to]
         for reviewer_id in assign_to_ids:
             new_assignment = model.Assignment()
             new_assignment.project_id = id
             new_assignment.user_id = reviewer_id
+            new_assignment.task_id = task.id
+            new_assignment.done_so_far = 0
+            new_assignment.date_assigned = datetime.datetime.now()
             new_assignment.date_due = due_date
             new_assignment.done = False
-            new_assignment.done_so_far = 0
-            new_assignment.num_assigned = n
-            new_assignment.p_rescreen = p_rescreen
-            new_assignment.date_assigned = datetime.datetime.now()
+            new_assignment.num_assigned = n_assigned
+            #new_assignment.p_rescreen = p_rescreen
+            new_assignment.assignment_type = 'assigned'
             Session.add(new_assignment)
-            Session.commit()
 
-        redirect(url(controller="review", action="admin", project_id=id))
+        Session.commit()
+
+        redirect(url(controller="review", action="assignments", id=id))
+
+    def _set_flash_redirect(self, msg, url):
+        session['flash'] = msg
+        session.save()
+        redirect(url)
+
 
     def _get_priority_for_citation_review(self, citation_id, review_id):
         priority_q = Session.query(model.Priority)
@@ -2417,7 +2476,7 @@ class ReviewController(BaseController):
             locked_priority.locked_by = None
             Session.commit()
 
-    def _get_next_priority(self, review, ignore_my_own_locks=True):
+    def _get_next_priority(self, review, assignment, ignore_my_own_locks=True):
         '''
         returns citation ids to be screened for the specified
         review, ordered by their priority (in the priority table).
@@ -2435,15 +2494,16 @@ class ReviewController(BaseController):
         me = request.environ.get('repoze.who.identity')['user'].id
         project_member_count = len(review.members)
 
-        ranked_priorities = Session.query(model.Priority).\
+        ranked_priorities_q = Session.query(model.Priority).\
             join(model.Assignment, model.Priority.project_id==model.Assignment.project_id).\
             outerjoin(model.Label, model.Priority.citation_id==model.Label.study_id).\
             filter(model.Priority.project_id==review_id).\
             filter(model.Assignment.user_id==me).\
-            filter(model.Assignment.assignment_type=='perpetual').\
-            filter(and_(or_(model.Label.user_id!=me, model.Label.user_id==None))).\
+            filter(or_(model.Assignment.assignment_type=='perpetual', model.Assignment.assignment_type==None)).\
+            filter(or_(model.Label.user_id!=me, model.Label.user_id==None)).\
             order_by(model.Priority.priority).\
             limit(project_member_count*10)
+        ranked_priorities = ranked_priorities_q.all()
 
         # now filter the priorities, excluding those that are locked
         # note that we also will remove locks here if a citation has

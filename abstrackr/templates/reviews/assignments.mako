@@ -10,7 +10,6 @@
 <a href="${url(controller='account', action='welcome')}">./dashboard</a>/<a href="${url(controller='review', action='show_review', id=c.review.id)}">${c.review.name}</a>
 </div>
 
-
 <h1>${c.review.name}: administrivia</h1>
 
 <div class="actions">
@@ -65,12 +64,10 @@ assign to: <br/><br/>
 <br/><br/>
 <table>
 <tr><td>number of citations for each assignee to screen:</td><td> <INPUT TYPE="text" NAME="n" SIZE=10></td></tr>
-<tr><td>percent of these that should be re-screens:</td><td> <INPUT TYPE="text" NAME="p_rescreen" VALUE="0" SIZE=10>
-</td>
-</tr>
-<tr>
-<td>
-due date:</td><td> 
+<!-- not actually working yet
+<tr><td>percent of these that should be re-screens:</td><td> <INPUT TYPE="text" NAME="p_rescreen" VALUE="0" SIZE=10></td></tr>
+-->
+<tr><td>due date:</td><td>
 <INPUT TYPE="text" NAME="due_date" VALUE="" SIZE=10>
 <a href="#"
    onClick="cal.select(document.forms['new_assignment'].due_date,'anchor1','MM/dd/yyyy'); return false;"
