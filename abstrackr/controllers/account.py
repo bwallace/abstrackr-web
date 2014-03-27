@@ -17,6 +17,8 @@ import smtplib
 import string
 import random
 
+from sqlalchemy import func
+
 # validation stuff
 from pylons.decorators import validate
 import abstrackr.model.form as form
@@ -266,6 +268,7 @@ to see which OperationalError is being raised ''')
         # pull all assignments for this person
         assignment_q = Session.query(model.Assignment)
         all_assignments = assignment_q.filter(model.Assignment.user_id == person.id).all()
+        self._set_assignment_done_status(all_assignments)
 
         # Build assignment completion status dictionary
         c.d_completion_status = self._get_assignment_completion_status(all_assignments)
@@ -307,6 +310,103 @@ to see which OperationalError is being raised ''')
         c.my_projects = False
         return render('/accounts/dashboard.mako')
 
+    @ActionProtector(not_anonymous())
+    def _set_assignment_done_status(self, all_assignments):
+        for a in all_assignments:
+            b_assignment_done = self._check_assignment_done(a)
+            a.done = b_assignment_done
+            Session.add(a)
+        Session.commit()
+
+    @ActionProtector(not_anonymous())
+    def _check_assignment_done(self, a):
+        project_id = a.project_id
+        user_id = a.user_id
+        task_id = a.task_id
+        done_so_far = a.done_so_far
+        done = a.done
+        num_assigned = a.num_assigned
+        assignment_type = a.assignment_type
+
+        if assignment_type=='perpetual':
+            return self._check_assignment_done_perpetual_type(a)
+        elif assignment_type=='conflict':
+            return self._check_assignment_done_conflict_type(a)
+        elif assignment_type=='initial':
+            return self._check_assignment_done_initial_type(a)
+        elif assignment_type=='assigned':
+            return self._check_assignment_done_assigned_type(a)
+
+    @ActionProtector(not_anonymous())
+    def _check_assignment_done_perpetual_type(self, a):
+        done_so_far = a.done_so_far
+        screening_mode = Session.query(model.Project).filter_by(id=a.project_id).first().screening_mode
+        cnt_citations_in_project = self._get_cnt_citations_in_project_by_project_id(a.project_id)
+
+        if screening_mode in ['single', 'advanced']:
+            cnt_citations_labeled_by_anyone = self._get_cnt_citations_labeled(a.project_id)
+            return cnt_citations_labeled_by_anyone>=cnt_citations_in_project
+        elif screening_mode in ['double']:
+            # In double screening it may be the case that we are already done because 2 other members
+            # finished screening all. So we have to check two conditions. Either the current user already
+            # screened all the citations in the project, or the number of citations that have been labeled
+            # twice is equal to the number of citations in the project
+            cnt_citations_labeled_twice_by_anyone = self._get_cnt_citations_labeled_twice_by_anyone(a.project_id)
+            cnt_citations_labeled_by_me = self._get_cnt_citations_labeled(a.project_id, a.user_id)
+            if cnt_citations_labeled_by_me==cnt_citations_in_project:
+                return True
+            else:
+                return cnt_citations_labeled_twice_by_anyone==cnt_citations_in_project
+
+    @ActionProtector(not_anonymous())
+    def _get_cnt_citations_labeled_twice_by_anyone(self, project_id):
+        labels_q = Session.query(model.Label).\
+                           filter_by(project_id=project_id).\
+                           group_by(model.Label.study_id).\
+                           having(func.count(model.Label.study_id) >= 2)
+        return len(labels_q.all())
+
+
+    @ActionProtector(not_anonymous())
+    def _get_cnt_citations_in_project_by_project_id(self, project_id):
+        citations = Session.query(model.Citation).filter_by(project_id=project_id).all()
+        return len(citations)
+
+    @ActionProtector(not_anonymous())
+    def _get_cnt_citations_labeled(self, project_id, user_id=None):
+        if user_id==None:
+            labels = Session.query(model.Label).filter_by(project_id=project_id).all()
+        else:
+            labels = Session.query(model.Label).filter_by(project_id=project_id).filter_by(user_id=user_id).all()
+
+        lof_citation_ids = [l.study_id for l in labels]
+        return len(set(lof_citation_ids))
+
+    @ActionProtector(not_anonymous())
+    # This is just like _check_assignment_done_assigned_type
+    # Going to keep this for now in case the requirements change.
+    def _check_assignment_done_conflict_type(self, a):
+        cnt_labels_by_assignment = self._get_cnt_labels_by_assignment(a)
+        num_assigned = a.num_assigned
+        return cnt_labels_by_assignment==num_assigned
+
+    @ActionProtector(not_anonymous())
+    # This is just like _check_assignment_done_assigned_type
+    # Going to keep this for now in case the requirements change.
+    def _check_assignment_done_initial_type(self, a):
+        cnt_labels_by_assignment = self._get_cnt_labels_by_assignment(a)
+        num_assigned = a.num_assigned
+        return cnt_labels_by_assignment==num_assigned
+
+    @ActionProtector(not_anonymous())
+    def _check_assignment_done_assigned_type(self, a):
+        cnt_labels_by_assignment = self._get_cnt_labels_by_assignment(a)
+        num_assigned = a.num_assigned
+        return cnt_labels_by_assignment==num_assigned
+
+    def _get_cnt_labels_by_assignment(self, a):
+        labels_q = Session.query(model.Label)
+        return labels_q.filter_by(user_id=a.user_id).filter_by(assignment_id=a.id).count()
 
     @ActionProtector(not_anonymous())
     def show_merge_review_screen(self):
