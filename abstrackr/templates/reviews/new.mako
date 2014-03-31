@@ -166,9 +166,11 @@
 
             <tr><td><label>tag visibility (<a href="#" id="tag-visibility-link">what?</a>):</td> <td>${h.select("tag_visibility", None, ["Private", "Public"])} </label></td></tr>
 
+            <!--
             <tr><td><label>minimum number of abstracts to screen:</td><td> ${h.text('min_citations', '0')}</label></td></tr>
 
             <tr><td><label>maximum number of abstracts to screen:</td><td> ${h.text('max_citations', '0')}</label></td></tr>
+            -->
 
             <div id='create' class="actions">
                 <tr><td></td><td></td><td class="actions">

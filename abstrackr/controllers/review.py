@@ -165,8 +165,8 @@ class ReviewController(BaseController):
         new_review.name = request.params['name']
         new_review.description = request.params['description']
         new_review.sort_by = request.params['order']
-        new_review.min_citations = request.params['min_citations']
-        new_review.max_citations = request.params['max_citations']
+        #new_review.min_citations = request.params['min_citations']
+        #new_review.max_citations = request.params['max_citations']
         screening_mode_str = request.params['screen_mode']
         tag_privacy_str = request.params['tag_visibility']
 
@@ -1677,9 +1677,10 @@ class ReviewController(BaseController):
         # Based on the assignment type we now look for any existing
         # label. When assignment type is "conflict" we look for a label
         # by CONSENSUS_USER (ID=0), else by current_user ID
-        existing_label = label_q.filter(and_(model.Label.project_id == review_id,
-                                             model.Label.study_id == study_id,
-                                             model.Label.user_id == user_id)).all()
+        existing_label = label_q.filter(and_(model.Label.project_id==review_id,
+                                             model.Label.study_id==study_id,
+                                             model.Label.user_id==user_id,
+                                             model.Label.assignment_id==assignment_id)).all()
 
         # Case when we re-label a citation
         if len(existing_label) > 0:
@@ -1746,6 +1747,7 @@ class ReviewController(BaseController):
                 new_label.user_id = CONSENSUS_USER
             else:
                 new_label.user_id = current_user.id
+
             new_label.first_labeled = new_label.label_last_updated = datetime.datetime.now()
             Session.add(new_label)
 
@@ -1755,7 +1757,8 @@ class ReviewController(BaseController):
 
             ###
             # for finite assignments, we need to check if we're through.
-            if assignment.assignment_type != "perpetual":
+            #if assignment.assignment_type != "perpetual":
+            if assignment.assignment_type not in ["perpetual", "assigned"]:
                 # in the case of conflict (and 'review maybe') assignments,
                 # we don't do fancy cacheing and hence just return the next
                 # citation here. may want to implement this in the future.
@@ -1766,8 +1769,8 @@ class ReviewController(BaseController):
                     assignment.done = True
                     Session.commit()
             else:
-                # for `perpetual' (single, double or n-screening) case, we need to
-                # keep track of the priority table.
+                # for `perpetual' (single, double or n-screening) case or `assigned',
+                # we need to keep track of the priority table.
                 #
                 # update the number of times this citation has been labeled;
                 # if we have collected a sufficient number of labels, pop it from
@@ -1776,12 +1779,13 @@ class ReviewController(BaseController):
                 priority_obj.num_times_labeled += 1
                 priority_obj.is_out = False
                 priority_obj.locked_by = None
+                Session.add(priority_obj)
                 Session.commit()
 
                 # are we through with this citation/review?
                 review = self._get_review_from_id(review_id)
 
-                if review.screening_mode in ("single", "double", "advanced"):
+                if review.screening_mode in ["single", "double", "advanced"]:
                     num_times_to_screen  = {"single": 1, "double": 2, "advanced": 1}[review.screening_mode]
 
                     if priority_obj.num_times_labeled >= num_times_to_screen:
@@ -1789,17 +1793,21 @@ class ReviewController(BaseController):
                         Session.commit()
 
                     # has this person already labeled everything in this review?
-                    num_citations_in_review = Session.query(
-                        func.count(model.Citation.project_id == review_id))
+                    num_citations_in_review = controller_globals._get_cnt_citations_in_project_by_project_id(review_id)
                     num_screened = len(self._get_already_labeled_ids(review.id, reviewer_id=user_id))
+
                     if num_screened >= num_citations_in_review:
                         assignment.done = True
+                        Session.add(assignment)
                         Session.commit()
+
+                if review.screening_mode in ["advanced"]:
                     num_screened_in_assignment = len(self._get_already_labeled_ids(review.id,
                                                                                    reviewer_id=user_id,
                                                                                    assignment_id=assignment.id))
                     if num_screened_in_assignment>=assignment.num_assigned:
                         assignment.done = True
+                        Session.add(assignment)
                         Session.commit()
 
             # Create assignment status dictionary
@@ -1858,7 +1866,7 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def screen(self, review_id, assignment_id):
         user = self._get_user()
-
+        
         assignment = self._get_assignment_from_id(assignment_id)
         if assignment is None:
             redirect(url(controller="review", action="screen", \
@@ -1867,7 +1875,6 @@ class ReviewController(BaseController):
         review = self._get_review_from_id(review_id)
         if assignment.done:
             redirect(url(controller="account", action="welcome"))
-
 
         # clear our locks for this review
         self._clear_all_my_locks(review.id)
@@ -1883,6 +1890,7 @@ class ReviewController(BaseController):
         c.show_authors = user.show_authors
         c.show_keywords = user.show_keywords
 
+        #import pdb; pdb.set_trace()
         c.cur_citation = self._get_next_citation(assignment, review)
 
         if c.cur_citation is None:
@@ -1892,7 +1900,7 @@ class ReviewController(BaseController):
                 return "nothing to see here (i.e., not conflicting labels and/or no maybe labels). hit back?"
             else:
                 #TODO
-                assignment.done = self._is_assignment_done(review, assignment)
+                assignment.done = controller_globals._check_assignment_done(assignment)
                 Session.commit()
                 redirect(url(controller="account", action="welcome"))
 
@@ -1968,11 +1976,6 @@ class ReviewController(BaseController):
         c.assignment_type = assignment.assignment_type
         c.assignment = assignment
 
-        # Need the above line because the first line of this function gives
-        #   a model.auth.User object
-        # as opposed to
-        #   a model.User object (which is what I need)
-
         # The following help determine which fields of the citation are shown.
         c.show_journal = user.show_journal
         c.show_authors = user.show_authors
@@ -1982,11 +1985,12 @@ class ReviewController(BaseController):
         # respect the user's locks
         c.cur_citation = self._get_next_citation(assignment, review, ignore_my_own_locks=False)
 
-        # but wait -- are we finished?
+        # but wait -- is the last one currently being screened? 
+        assignment.done = controller_globals._check_assignment_done(assignment, offset=-1)
+
         if assignment.done or c.cur_citation is None:
-            #TODO
-            #assignment.done = True
-            assignment.done = self._is_assignment_done(review, assignment)
+            assignment.done = True
+            Session.add(assignment)
             Session.commit()
             return render("/assignment_complete.mako")
 
@@ -2035,7 +2039,15 @@ class ReviewController(BaseController):
         return reviewer_ids_to_names_d
 
     def _get_next_citation(self, assignment, review, ignore_my_own_locks=True):
+        assignment_id = assignment.id
+        assignment_type = assignment.assignment_type
+        task_id = assignment.task_id
+        num_assigned = assignment.num_assigned
+        user = self._get_user()
+        user_id = user.id
+        project_id = review.id
         next_id = None
+
         if not ignore_my_own_locks:
             # then we're fetching the *next* citation, so we
             # we may futz with the assignment object a bit (see
@@ -2046,24 +2058,24 @@ class ReviewController(BaseController):
         # if the current assignment is a 'fixed' assignment (i.e.,
         # comprises a finite set of ids to be screened -- an initial round,
         # conflicting round, or assigned assignment) then we pull from the FixedAssignments table
-        if assignment.assignment_type in ["initial", "conflict"]:
+        if assignment_type in ["initial", "conflict"]:
             # in the case of initial assignments, we never remove the citations,
             # thus we need to ascertain that we haven't already screened it
-            eligible_pool = self._get_ids_for_task(assignment.task_id)
+            eligible_pool = self._get_ids_for_task(task_id)
             # a bit worried about runtime here (O(|eligible_pool| x |already_labeled|)).
             # hopefully eligible_pool shrinks as sufficient labels are acquired (and it
             # shoudl always be pretty small for initial assignments).
 
-            if assignment.assignment_type=="conflict":
+            if assignment_type=="conflict":
                 # the 0th user is the omniscient consensus reviewer,
                 # by convention. in the case that we're reviewing conflicts
                 # we use this special user.
                 reviewer_id = 0
-            elif assignment.assignment_type=="initial":
+            elif assignment_type=="initial":
                 reviewer_id = self._get_user().id
 
             already_labeled = \
-                    self._get_already_labeled_ids(review.id, reviewer_id=reviewer_id, assignment_id=assignment.id)
+                    self._get_already_labeled_ids(review.id, reviewer_id=reviewer_id, assignment_id=assignment_id)
 
             eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
             next_id = None
@@ -2076,13 +2088,19 @@ class ReviewController(BaseController):
             if len(eligible_pool)>offset:
                 next_id = eligible_pool[offset]
 
-        # Else we are in 'perpetual' assignment type
-        elif assignment.assignment_type in ["perpetual", "assigned"]:
-            if assignment.assignment_type=="assigned":
-                user_id = self._get_user().id
-                already_labeled_by_me = self._get_already_labeled_ids(review.id, reviewer_id=user_id, assignment_id=assignment.id)
-                if len(already_labeled_by_me)>=assignment.num_assigned:
+        # Else we are in 'perpetual' or 'assigned' assignment type
+        elif assignment_type in ["perpetual", "assigned"]:
+            if assignment_type=="assigned":
+                already_labeled_by_me = controller_globals._get_labels_by_assignment(assignment)
+                if len(already_labeled_by_me)==num_assigned:
                     return None
+                # If we are in the process of fetching the 'next' citation
+                # then we need to stop one (1) short of num_assigned.
+                # ignore_my_own_locks is false in the case that we are caching
+                # the 'next' citation
+                if not ignore_my_own_locks:
+                    if len(already_labeled_by_me)+1==num_assigned:
+                        return None
 
             priority = self._get_next_priority(review, assignment, ignore_my_own_locks=ignore_my_own_locks)
 
@@ -2478,7 +2496,7 @@ class ReviewController(BaseController):
         return False
 
     def _clear_all_my_locks(self, review_id):
-        me = request.environ.get('repoze.who.identity')['user'].id
+        me = self._get_user().id
         priority_q = Session.query(model.Priority)
         locked_priorities =  priority_q.filter(and_(\
                                     model.Priority.project_id == review_id,\
@@ -2488,7 +2506,8 @@ class ReviewController(BaseController):
         for locked_priority in locked_priorities:
             locked_priority.is_out = False
             locked_priority.locked_by = None
-            Session.commit()
+            Session.add(locked_priority)
+        Session.commit()
 
     def _get_next_priority(self, review, assignment, ignore_my_own_locks=True):
         '''
@@ -2511,7 +2530,8 @@ class ReviewController(BaseController):
 
         ranked_priorities_q = Session.query(model.Priority).\
             join(model.Assignment, model.Priority.project_id==model.Assignment.project_id).\
-            outerjoin(model.Label, model.Priority.citation_id==model.Label.study_id).\
+            outerjoin(model.Label, and_(model.Priority.citation_id==model.Label.study_id,
+                                        model.Label.assignment_id==model.Assignment.id)).\
             filter(model.Priority.project_id==review_id).\
             filter(model.Assignment.user_id==me).\
             filter(model.Assignment.assignment_type==assignment_type).\
@@ -2519,6 +2539,7 @@ class ReviewController(BaseController):
             order_by(model.Priority.priority).\
             limit(project_member_count*10)
         ranked_priorities = ranked_priorities_q.all()
+        #import pdb; pdb.set_trace()
 
         # now filter the priorities, excluding those that are locked
         # note that we also will remove locks here if a citation has
@@ -3000,38 +3021,38 @@ class ReviewController(BaseController):
         current_user = request.environ.get('repoze.who.identity')['user']
         return controller_globals._get_user_from_email(current_user.email)
 
-    def _is_assignment_done(self, review, assignment):
-        user = self._get_user()
-        review_id = review.id
-        reviewer_id = user.id
-
-        if assignment.assignment_type in ['initial', 'conflict']:
-            # in the case of initial assignments, we never remove the citations,
-            # thus we need to ascertain that we haven't already screened it
-            eligible_pool = self._get_ids_for_task(assignment.task_id)
-            reviewer_id = None
-            if assignment.assignment_type == "conflict":
-                # the 0th user is the omniscient consensus reviewer,
-                # by convention. in the case that we're reviewing conflicts
-                # we use this special user.
-                reviewer_id = 0
-
-            already_labeled = self._get_already_labeled_ids(review.id, reviewer_id=reviewer_id)
-            eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
-            return len(eligible_pool) == 0
-        elif assignment.assignment_type in ['perpetual', 'assigned']:
-            citations_in_priority_queue = self._get_citations_in_priority_queue(review)
-            if len(citations_in_priority_queue) == 0:
-                return True
-            else:
-                labels= self._get_labels_for_user(review, assignment, user)
-                labeled_citation_ids = [label.study_id for label in labels]
-                citations_in_priority_queue = [cit.id for cit in citations_in_priority_queue]
-                citations_not_yet_labeled = [x for x in citations_in_priority_queue if x not in labeled_citation_ids]
-                if len(citations_not_yet_labeled) == 0:
-                    return True
-                else:
-                    return sorted(labeled_citation_ids) == sorted(citations_in_priority_queue)
+#    def _is_assignment_done(self, review, assignment):
+#        user = self._get_user()
+#        review_id = review.id
+#        reviewer_id = user.id
+#
+#        if assignment.assignment_type in ['initial', 'conflict']:
+#            # in the case of initial assignments, we never remove the citations,
+#            # thus we need to ascertain that we haven't already screened it
+#            eligible_pool = self._get_ids_for_task(assignment.task_id)
+#            reviewer_id = None
+#            if assignment.assignment_type == "conflict":
+#                # the 0th user is the omniscient consensus reviewer,
+#                # by convention. in the case that we're reviewing conflicts
+#                # we use this special user.
+#                reviewer_id = 0
+#
+#            already_labeled = self._get_already_labeled_ids(review.id, reviewer_id=reviewer_id)
+#            eligible_pool = [xid for xid in eligible_pool if not xid in already_labeled]
+#            return len(eligible_pool) == 0
+#        elif assignment.assignment_type in ['perpetual', 'assigned']:
+#            citations_in_priority_queue = self._get_citations_in_priority_queue(review)
+#            if len(citations_in_priority_queue) == 0:
+#                return True
+#            else:
+#                labels= self._get_labels_for_user(review, assignment, user)
+#                labeled_citation_ids = [label.study_id for label in labels]
+#                citations_in_priority_queue = [cit.id for cit in citations_in_priority_queue]
+#                citations_not_yet_labeled = [x for x in citations_in_priority_queue if x not in labeled_citation_ids]
+#                if len(citations_not_yet_labeled) == 0:
+#                    return True
+#                else:
+#                    return sorted(labeled_citation_ids) == sorted(citations_in_priority_queue)
 
     def _get_citations_in_priority_queue(self, project):
         Session.commit()

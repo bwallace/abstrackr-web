@@ -3,7 +3,8 @@
 
 <script type="text/javascript">    
     function setup_js(){
-        % if 'assignment' in dir(c):
+
+        % if not 'assignment' in dir(c):
           % if c.assignment.num_assigned and c.assignment.num_assigned > 0:
             $("#progress").html("you've screened <b>${c.assignment.done_so_far}</b> out of <b>${c.assignment.num_assigned}</b> so far (nice going!)");
           % else:
