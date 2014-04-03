@@ -37,7 +37,7 @@ from pylons.controllers.util import abort, redirect
 from repoze.what.plugins.pylonshq import ActionProtector
 from repoze.what.predicates import not_anonymous, has_permission
 
-from sqlalchemy import or_, and_, desc, func
+from sqlalchemy import or_, and_, desc, func, asc
 from sqlalchemy.sql import select
 
 from random import shuffle
@@ -2527,63 +2527,88 @@ class ReviewController(BaseController):
         me = request.environ.get('repoze.who.identity')['user'].id
         project_member_count = len(review.members)
         assignment_type = assignment.assignment_type
+        screening_mode = review.screening_mode
+        times_to_screen = {'single': 1, 'double': 2, 'advanced': 1}[screening_mode]
 
+        # This finds the next priority that no one has screened
         ranked_priorities_q = Session.query(model.Priority).\
-            join(model.Assignment, model.Priority.project_id==model.Assignment.project_id).\
-            outerjoin(model.Label, and_(model.Priority.citation_id==model.Label.study_id,
-                                        model.Label.assignment_id==model.Assignment.id)).\
-            filter(model.Priority.project_id==review_id).\
-            filter(model.Assignment.user_id==me).\
-            filter(model.Assignment.assignment_type==assignment_type).\
-            filter(or_(model.Label.user_id!=me, model.Label.user_id==None)).\
-            order_by(model.Priority.priority).\
-            limit(project_member_count*10)
+                outerjoin(model.Label, model.Priority.citation_id==model.Label.study_id).\
+                filter(model.Priority.project_id==review_id).\
+                filter(model.Label.user_id==None).\
+                order_by(asc(model.Priority.priority)).\
+                limit(project_member_count*10)
+
         ranked_priorities = ranked_priorities_q.all()
-        #import pdb; pdb.set_trace()
+
+        # if none were found then we get the next priority that this user hasn't screened
+        # and does not have the required number of labels (project-wide) yet.
+        if len(ranked_priorities)==0:
+
+            # in sql this is what we want:
+            # SELECT priorities.* FROM priorities LEFT OUTER JOIN
+            #   (  SELECT    study_id, user_id, count(*) AS label_count
+            #      FROM      labels
+            #      WHERE     project_id=review_id
+            #      GROUP BY  study_id
+            #      HAVING    count(*)<times_to_screen  ) AS lbl_cnt
+            # ON    priorities.citation_id=lbl_cnt.study_id
+            # WHERE lbl_cnt.user_id != me;
+
+            inner_query = Session.query(model.Label.study_id, model.Label.user_id, func.count('*').\
+                                        label('label_count')).\
+                                filter(model.Label.project_id==review_id).\
+                                group_by(model.Label.study_id).\
+                                having(func.count(model.Label.study_id)<times_to_screen).\
+                                subquery()
+
+            ranked_priorities_q = Session.query(model.Priority).\
+                                        outerjoin(inner_query, model.Priority.citation_id==inner_query.c.study_id).\
+                                        filter(inner_query.c.user_id!=me).\
+                                        order_by(asc(model.Priority.priority)).\
+                                        limit(project_member_count*10)
+
+            ranked_priorities = ranked_priorities_q.all()
 
         # now filter the priorities, excluding those that are locked
         # note that we also will remove locks here if a citation has
         # been out for > 2 hours.
         EXPIRE_TIME = 3600 # 3600 *seconds*: i.e., 1 hours
 
-        already_labeled_by_me = \
-            self._get_already_labeled_ids(review_id, reviewer_id=me, assignment_id=assignment.id)
-
-        ###
         count = 0
         for priority in ranked_priorities:
             print "\n\n on priority: %s " % count
             print "associated citation is: %s" % priority.citation_id
+            print "citation priority is: %s" % priority.priority
             print "priority is_out? %s" % priority.is_out
             print "locked by me? %s" % (priority.locked_by==me)
             print "ignore_my_own_locks? %s" % ignore_my_own_locks
-            if priority.citation_id not in already_labeled_by_me:
-                if priority.is_out:
-                    # priority is out for screening
-                    if priority.locked_by != me:
-                        # currently locked by someone else; here we check
-                        # if the lock should be 'expired'
-                        td = datetime.datetime.now()-priority.time_requested
-                        time_locked = (td).seconds + (td).days*86400
-                        if time_locked > EXPIRE_TIME:
-                            priority.is_out = False
-                            priority.locked_by = None
-                            Session.commit()
-                            return priority
-                    elif ignore_my_own_locks:
-                        # then *the current user* has a lock on this priority
-                        # we ignore this (and return the priority object anyway)
-                        # iff ignore_my_own_locks is true; otherwise, we refuse
-                        # to return this. this should be set to false, for example,
-                        # when fetching the next citation to cache
-                        if priority.citation_id not in already_labeled_by_me:
-                            return priority
-                else:
-                    # priority is not locked and we haven't screened the associated
-                    # citation
-                    print "(regular) returning priority with citation_id %s" % \
-                                             priority.citation_id
-                    return priority
+            #if priority.citation_id not in already_labeled_by_me:
+            if priority.is_out:
+                # priority is out for screening
+                if priority.locked_by != me:
+                    # currently locked by someone else; here we check
+                    # if the lock should be 'expired'
+                    td = datetime.datetime.now()-priority.time_requested
+                    time_locked = (td).seconds + (td).days*86400
+                    if time_locked > EXPIRE_TIME:
+                        priority.is_out = False
+                        priority.locked_by = None
+                        Session.commit()
+                        return priority
+                elif ignore_my_own_locks:
+                    # then *the current user* has a lock on this priority
+                    # we ignore this (and return the priority object anyway)
+                    # iff ignore_my_own_locks is true; otherwise, we refuse
+                    # to return this. this should be set to false, for example,
+                    # when fetching the next citation to cache
+                    if priority.citation_id not in already_labeled_by_me:
+                        return priority
+            else:
+                # priority is not locked and we haven't screened the associated
+                # citation
+                print "(regular) returning priority with citation_id %s" % \
+                                         priority.citation_id
+                return priority
             count+=1
 
         # this person has nothing more to do!
