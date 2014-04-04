@@ -2545,44 +2545,50 @@ class ReviewController(BaseController):
         screening_mode = review.screening_mode
         times_to_screen = {'single': 1, 'double': 2, 'advanced': 1}[screening_mode]
 
-        # This finds the next priority that no one has screened
-        ranked_priorities_q = Session.query(model.Priority).\
-                outerjoin(model.Label, model.Priority.citation_id==model.Label.study_id).\
-                filter(model.Priority.project_id==review_id).\
-                filter(model.Label.user_id==None).\
-                order_by(asc(model.Priority.priority)).\
-                limit(project_member_count*10)
 
-        ranked_priorities = ranked_priorities_q.all()
+        # jjap 2014-04-04: Decision was made to give priority strictly by priority
+        #                  position. Do not need to look for priority item with no
+        #                  labels yet
+        # This finds the next priority that no one has screened
+        #ranked_priorities_q = Session.query(model.Priority).\
+        #        outerjoin(model.Label, model.Priority.citation_id==model.Label.study_id).\
+        #        filter(model.Priority.project_id==review_id).\
+        #        filter(model.Label.user_id==None).\
+        #        order_by(asc(model.Priority.priority)).\
+        #        limit(project_member_count*10)
+
+        #ranked_priorities = ranked_priorities_q.all()
 
         # if none were found then we get the next priority that this user hasn't screened
         # and does not have the required number of labels (project-wide) yet.
-        if len(ranked_priorities)==0:
+        #if len(ranked_priorities)==0:
 
-            # in sql this is what we want:
-            # SELECT priorities.* FROM priorities LEFT OUTER JOIN
-            #   (  SELECT    study_id, user_id, count(*) AS label_count
-            #      FROM      labels
-            #      WHERE     project_id=review_id
-            #      GROUP BY  study_id
-            #      HAVING    count(*)<times_to_screen  ) AS lbl_cnt
-            # ON    priorities.citation_id=lbl_cnt.study_id
-            # WHERE lbl_cnt.user_id != me;
+        # in sql this is what we want:
+        # SELECT priorities.* FROM priorities LEFT OUTER JOIN
+        #         (  SELECT    study_id, user_id, count(*) AS label_count
+        #            FROM      labels
+        #            WHERE     project_id=review_id
+        #            GROUP BY  study_id
+        #            HAVING    count(*)<times_to_screen  ) AS lbl_cnt
+        #    ON  priorities.citation_id=lbl_cnt.study_id
+        # WHERE priorities.project_id=review_id
+        #   AND (lbl_cnt.user_id != me OR lbl_cnt.user_id is NULL);
 
-            inner_query = Session.query(model.Label.study_id, model.Label.user_id, func.count('*').\
-                                        label('label_count')).\
-                                filter(model.Label.project_id==review_id).\
-                                group_by(model.Label.study_id).\
-                                having(func.count(model.Label.study_id)<times_to_screen).\
-                                subquery()
+        inner_query = Session.query(model.Label.study_id, model.Label.user_id, func.count('*').\
+                                    label('label_count')).\
+                            filter(model.Label.project_id==review_id).\
+                            group_by(model.Label.study_id).\
+                            having(func.count(model.Label.study_id)<times_to_screen).\
+                            subquery()
 
-            ranked_priorities_q = Session.query(model.Priority).\
-                                        outerjoin(inner_query, model.Priority.citation_id==inner_query.c.study_id).\
-                                        filter(inner_query.c.user_id!=me).\
-                                        order_by(asc(model.Priority.priority)).\
-                                        limit(project_member_count*10)
+        ranked_priorities_q = Session.query(model.Priority).\
+                                    outerjoin(inner_query, model.Priority.citation_id==inner_query.c.study_id).\
+                                    filter(model.Priority.project_id==review_id).\
+                                    filter(or_(inner_query.c.user_id!=me, inner_query.c.user_id==None)).\
+                                    order_by(asc(model.Priority.priority)).\
+                                    limit(project_member_count*10)
 
-            ranked_priorities = ranked_priorities_q.all()
+        ranked_priorities = ranked_priorities_q.all()
 
         # now filter the priorities, excluding those that are locked
         # note that we also will remove locks here if a citation has
