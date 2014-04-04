@@ -70,6 +70,13 @@
                       });
                       ">
                       export<img src = "../../export_sm.png"></a></td>
+
+            % if c.projects_w_locked_priorities[review.id]:
+                <td class="inline-actions"><a href="${url(controller='review', action='unlock_priorities', id=review.id)}">unlock citations
+                            <img src = "../../unlock-icon.png"></a></td>
+            % else:
+                <td class="inline-actions"><i>no citations locked</i></td>
+            % endif               
                     
             % if c.statuses[review.id]:
                 <td class="inline-actions"><a href="${url(controller='review', action='predictions_about_remaining_citations', id=review.id)}">predictions

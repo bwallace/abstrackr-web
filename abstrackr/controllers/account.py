@@ -377,7 +377,6 @@ to see which OperationalError is being raised ''')
             user.show_keywords = True
 
         project_q = Session.query(model.Project)
-        #c.leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
         c.leading_projects = user.leader_of_projects
         leading_project_ids = [proj.id for proj in c.leading_projects]
 
@@ -399,15 +398,44 @@ to see which OperationalError is being raised ''')
 
             c.do_we_have_a_maybe[project_id] = False
 
+        # Flag projects that have locked priorities
+        c.projects_w_locked_priorities = self._get_projects_w_locked_priorities(leading_project_ids)
+
         c.my_work = False
         c.my_projects = True
 
         return render('/accounts/dashboard.mako')
 
+    def _get_projects_w_locked_priorities(self, lof_project_ids):
+        """Checks if projects in lof_project_ids have any locked priorities
+
+           (listof ProjectID) -> Dictionary
+        """
+
+        dict_proj_w_locked_priorities = {}
+
+        for i in lof_project_ids:
+            has_locked_priorities = self._project_has_locked_priorities(i)
+            dict_proj_w_locked_priorities[i] = has_locked_priorities
+
+        return dict_proj_w_locked_priorities
+           
+    def _project_has_locked_priorities(self, project_id):
+        """Returns True if project has any locked priorities, else False
+
+           Integer -> Boolean
+        """
+
+        priorities_q = Session.query(model.Priority).\
+                               filter_by(project_id=project_id).\
+                               filter_by(is_out=1)
+        priority = priorities_q.first()
+        if priority:
+            return True
+        else:
+            return False
 
     def _get_projects_person_leads(self, person):
-        #project_q = Session.query(model.Project)
-        #leading_projects = project_q.filter(model.Project.leader_id == person.id).all()
         leading_projects = person.leader_of_projects
         return leading_projects
 

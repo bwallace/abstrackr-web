@@ -28,6 +28,7 @@ def make_map(config):
     map.connect('/review/add_admin/{project_id}/{user_id}', controller='review', action='add_admin')
     map.connect('/review/remove_admin/{project_id}/{user_id}', controller='review', action='remove_admin')
     map.connect('/review/get_fields/{review_id}', controller='review', action='get_fields')
+    map.connect('/review/unlock_priorities/{project_id}', controller='review', action='unlock_priorities')
 
     map.connect('/review/update_tags/{study_id}/{tag_privacy}/{assignment_type}', controller='review', action='update_tags')
 

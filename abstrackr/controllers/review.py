@@ -66,6 +66,15 @@ class ReviewController(BaseController):
         return render("/reviews/new.mako")
 
     @ActionProtector(not_anonymous())
+    def unlock_priorities(self, project_id):
+        if not self._current_user_leads_review(project_id):
+            return "yeah, I don't think so."
+        print("Unlocking priorities for project: %s" % project_id)
+        self._clear_all_locks(project_id)
+
+        redirect(url(controller="account", action="my_projects"))
+
+    @ActionProtector(not_anonymous())
     def predictions_about_remaining_citations(self, id):
         if not self._current_user_leads_review(id):
             return "yeah, I don't think so."
@@ -1890,7 +1899,6 @@ class ReviewController(BaseController):
         c.show_authors = user.show_authors
         c.show_keywords = user.show_keywords
 
-        #import pdb; pdb.set_trace()
         c.cur_citation = self._get_next_citation(assignment, review)
 
         if c.cur_citation is None:
@@ -2501,12 +2509,19 @@ class ReviewController(BaseController):
         locked_priorities =  priority_q.filter(and_(\
                                     model.Priority.project_id == review_id,\
                                     model.Priority.locked_by == me)).all()
+        self._unlock_priorities(locked_priorities)
 
-        print "unlocking %s priorities" % len(locked_priorities)
-        for locked_priority in locked_priorities:
-            locked_priority.is_out = False
-            locked_priority.locked_by = None
-            Session.add(locked_priority)
+    def _clear_all_locks(self, project_id):
+        priority_q = Session.query(model.Priority)
+        locked_priorities =  priority_q.filter(model.Priority.project_id == project_id).all()
+        self._unlock_priorities(locked_priorities)
+
+    def _unlock_priorities(self, listof_Priority):
+        print "unlocking %s priorities" % len(listof_Priority)
+        for p in listof_Priority:
+            p.is_out = False
+            p.locked_by = None
+            Session.add(p)
         Session.commit()
 
     def _get_next_priority(self, review, assignment, ignore_my_own_locks=True):
