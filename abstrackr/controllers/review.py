@@ -2564,27 +2564,31 @@ class ReviewController(BaseController):
         #if len(ranked_priorities)==0:
 
         # in sql this is what we want:
-        # SELECT priorities.* FROM priorities LEFT OUTER JOIN
-        #         (  SELECT    study_id, user_id, count(*) AS label_count
-        #            FROM      labels
-        #            WHERE     project_id=review_id
-        #            GROUP BY  study_id
-        #            HAVING    count(*)<times_to_screen  ) AS lbl_cnt
-        #    ON  priorities.citation_id=lbl_cnt.study_id
-        # WHERE priorities.project_id=review_id
-        #   AND (lbl_cnt.user_id != me OR lbl_cnt.user_id is NULL);
+        # SELECT priorities.*,lbl_cnt.* FROM priorities left JOIN
+        #    (  SELECT     study_id, user_id, count(*) AS label_count
+        #       FROM       labels
+        #       WHERE      project_id=1
+        #       GROUP BY   study_id
+        #    ) AS lbl_cnt
+        # ON            priorities.citation_id=lbl_cnt.study_id
+        # WHERE         priorities.project_id=1
+        # AND          (lbl_cnt.user_id != 1 OR lbl_cnt.user_id is NULL)
+        # AND           COALESCE(lbl_cnt.label_count, 0) < 2
+        # ORDER BY      priorities.priority;
+
+
 
         inner_query = Session.query(model.Label.study_id, model.Label.user_id, func.count('*').\
                                     label('label_count')).\
                             filter(model.Label.project_id==review_id).\
                             group_by(model.Label.study_id).\
-                            having(func.count(model.Label.study_id)<times_to_screen).\
                             subquery()
 
         ranked_priorities_q = Session.query(model.Priority).\
                                     outerjoin(inner_query, model.Priority.citation_id==inner_query.c.study_id).\
                                     filter(model.Priority.project_id==review_id).\
                                     filter(or_(inner_query.c.user_id!=me, inner_query.c.user_id==None)).\
+                                    filter(or_(inner_query.c.label_count==None, inner_query.c.label_count<times_to_screen)).\
                                     order_by(asc(model.Priority.priority)).\
                                     limit(project_member_count*10)
 
