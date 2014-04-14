@@ -389,6 +389,10 @@ class ReviewController(BaseController):
         elif xml_to_sql.looks_like_tsv(local_file_path):
             num_articles = xml_to_sql.tsv_to_sql(local_file_path, cur_review)
             self.de_duplicate_citations(id, False)
+        elif xml_file.filename.lower().endswith(".ris"):
+            print "parsing RIS file..."
+            num_articles = xml_to_sql.ris_to_sql(local_file_path, cur_review)
+            self.de_duplicate_citations(id, False)
         else:
             print "assuming this is a list of pubmed ids"
             num_articles = xml_to_sql.pmid_list_to_sql(local_file_path, cur_review)
