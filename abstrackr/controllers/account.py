@@ -1,4 +1,8 @@
+import pdb
 import logging
+import httplib2
+
+from apiclient.discovery import build
 
 from pylons import config, request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -14,8 +18,11 @@ from repoze.what.plugins.pylonshq import ActionProtector
 
 import turbomail
 import smtplib
+import ConfigParser # really shouldn't have to use this 
 import string
 import random
+
+from oauth2client.client import OAuth2WebServerFlow
 
 from sqlalchemy import func
 
@@ -44,6 +51,72 @@ class AccountController(BaseController):
             c.came_from = came_from
             c.login_counter = request.environ['repoze.who.logins'] + 1
             return render('/accounts/login.mako')
+
+    def _get_google_client_key(self):
+        ini_config = ConfigParser.ConfigParser()
+        ini_config.read('development.ini')
+        client_secret = ini_config.get("google_account_stuff", "client_secret")
+        return client_secret
+
+    def _get_flow(self):
+        ''' see: https://developers.google.com/api-client-library/python/guide/aaa_oauth#flows '''
+        ###
+        # this needs to reflect whatever the development console
+        # says! 
+        g_redirect_url = "http://127.0.0.1/account/google_login"
+        # our client secret deal
+        #path_to_secret = "abstrackr/google-credentials/client_secret_234308404053.apps.googleusercontent.com.json"
+        client_secret = self._get_google_client_key()
+        client_id = "234308404053.apps.googleusercontent.com"
+        scope_str = "https://www.googleapis.com/auth/plus.profile.emails.read"
+        flow = OAuth2WebServerFlow(client_id=client_id ,
+                                   client_secret=client_secret,
+                                   scope=scope_str,
+                                   redirect_uri=g_redirect_url)
+        return flow
+
+    def google_login(self):
+        if 'code' in request.params:
+            # success
+            flow = self._get_flow()
+            code = request.params['code']
+            #try:
+            credentials = flow.step2_exchange(code)
+            #except:
+                # just fail here and return the user
+                # back to the login screen for now
+                # @TODO handle elegantly
+            #    pass
+            # credentials check out
+            http = httplib2.Http()
+            http = credentials.authorize(http)
+            # apparently we have to use google plus... 
+            # grumble, grumble
+            service = build('plus', 'v1', http=http)
+            google_user_info = service.people().get(userId="me").execute()
+
+            '''
+            @TODO (1) create a new user account in *our* system, 
+                  (2) associate this user account with this google account
+
+            '''
+            pdb.set_trace()
+            raise Exception, "@TODO!!! finish implementing google login!"
+
+        # place them back on the login page
+        return render('/accounts/login.mako')
+        
+
+    def confirm_google_login(self):
+        ''' log user in via google. '''
+        ###
+        # https://console.developers.google.com/ (Brown account)
+        #g_redirect_url = "http://abstrackr.cebm.brown.edu/account/google_login/"
+        flow = self._get_flow()
+
+        auth_uri = flow.step1_get_authorize_url()
+        return redirect(auth_uri)
+
 
     def email_test(self):
         from turbomail import Message
@@ -196,6 +269,86 @@ class AccountController(BaseController):
             This is just a welcome email to say hello, and that we've got your email.
             Should you ever need to reset your password, we'll send you instructions
             to this email. In the meantime, happy screening!
+
+            -- The Brown EPC.
+        """ % (new_user.fullname, url('/', qualified=True), new_user.username)
+
+        try:
+            self.send_email_to_user(new_user, "welcome to abstrackr", greeting_message)
+        except:
+            # this almost certainly means we're on our Windows dev box :)
+            pass
+
+        ###
+        # log this user in programmatically (issue #28)
+        rememberer = request.environ['repoze.who.plugins']['cookie']
+        identity = {'repoze.who.userid': new_user.username}
+        response.headerlist = response.headerlist + \
+            rememberer.remember(request.environ, identity)
+        rememberer.remember(request.environ, identity)
+
+
+        # if they were originally trying to join a review prior to
+        # registering, then join them now. (issue #8).
+        if 'then_join' in request.params and request.params['then_join'] != '':
+            redirect(url(controller="review", action="join", review_code=request.params['then_join']))
+        else:
+            redirect(url(controller="account", action="login"))
+
+
+    # @TODO TODO TODO
+    def new_user_from_google_account(self, google_info):
+        '''
+        Note that the verification goes on in model/form.py.
+
+        This is almost done, *except* we need to (a) remember 
+        which users are 'google' users -- they should never be 
+        allowed to log in directly, since we're just assigning
+        some arbitrary password. And (b) we need to link their 
+        google login to this internal account (through another table?
+        or maybe just another column?)
+        '''
+        # I think we're going to have to add an entry to the
+        # table that flags this user as a 'google' (/auto-generated)
+        # user, because they should not be able to subsequently
+        # login with the made up credentials here
+
+        # create the new user; post to db via sqlalchemy
+        new_user = model.User()
+        
+        # @TODO unfinished!
+        # should we just use their email here? and then look up
+        # their email? 
+        new_user.username = "google-user_" + google_info['displayName']#request.params['username']
+        new_user.fullname = " ".join([google_info['givenName'], google_info['familyName']])
+
+
+        # right now we will not know htis for google users!
+        # @TODO should probably ask in a separate dialogue.
+        new_user.experience = -1 
+        # again, these auto-generated users should not be allowed
+        # to log in directly
+        new_user._set_password('xxx') 
+        new_user.email = google_user_info['emails'][0]['value']
+
+        # These are for citation settings,
+        # initialized to True to make everything in the citation visible by default.
+        new_user.show_journal = True
+        new_user.show_authors = True
+        new_user.show_keywords = True
+
+        Session.add(new_user)
+        Session.commit()
+
+        # send out an email
+        greeting_message = """
+            Hi, %s.\n
+
+            Thanks for joining the abstrackr party using your Google login. 
+            You can continue to login using your google credentials.
+
+            This is just a welcome email to say hello, and that we've got your email.
+            Happy screening!
 
             -- The Brown EPC.
         """ % (new_user.fullname, url('/', qualified=True), new_user.username)
