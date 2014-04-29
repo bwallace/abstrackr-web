@@ -44,6 +44,9 @@
   <div class="content">
 
     <h2>${c.review_being_predicted}</h2>
+    Predictions last updated on ${c.predictions_status.predictions_last_made}.<br/>
+    Training data set size: ${c.predictions_status.train_set_size}.</br>
+
     ${len(c.predictions_for_review)} citations have not been screened yet.<br />
     ${c.probably_included} citations are probably relevant.<br /><br /><br/>
     <br/><br/>

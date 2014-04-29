@@ -79,12 +79,24 @@
             % endif               
                     
             % if c.statuses[review.id]:
-                <td class="inline-actions"><a href="${url(controller='review', action='predictions_about_remaining_citations', id=review.id)}">predictions
-                            <img src = "../../Robot-icon.png"></a></td>
+                <td class="inline-actions"><a href="${url(controller='review', action='predictions_about_remaining_citations', id=review.id)}">view predictions... <img src = "../../Robot-icon.png">
+                           </a>
             % else:
-                <td class="inline-actions"><i>no predictions yet</i></td>
+                <td class="inline-actions"><i>no predictions yet</i>
+
             % endif
+            <br/><br/>
+            <!-- allow on-demand updating of predictions!          -->
+            <input type="button" style="width: 120px" id="screen_abstracts_btn2" value="screen my abstracts!" onclick="$.post('/review/update_predictions/${review.id}')">
             
+            <br/>
+            </td>
+
+
+
+
+
+
             <td id="conflict_button_${review.id}">loading...</td>
             <script language="javascript">
                 $("#conflict_button_${review.id}").load("/review/get_conflict_button_fragment/${review.id}");
@@ -219,3 +231,5 @@
 %endif
 
 </div>
+
+

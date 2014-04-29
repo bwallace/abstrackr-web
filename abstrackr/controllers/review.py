@@ -1,12 +1,11 @@
-# Imports..
-import abstrackr.lib.helpers as h
-
 import controller_globals
 import copy
 import csv
 import datetime
 import logging
 import os
+import sys
+import pdb
 import pygooglechart
 import random
 import re
@@ -15,9 +14,12 @@ import smtplib
 import string
 import subprocess
 
+import abstrackr.lib.helpers as h
 from abstrackr.lib import xml_to_sql
 from abstrackr.lib.base import BaseController, render
 from abstrackr.lib.helpers import literal
+# requires sklearn (obviously!)
+from abstrackr.lib import make_predictions_sklearn
 
 import abstrackr.model as model
 from abstrackr.model.meta import Session
@@ -75,9 +77,29 @@ class ReviewController(BaseController):
         redirect(url(controller="account", action="my_projects"))
 
     @ActionProtector(not_anonymous())
+    def update_predictions(self, id):
+        ''' 
+        this can be called by a project lead to update
+        ML predictions 'on-demand'. note that this happens
+        in a separate process! 
+        '''
+        if not self._current_user_leads_review(id):
+            return "yeah, I don't think so."
+        cmd = [sys.executable, 'abstrackr/lib/make_predictions_sklearn.py', id]
+        subprocess.Popen(cmd)
+
+    @ActionProtector(not_anonymous())
     def predictions_about_remaining_citations(self, id):
         if not self._current_user_leads_review(id):
             return "yeah, I don't think so."
+
+        predictions_status_q = Session.query(model.PredictionsStatus)
+        try:
+            c.predictions_status =  predictions_status_q.filter(
+                        model.PredictionsStatus.project_id==id).all()[0]
+        except:
+            c.predictions_status = None            
+
         predictions_q = Session.query(model.Prediction)
         c.predictions_for_review = predictions_q.filter(model.Prediction.project_id == id).all()
         c.probably_included = len([x for x in c.predictions_for_review if x.num_yes_votes > 5])
