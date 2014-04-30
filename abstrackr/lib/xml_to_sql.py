@@ -21,6 +21,9 @@ from Bio import Entrez
 # homegrown 
 import pubmedpy
 import abstrackr.model as model # for access to sqlalchemy
+import re
+ris_regex_str = "^\w{2,3} {1,3}- "
+ris_regex = re.compile(ris_regex_str, re.IGNORECASE)
 
 pubmedpy.set_email("byron.wallace@gmail.com")
 
@@ -100,51 +103,80 @@ def ris_to_sql(ris_path, review):
     return len(d)
     
 def ris_to_d(ris_data):
+    # sometimes the abstract is split across multiple
+    # lines, so we need to concatenate these in such
+    # cases
+    in_abstract = False 
     ris_d = {}
     cur_id = 1
     cur_authors, cur_keywords = [], []
-    current_citation = {"title":"", "abstract":"", "journal":"",\
-                                "keywords":"", "pmid":"", "authors":""}
+    current_citation = {"title":"", "abstract":"", "journal":"",
+                        "keywords":"", "pmid":"", "authors":""}
 
     # drop garbage/blank lines
-    ris_data = [line for line in ris_data if "-" in line]
+    ### TODO this fails when, e.g., abstracts are split into
+    # muliple lines! this should be a relatively easy fix.
+    # just grab all text (lines) between "AB -" and the next
+    # "[a-z]{2,3} -" string. 
+    #ris_data = [line for line in ris_data if "-" in line]
 
     # we skip the first line which just starts the
     # first citation (citation 1)
     for line in ris_data[1:]:
-        field, value = line.split("-")[0], "-".join(line.split("-")[1:])
-        field, value = field.strip(), value.strip()
+        if len(ris_regex.findall(line)) > 0:
+            field, value = line.split("-")[0], "-".join(line.split("-")[1:])
+            field, value = field.strip(), value.strip()
+            # note that MEDLINE uses "TI"! 
+            
+            if field in ("TY", "TI"):
+                # new citation
+                current_citation["authors"] = list(set(cur_authors))
+                current_citation["keywords"] = list(cur_keywords)
+                ris_d[cur_id] = current_citation
 
-        if field == "TY":
-            # new citation
-            current_citation["authors"] = list(set(cur_authors))
-            current_citation["keywords"] = list(cur_keywords)
-            ris_d[cur_id] = current_citation
+                ###
+                # now create a new (empty) citation
+                # to be overwritten
+                current_citation = {"title":"", "abstract":"", "journal":"",\
+                                    "keywords":"", "pmid":"", "authors":""}
+                current_citation["title"] = value[:MAX_TITLE_LENGTH]
+                cur_authors, cur_keywords = [], []
+                cur_id += 1
+                print "current id: %s" % cur_id
+            elif field in ("AU", "A1"):
+                cur_authors.append(value)
+            elif field.startswith("J"):
+                current_citation["journal"] = value
+            elif field == "KW":
+                cur_keywords.append(value)
+            elif field in ("N2", "AB"):
+                in_abstract = True
+                current_citation["abstract"] = value
+            if not field in ("AU", "A1", "AB"):
+                in_abstract = False
+        elif in_abstract:
+            current_citation["abstract"] += " " + line.strip()
 
-            ###
-            # now create a new (empty) citation
-            # to be overwritten
-            current_citation = {"title":"", "abstract":"", "journal":"",\
-                                "keywords":"", "pmid":"", "authors":""}
-            cur_authors, cur_keywords = [], []
-            cur_id += 1
-        elif field in ("AU", "A1"):
-            # author
-            #pdb.set_trace()
-            cur_authors.append(value)
-        elif field in ("T1", "TI"):
-            current_citation["title"] = value[:MAX_TITLE_LENGTH]
-        elif field.startswith("J"):
-            current_citation["journal"] = value
-        elif field == "KW":
-            cur_keywords.append(value)
-        elif field in ("N2", "AB"):
-            current_citation["abstract"] = value
-    # add the last citation
-    ris_d[cur_id] = current_citation
+        # update the dictionary last citation
+        ris_d[cur_id] = current_citation
     
     return ris_d
 
+## TODO 
+def get_multiline_abstract(all_lines):
+    abstract = []
+    in_abstract = False
+    for line in all_lines:
+        if line.startswith("AB -"):
+            in_abstract = True
+            abstract = [line]
+        elif in_abstract:
+            # this is some other field; terminate abstract
+            if len(ris_regex.findall(line)) > 0:
+                return abstract
+            abstract.append(line.strip())
+
+    return " ".join(abstract)
 
 def tsv_to_d(citations, field_index_d):
     tsv_d = {}
