@@ -79,6 +79,7 @@ def _get_predictions_for_review(review_id):
 def _re_prioritize(review_id, sort_by_str):
     citation_ids = [cit.id for cit in _get_citations_for_review(review_id)]
     predictions_for_review = None
+
     if _do_predictions_exist_for_review(review_id):
         # this will be a dictionary mapping citation ids to
         # the number of yes votes for them
@@ -136,13 +137,16 @@ def _re_prioritize(review_id, sort_by_str):
 def _priority_q_is_empty(review_id):
     return len(select([priorities.c.id], priorities.c.project_id == review_id).execute().fetchall()) == 0
 
+def _get_sorting_str_for_review(review_id):
+    return select([reviews.c.sort_by], reviews.c.id == review_id).execute().fetchall()[0][0]
+
 if __name__ == "__main__":
     all_reviews = _all_review_ids()
     reviews_to_update = [r for r in all_reviews if not _priority_q_is_empty(r)]
-    #pdb.set_trace()
+  
     for review_id in reviews_to_update:
         predictions_last_updated = _predictions_last_updated(review_id)
-        sort_by_str = select([reviews.c.sort_by], reviews.c.id == review_id).execute()
+        sort_by_str = _get_sorting_str_for_review(review_id)
         # uh-oh
         if sort_by_str.rowcount == 0:
             print "I can't do anything for review %s -- it doesn't appear to have an entry" % review_id
