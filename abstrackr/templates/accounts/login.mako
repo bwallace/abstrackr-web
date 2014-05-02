@@ -15,7 +15,13 @@
 <input type="password" id="password" name="password" /><br />
 <input type="submit" id="submit" value="Submit" />
 </form>
+
+<br/>
+<a href="${url()}"><img src="/sign-in-with-google.png"></a>
+<br/>
+
 </div>
+
 
 % if "join/" in c.came_from:
 	don't have an account yet? <a href="${url(controller='account', action='create_account', then_join=c.came_from.split("join/")[1])}">register here</a>.<br/>	
