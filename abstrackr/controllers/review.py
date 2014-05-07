@@ -137,7 +137,7 @@ class ReviewController(BaseController):
 
             c.preds_download_url = "%sexports/predictions_%s.csv" % (
                                         url('/', qualified=True), id)
-           
+
         else:
             # this will be phased out
             c.frequencies = [] # This is the list of frequencies of the number of 'yes' votes.
@@ -276,7 +276,7 @@ class ReviewController(BaseController):
             self._move_review(review_id, merged_review.id)
 
         # Eliminate duplicate citations:
-        self.de_duplicate_citations(merged_review.id, True)
+        self.de_duplicate_citations(merged_review.id, False)
 
         if merged_review.screening_mode in (u"single", u"double"):
             self._create_perpetual_task_for_review(merged_review.id)
@@ -700,10 +700,12 @@ class ReviewController(BaseController):
 
         ###
         # move (reviewers) first
-        old_project = Session.query(model.Project).filter(model.Project.id == old_review_id).one()
-        new_project = Session.query(model.Project).filter(model.Project.id == new_review_id).one()
+        old_project = Session.query(model.Project).\
+            filter(model.Project.id == old_review_id).one()
+        new_project = Session.query(model.Project).\
+            filter(model.Project.id == new_review_id).one()
         users_to_move = Session.query(model.User).\
-                filter(model.User.member_of_projects.any(id=old_review_id)).all()
+            filter(model.User.member_of_projects.any(id=old_review_id)).all()
         for user_to_move in users_to_move:
             new_project.members.append(user_to_move)
 
@@ -717,65 +719,66 @@ class ReviewController(BaseController):
         #   will be added elsewhere.
         ###
         assignments_q = Session.query(model.Assignment)
-        assignments = assignments_q.filter(\
-                    model.Assignment.project_id == old_review_id).all()
+        assignments = assignments_q.filter(
+            model.Assignment.project_id == old_review_id).all()
         for assignment in assignments:
             Session.delete(assignment)
-            Session.commit()
+        Session.commit()
 
         ###
         # now tasks
         tasks_q = Session.query(model.Task)
-        tasks = tasks_q.filter(\
-                    model.Task.project_id == old_review_id).all()
+        tasks = tasks_q.filter(
+            model.Task.project_id == old_review_id).all()
         for task in tasks:
             Session.delete(task)
-            Session.commit()
+        Session.commit()
 
         ###
         # and citations
         citations_q = Session.query(model.Citation)
-        citations = citations_q.filter(\
-                    model.Citation.project_id == old_review_id).all()
+        citations = citations_q.filter(
+            model.Citation.project_id == old_review_id).all()
         for citation in citations:
             citation.project_id = new_review_id
-            Session.commit()
+            Session.add(citation)
+        Session.commit()
 
         ###
         # labels
         labels_q = Session.query(model.Label)
-        labels = labels_q.filter(\
-                    model.Label.project_id == old_review_id).all()
+        labels = labels_q.filter(
+            model.Label.project_id == old_review_id).all()
         for label in labels:
             label.project_id = new_review_id
             # we remove the associated assignment id
             # because this assignment will no longer exist
             label.assignment_id = None
-            Session.commit()
-
+            Session.add(label)
+        Session.commit()
 
         ###
         # labeled features
         lfs_q = Session.query(model.LabeledFeature)
-        lfs = lfs_q.filter(\
-                    model.LabeledFeature.project_id == old_review_id).all()
+        lfs = lfs_q.filter(
+            model.LabeledFeature.project_id == old_review_id).all()
         for lf in lfs:
             lf.project_id = new_review_id
-            Session.commit()
-
+            Session.add(lf)
+        Session.commit()
 
         ###
         # tags (technically, TagType)
         tag_types_q = Session.query(model.TagType)
-        tag_types_to_move = tag_types_q.filter(\
-                    model.TagType.project_id == old_review_id).all()
+        tag_types_to_move = tag_types_q.filter(
+            model.TagType.project_id == old_review_id).all()
 
         # issues #29/#33: need to handle duplicate tags properly
-        # here -- so we pull all tags aleady associated with the
+        # here -- so we pull all tags already associated with the
         # review were are moving old_review to.
         tag_texts_to_ids = {}
-        tags_already_in_new_review = tag_types_q.filter(\
-                    model.TagType.project_id == new_review_id).all()
+        tags_already_in_new_review = tag_types_q.filter(
+            model.TagType.project_id == new_review_id).all()
         for existing_tag in tags_already_in_new_review:
             tag_texts_to_ids[existing_tag.text.lower()] = existing_tag.id
 
@@ -789,6 +792,7 @@ class ReviewController(BaseController):
                 # ok -- it's a new tag, simply changed its associated
                 # review to the new one
                 tag_to_move.project_id = new_review_id
+                Session.add(tag_to_move)
                 Session.commit()
             else:
                 # then we've already got a tag with the same
@@ -799,7 +803,7 @@ class ReviewController(BaseController):
                 # for actual tags, not tag types
                 tags_q = Session.query(model.Tag)
                 tags_of_this_type =\
-                     tags_q.filter(model.Tag.tag_id == tag_to_move.id).all()
+                    tags_q.filter(model.Tag.tag_id == tag_to_move.id).all()
 
                 for dupe_tag in tags_of_this_type:
                     # associate these tags with the already-existing
@@ -807,7 +811,8 @@ class ReviewController(BaseController):
                     # this tag (pre_existing_tag_id) is already
                     # associated with the target review
                     dupe_tag.tag_id = pre_existing_tag_id
-                    Session.commit()
+                    Session.add(dupe_tag)
+                Session.commit()
 
                 # now delete the duplicate tag.
                 Session.delete(tag_to_move)
@@ -816,15 +821,15 @@ class ReviewController(BaseController):
         ###
         # priority
         priority_q = Session.query(model.Priority)
-        priorities = priority_q.filter(\
-                    model.Priority.project_id == old_review_id).all()
+        priorities = priority_q.filter(
+            model.Priority.project_id == old_review_id).all()
         for priority in priorities:
             priority.project_id = new_review_id
-            Session.commit()
+            Session.add(priority)
+        Session.commit()
 
         # ok -- that's it. now we're going to *delete* the old review!
-        moved_review = self._get_review_from_id(old_review_id)
-        Session.delete(moved_review)
+        Session.delete(old_project)
         Session.commit()
 
     def _make_new_review(self):
@@ -973,7 +978,7 @@ class ReviewController(BaseController):
         citation_to_lbls_dict = {}
 
         all_citations = [cit.id for cit in self._get_citations_for_review(review.id)]
-	    
+
         citations_labeled_dict = {}
         for cit in all_citations:
           citations_labeled_dict[cit]=False
@@ -1879,7 +1884,7 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def screen(self, review_id, assignment_id):
         user = self._get_user()
-        
+
         assignment = self._get_assignment_from_id(assignment_id)
         if assignment is None:
             redirect(url(controller="review", action="screen", \
@@ -1997,7 +2002,7 @@ class ReviewController(BaseController):
         # respect the user's locks
         c.cur_citation = self._get_next_citation(assignment, review, ignore_my_own_locks=False)
 
-        # but wait -- is the last one currently being screened? 
+        # but wait -- is the last one currently being screened?
         assignment.done = controller_globals._check_assignment_done(assignment, offset=-1)
 
         if assignment.done or c.cur_citation is None:
@@ -2801,7 +2806,7 @@ class ReviewController(BaseController):
         try:
             return assignment_q.filter(model.Assignment.id == assignment_id).one()
         except:
-            pdb.set_trace()
+            return None
 
     def _create_perpetual_task_for_review(self, review_id):
         new_task = model.Task()

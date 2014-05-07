@@ -7,7 +7,7 @@ except ImportError:
 
 setup(
     name='abstrackr',
-    version='0.2.7',
+    version='0.3.0',
     description='Web-based Citation Screening Tool',
     author='Byron Wallace',
     author_email='byron_wallace@brown.edu',
@@ -28,7 +28,7 @@ setup(
     include_package_data=True,
     test_suite='nose.collector',
     package_data={'abstrackr': ['i18n/*/LC_MESSAGES/*.mo']},
-    #message_extractors={'abstrackr': [
+    # message_extractors={'abstrackr': [
     #        ('**.py', 'python', None),
     #        ('templates/**.mako', 'mako', {'input_encoding': 'utf-8'}),
     #        ('public/**', 'ignore', None)]},
