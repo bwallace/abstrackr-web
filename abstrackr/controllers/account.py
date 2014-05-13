@@ -58,14 +58,15 @@ class AccountController(BaseController):
         ini_config.read('development.ini')
         client_id = ini_config.get("google_account_stuff", "client_id")
         client_secret = ini_config.get("google_account_stuff", "client_secret")
-	return {'id': client_id, 'secret': client_secret}
+        client_host = ini_config.get("google_account_stuff", "client_host")
+	return {'id': client_id, 'secret': client_secret, 'host': client_host}
 
     def _get_flow(self):
         ''' see: https://developers.google.com/api-client-library/python/guide/aaa_oauth#flows '''
         ###
         # the development console needs to reflect whatever this says! 
-        g_redirect_url = "/account/google_login"
         client_config = self._get_google_client_config()
+        g_redirect_url = client_config['host'] + "/account/google_login"
         scope_str = "https://www.googleapis.com/auth/plus.profile.emails.read"
         flow = OAuth2WebServerFlow(client_id=client_config['id'],
                                    client_secret=client_config['secret'],
