@@ -17,7 +17,7 @@
 </form>
 
 <br/>
-<a href="${url()}"><img src="/sign-in-with-google.png"></a>
+<a href="${url(controller='account', action='confirm_google_login')}"><img src="/sign-in-with-google.png"></a>
 <br/>
 
 </div>

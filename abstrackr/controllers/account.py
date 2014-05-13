@@ -43,13 +43,14 @@ class AccountController(BaseController):
         identity = request.environ.get('repoze.who.identity')
         came_from = str(request.GET.get('came_from', '')) or \
                      url(controller='account', action='welcome')
+        c.login_counter = request.environ['repoze.who.logins'] + 1
         if identity:
             session['flash'] = 'Login successful.'
             session.save()
             redirect(url(came_from))
         else:
             c.came_from = came_from
-            c.login_counter = request.environ['repoze.who.logins'] + 1
+            #c.login_counter = request.environ['repoze.who.logins'] + 1
             return render('/accounts/login.mako')
 
     def _get_google_client_key(self):
@@ -100,15 +101,46 @@ class AccountController(BaseController):
                   (2) associate this user account with this google account
 
             '''
-            pdb.set_trace()
-            raise Exception, "@TODO!!! finish implementing google login!"
+
+            #raise Exception, "@TODO!!! finish implementing google login!"
+            google_user_id = google_user_info['id']
+            if self._google_user_exists(google_user_id):
+                user = self._get_user_from_google_id(google_user_id)
+                ###
+                # log this user in programmatically (issue #28)
+                rememberer = request.environ['repoze.who.plugins']['cookie']
+                identity = {'repoze.who.userid': user.username}
+                response.headerlist = response.headerlist + \
+                    rememberer.remember(request.environ, identity)
+                rememberer.remember(request.environ, identity)
+            else:
+                self.new_user_from_google_account(google_user_info)
 
         # place them back on the login page
-        return render('/accounts/login.mako')
-        
+        #return render('/accounts/login.mako')
+        #pdb.set_trace()
+        redirect(url(controller='account', action='welcome'))
+
+    def _get_user_from_google_id(self, google_id):
+        google_user_q = Session.query(model.GoogleUser_User)
+        user_id = google_user_q.filter(
+                model.GoogleUser_User.google_id == google_id).one().internal_id
+        return self._get_user_from_id(user_id)
+
+    def _get_user_from_id(self, user_id):
+        user_q =model.meta.Session.query(model.User)
+        return user_q.filter(model.User.id == user_id).one()
+
+    def _google_user_exists(self, google_id):
+        google_user_q = Session.query(model.GoogleUser_User)
+        return len(
+            google_user_q.filter(
+                model.GoogleUser_User.google_id == google_id).all()) > 0
+
 
     def confirm_google_login(self):
         ''' log user in via google. '''
+
         ###
         # https://console.developers.google.com/ (Brown account)
         #g_redirect_url = "http://abstrackr.cebm.brown.edu/account/google_login/"
@@ -319,17 +351,17 @@ class AccountController(BaseController):
         # @TODO unfinished!
         # should we just use their email here? and then look up
         # their email? 
-        new_user.username = "google-user_" + google_info['displayName']#request.params['username']
-        new_user.fullname = " ".join([google_info['givenName'], google_info['familyName']])
+        new_user.username = google_info['displayName']#request.params['username']
+        new_user.fullname = " ".join([google_info['name']['givenName'], 
+                                      google_info['name']['familyName']])
 
-
-        # right now we will not know htis for google users!
+        # right now we will not know this for google users!
         # @TODO should probably ask in a separate dialogue.
         new_user.experience = -1 
         # again, these auto-generated users should not be allowed
         # to log in directly
         new_user._set_password('xxx') 
-        new_user.email = google_user_info['emails'][0]['value']
+        new_user.email = google_info['emails'][0]['value']
 
         # These are for citation settings,
         # initialized to True to make everything in the citation visible by default.
@@ -340,23 +372,31 @@ class AccountController(BaseController):
         Session.add(new_user)
         Session.commit()
 
+        # now insert an entry in our table that 
+        # maps internal users to Google users!
+        google_user_user = model.GoogleUser_User()
+        google_user_user.internal_id = new_user.id
+        google_user_user.google_id = google_info['id']
+        Session.add(google_user_user)
+        Session.commit()
+
         # send out an email
         greeting_message = """
             Hi, %s.\n
 
-            Thanks for joining the abstrackr party using your Google login. 
+            Thanks for joining the abstrackr party (%s) using your Google account. 
             You can continue to login using your google credentials.
 
             This is just a welcome email to say hello, and that we've got your email.
             Happy screening!
 
             -- The Brown EPC.
-        """ % (new_user.fullname, url('/', qualified=True), new_user.username)
+        """ % (new_user.fullname, url('/', qualified=True))
 
         try:
             self.send_email_to_user(new_user, "welcome to abstrackr", greeting_message)
         except:
-            # this almost certainly means we're on our Windows dev box :)
+            # this almost certainly means we're on our dev box :)
             pass
 
         ###
@@ -366,7 +406,6 @@ class AccountController(BaseController):
         response.headerlist = response.headerlist + \
             rememberer.remember(request.environ, identity)
         rememberer.remember(request.environ, identity)
-
 
         # if they were originally trying to join a review prior to
         # registering, then join them now. (issue #8).
@@ -391,21 +430,22 @@ class AccountController(BaseController):
 
     @ActionProtector(not_anonymous())
     def my_work(self):
-
         person = request.environ.get('repoze.who.identity')['user']
+
         c.person = person
         user = controller_globals._get_user_from_email(c.person.email)
+        
         if not user:
-            log.error('''\
-Hum...fetching user from the database returned False.
-We need to investigate. Go remove the catch all in
-controller_globals.py, method _get_user_from_email()
-to see which OperationalError is being raised ''')
+            log.error('''Hum...fetching user from the database returned False.
+                We need to investigate. Go remove the catch all in
+                controller_globals.py, method _get_user_from_email()
+                to see which OperationalError is being raised''')
+        
 
         # If somehow the user's citation settings variables don't get initialized yet,
         # then the following 3 if-else blocks should take care of it in order to avoid
         # any errors due to the values of the variables being null:
-        c.show_journal = user.show_journal if not user.show_journal is None else True
+        journal = user.show_journal if not user.show_journal is None else True
 
         if (user.show_authors==True or user.show_authors==False):
             c.show_authors = user.show_authors
