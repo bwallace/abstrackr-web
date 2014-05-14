@@ -17,6 +17,7 @@ def init_model(engine):
     Session.configure(bind=engine)
 
 
+
 ### Association Tables
 citations_tasks_table = Table('citations_tasks', Base.metadata,
         Column('citation_id', types.Integer, ForeignKey('citations.id')),
@@ -425,3 +426,12 @@ class UserGroup(Base):
     id = Column(types.Integer, primary_key=True)
     user_id = Column(types.Integer)
     group_id = Column(types.Integer)
+
+'''
+create table googleuser_user (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, internal_id INT NOT NULL, google_id VARCHAR(100) UNIQUE NOT NULL);
+'''
+class GoogleUser_User(Base):
+    __tablename__ = "googleuser_user"
+    id = Column(types.Integer, primary_key=True)
+    google_id = Column(types.Unicode(100))
+    internal_id = Column(types.Integer)
