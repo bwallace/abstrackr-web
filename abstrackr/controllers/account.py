@@ -419,7 +419,7 @@ to see which OperationalError is being raised ''')
             dict_proj_w_locked_priorities[i] = has_locked_priorities
 
         return dict_proj_w_locked_priorities
-           
+
     def _project_has_locked_priorities(self, project_id):
         """Returns True if project has any locked priorities, else False
 
