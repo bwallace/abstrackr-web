@@ -53,25 +53,23 @@ class AccountController(BaseController):
             #c.login_counter = request.environ['repoze.who.logins'] + 1
             return render('/accounts/login.mako')
 
-    def _get_google_client_key(self):
+    def _get_google_client_config(self):
         ini_config = ConfigParser.ConfigParser()
         ini_config.read('development.ini')
+        client_id = ini_config.get("google_account_stuff", "client_id")
         client_secret = ini_config.get("google_account_stuff", "client_secret")
-        return client_secret
+        client_host = ini_config.get("google_account_stuff", "client_host")
+	return {'id': client_id, 'secret': client_secret, 'host': client_host}
 
     def _get_flow(self):
         ''' see: https://developers.google.com/api-client-library/python/guide/aaa_oauth#flows '''
         ###
-        # this needs to reflect whatever the development console
-        # says! 
-        g_redirect_url = "http://127.0.0.1/account/google_login"
-        # our client secret deal
-        #path_to_secret = "abstrackr/google-credentials/client_secret_234308404053.apps.googleusercontent.com.json"
-        client_secret = self._get_google_client_key()
-        client_id = "234308404053.apps.googleusercontent.com"
+        # the development console needs to reflect whatever this says! 
+        client_config = self._get_google_client_config()
+        g_redirect_url = client_config['host'] + "/account/google_login"
         scope_str = "https://www.googleapis.com/auth/plus.profile.emails.read"
-        flow = OAuth2WebServerFlow(client_id=client_id ,
-                                   client_secret=client_secret,
+        flow = OAuth2WebServerFlow(client_id=client_config['id'],
+                                   client_secret=client_config['secret'],
                                    scope=scope_str,
                                    redirect_uri=g_redirect_url)
         return flow
