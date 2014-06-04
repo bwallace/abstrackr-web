@@ -46,6 +46,10 @@ def make_predictions(review_id):
     ids, titles, abstracts, mesh, lbls_dict = get_data_for_review(review_id)
     review_dataset = abstrackr_dataset.Dataset(ids, titles, abstracts, mesh, 
                                                 lbls_dict, name=str(review_id))
+
+    if review_dataset.is_everything_labeled():
+        return False
+
     learner = BaggedUSLearner(review_dataset)
     print "training..."
     learner.train()
