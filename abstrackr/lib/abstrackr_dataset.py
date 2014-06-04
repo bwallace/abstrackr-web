@@ -76,7 +76,11 @@ class Dataset:
         if indices is not None:
             if len(indices) == 0:
                 raise Exception, "list of indices is empty."
-            return self.abstracts_X[indices], self.titles_X[indices], self.mesh_X[indices], self.l1s[indices]
+            mesh_for_indices = None
+            if self.mesh_X is not None:
+                mesh_for_indices = self.mesh_X[indices]
+
+            return self.abstracts_X[indices], self.titles_X[indices], mesh_for_indices, self.l1s[indices]
         return self.abstracts_X, self.titles_X, self.mesh_X, self.l1s
 
     def encode(self):
@@ -94,15 +98,18 @@ class Dataset:
         
         print "and finally, mesh..."
         self.mesh_vectorizer = TfidfVectorizer(max_features=50000, min_df=3)
-        self.mesh_X = self.mesh_vectorizer.fit_transform(self.mesh)
-        print "ok -- %s mesh features." % self.mesh_X.shape[1]
+        try:
+            self.mesh_X = self.mesh_vectorizer.fit_transform(self.mesh)
+            print "ok -- %s mesh features." % self.mesh_X.shape[1]
+        except:
+            print "no mesh!"
 
         print "all encoded!"
 
 
     def is_everything_labeled(self):
         return len(self.unlabeled_ids) == 0
-        
+
     def _load_stopwords(self):
         self.stopwords = [w.strip() for w in open(self.stop_word_list_path, 'rU').readlines()]
 
