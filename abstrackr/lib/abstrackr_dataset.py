@@ -32,8 +32,8 @@ class Dataset:
 
         print "done. now reading labels in..."
         self._setup_lbl_vecs()
-        self.stop_word_list_path = stop_word_fpath
-        #self.stop_word_list_path = "/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/stop_list.txt"
+        #self.stop_word_list_path = stop_word_fpath
+        self.stop_word_list_path = "/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/stop_list.txt"
         self._load_stopwords()
         print "alright -- encoding!"
         self.encode()
@@ -94,6 +94,7 @@ class Dataset:
         
         print "and finally, mesh..."
         self.mesh_vectorizer = TfidfVectorizer(max_features=50000, min_df=3)
+        import pdb; pdb.set_trace()
         self.mesh_X = self.mesh_vectorizer.fit_transform(self.mesh)
         print "ok -- %s mesh features." % self.mesh_X.shape[1]
 
