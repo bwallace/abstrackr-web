@@ -158,8 +158,12 @@ if __name__ == "__main__":
                 if not _do_predictions_exist_for_review(review_id) or most_recent_label > predictions_last_updated:
                     # now make predictions for updated reviews.
                     print "making predictions for %s" % review_id
-                    make_predictions_sklearn.make_predictions(review_id)
-
+                    if make_predictions_sklearn.make_predictions(review_id):
+                        # now re-prioritize
+                        print "re-prioritizing..."
+                        _re_prioritize(review_id, sort_by_str)
+                    else:
+                        print "erm, *everything* has been labeled for this review!"
                     # now re-prioritize
                     print "re-prioritizing..."
                     _re_prioritize(review_id, sort_by_str)

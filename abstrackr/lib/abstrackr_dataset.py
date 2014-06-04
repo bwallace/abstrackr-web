@@ -99,6 +99,10 @@ class Dataset:
 
         print "all encoded!"
 
+
+    def is_everything_labeled(self):
+        return len(self.unlabeled_ids) == 0
+        
     def _load_stopwords(self):
         self.stopwords = [w.strip() for w in open(self.stop_word_list_path, 'rU').readlines()]
 
