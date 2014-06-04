@@ -22,8 +22,7 @@ from sqlalchemy.sql import and_, or_
 # home-grown
 import abstrackr_dataset
 
-engine = create_engine("mysql://root@127.0.0.1:3306/abstrackr?unix_socket=/var/mysql/mysql.sock")
-#engine = create_engine("mysql://abstrackr-user:5xl.z=Uy6d@127.0.0.1:3306/abstrackrDBP01?unix_socket=/var/mysql/mysql.sock")
+engine = create_engine("mysql://abstrackr-user:pignic@127.0.0.1:3306/abstrackr?unix_socket=/var/mysql/mysql.sock")
 conn = engine.connect()
 metadata = MetaData(bind=engine)
 
@@ -128,4 +127,5 @@ def _get_lbl_d_for_review(review_id):
     for lbl in s.execute():
         lbl_d[lbl["study_id"]]=lbl["label"]  
     return lbl_d
+
 
