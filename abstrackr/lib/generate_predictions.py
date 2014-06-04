@@ -137,9 +137,11 @@ def _priority_q_is_empty(review_id):
     return len(select([priorities.c.id], priorities.c.project_id == review_id).execute().fetchall()) == 0
 
 if __name__ == "__main__":
+    # only build models if we have >= MIN_TRAINING_EXAMPLES labels
+    MIN_TRAINING_EXAMPLES = 100
     all_reviews = _all_review_ids()
     reviews_to_update = [r for r in all_reviews if not _priority_q_is_empty(r)]
-    #pdb.set_trace()
+
     for review_id in reviews_to_update:
         predictions_last_updated = _predictions_last_updated(review_id)
         sort_by_str = select([reviews.c.sort_by], reviews.c.id == review_id).execute()
@@ -150,7 +152,7 @@ if __name__ == "__main__":
             sort_by_str = sort_by_str.fetchone().sort_by
             labels_for_review = select([labels.c.label_last_updated], 
 			         labels.c.project_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
-            if labels_for_review.rowcount > 0:
+            if labels_for_review.rowcount >= MIN_TRAINING_EXAMPLES:
                 print "checking review %s..." % review_id
                 most_recent_label = labels_for_review.fetchone().label_last_updated
                 #pdb.set_trace()
