@@ -2713,10 +2713,9 @@ class ReviewController(BaseController):
         tag_q = Session.query(model.TagType)
 
         if only_for_user_id:
-            tag_types = tag_q.filter(and_(\
-                        model.TagType.project_id == review_id,\
-                        model.TagType.creator_id == only_for_user_id
-                )).all()
+            tag_types = tag_q.join(model.Tag, model.Tag.tag_id==model.TagType.id).\
+                              filter(and_(model.TagType.project_id==review_id,
+                                          model.Tag.creator_id==only_for_user_id)).all()
         else:
             tag_types = tag_q.filter(model.TagType.project_id == review_id).all()
         return [tag_type.text for tag_type in tag_types]
