@@ -54,7 +54,7 @@ import EUtils
 from EUtils import ThinClient
 
 # home-grown
-import tfidf2 
+#import tfidf2 
 
 def main(argv=None):
   parser = OptionParser()
