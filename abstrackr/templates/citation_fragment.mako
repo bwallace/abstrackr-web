@@ -194,6 +194,10 @@ function setup_js(){
                 };
             });
         });
+        $("#general_notes").val("");
+        $("#pop_notes").val("");
+        $("#ic_notes").val("");
+        $("#outcome_notes").val("");
     };
 
     $("#accept").click(function() {

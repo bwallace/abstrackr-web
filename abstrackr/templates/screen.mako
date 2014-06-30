@@ -92,9 +92,9 @@
                     (no tags yet.)
                 % endif
             </div><br>
-            <input type="button" style="width: 120px" id="tag_btn" value="tag study..." /><br><br>
+            <input type="button" style="width: 120px" id="tag_btn" value="tag study..."/><br><br>
             <input type="button" style="width: 120px" id="edit_tags_btn" value="edit tags..." onclick="parent.location='/review/edit_tags/${c.review_id}/${c.assignment_id}'"><br><br>
-            <input type="button" style="width: 120px" id="notes_btn" value="notes..." /><br><br>
+            <input type="button" style="width: 120px" id="notes_btn" value="notes..."/><br><br>
         </center>
     </div>
 
@@ -384,6 +384,10 @@ function setup_js() {
                 };
             });
         });
+        $("#general_notes").val("");
+        $("#pop_notes").val("");
+        $("#ic_notes").val("");
+        $("#outcome_notes").val("");
     };
 
     $("#accept").click(function() {
