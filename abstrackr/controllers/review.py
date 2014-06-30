@@ -1107,14 +1107,14 @@ class ReviewController(BaseController):
                         else:
                             notes_field = field
                             if "general" in notes_field:
-                                cur_line.append(cur_note.general)
+                                cur_line.append("%s" % cur_note.general.replace("\n", "; "))
                             elif "population" in notes_field:
-                                cur_line.append(cur_note.population)
+                                cur_line.append("%s" % cur_note.population.replace("\n", "; "))
                             elif "outcome" in notes_field:
-                                cur_line.append(cur_note.outcome)
+                                cur_line.append("%s" % cur_note.outcome.replace("\n", "; "))
                             else:
                                 # intervention/comparator
-                                cur_line.append(cur_note.ic)
+                                cur_line.append("%s" % cur_note.ic.replace("\n", "; "))
 
             labels.append(",".join(cur_line))
 
