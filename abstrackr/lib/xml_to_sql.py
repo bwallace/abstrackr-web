@@ -5,7 +5,6 @@ basically, this contains code to map data from a given format
 '''
 
 # std libs
-import pdb
 import string 
 import csv
 import random
@@ -100,37 +99,30 @@ def ris_to_sql(ris_path, review):
     return len(d)
     
 def ris_to_d(ris_data):
-    ris_d = {}
     cur_id = 1
-    cur_authors, cur_keywords = [], []
-    current_citation = {"title":"", "abstract":"", "journal":"",\
-                                "keywords":"", "pmid":"", "authors":""}
+    ris_d = {}
 
     # drop garbage/blank lines
     ris_data = [line for line in ris_data if "-" in line]
 
-    # we skip the first line which just starts the
-    # first citation (citation 1)
-    for line in ris_data[1:]:
+    for line in ris_data:
         field, value = line.split("-")[0], "-".join(line.split("-")[1:])
         field, value = field.strip(), value.strip()
 
+        # Marks start of new citation
         if field == "TY":
-            # new citation
-            current_citation["authors"] = list(set(cur_authors))
-            current_citation["keywords"] = list(cur_keywords)
+
+            # Clear fields
+            current_citation = {"title":"", "abstract":"", "journal":"",\
+                                        "keywords":"", "pmid":"", "authors":""}
+            cur_authors, cur_keywords = [], []
+
+            while cur_id in ris_d.keys():
+                cur_id += 1
+
             ris_d[cur_id] = current_citation
 
-            ###
-            # now create a new (empty) citation
-            # to be overwritten
-            current_citation = {"title":"", "abstract":"", "journal":"",\
-                                "keywords":"", "pmid":"", "authors":""}
-            cur_authors, cur_keywords = [], []
-            cur_id += 1
         elif field in ("AU", "A1"):
-            # author
-            #pdb.set_trace()
             cur_authors.append(value)
         elif field in ("T1", "TI"):
             current_citation["title"] = value[:MAX_TITLE_LENGTH]
@@ -140,8 +132,28 @@ def ris_to_d(ris_data):
             cur_keywords.append(value)
         elif field in ("N2", "AB"):
             current_citation["abstract"] = value
-    # add the last citation
-    ris_d[cur_id] = current_citation
+        elif field in ("ID"):
+            # Sometimes ID's are given (internal id). If this is the case
+            # let's try to override the cur_id counter and give preference to this id
+            try:
+                internal_id = int(value)
+            except ValueError:
+                continue
+
+            # Swap IDs if necessary
+            if internal_id in ris_d.keys():
+                temp = ris_d[internal_id]
+                ris_d[internal_id] = ris_d[cur_id]
+                ris_d[cur_id] = temp
+                cur_id = internal_id
+            else:
+                ris_d[internal_id] = ris_d.pop(cur_id)
+                cur_id = internal_id
+
+        elif field in ("ER"):
+            current_citation["authors"] = list(set(cur_authors))
+            current_citation["keywords"] = list(cur_keywords)
+            ris_d[cur_id] = current_citation
     
     return ris_d
 
