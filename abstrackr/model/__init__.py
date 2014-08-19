@@ -97,8 +97,8 @@ class Citation(Base):
 
     # associates the citation with the project that owns it
     project_id = Column(types.Integer, ForeignKey('projects.id'))
-    pmid = Column(types.Integer)
-    refman = Column(types.Integer)
+    pmid = Column(types.BigInteger)
+    refman = Column(types.BigInteger)
 
     title = Column(types.Unicode(500))
     # length is based on back-of-envelope calculation

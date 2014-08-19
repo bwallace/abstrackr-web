@@ -106,6 +106,9 @@ def ris_to_d(ris_data):
     ris_data = [line for line in ris_data if "-" in line]
 
     for line in ris_data:
+        # Prevent BOM unicode signature from messing up line parsing
+        line = line.decode('utf-8-sig')
+
         field, value = line.split("-")[0], "-".join(line.split("-")[1:])
         field, value = field.strip(), value.strip()
 
