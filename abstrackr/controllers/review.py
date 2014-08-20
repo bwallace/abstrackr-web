@@ -1120,9 +1120,35 @@ class ReviewController(BaseController):
 
         # exporting *all* (including unlabeled!) citations, per Ethan's request
         #-- may want to make this optional
-        unlabeled_citations = [cit for cit in citations_labeled_dict if not citations_labeled_dict[cit]]
+
         labels.append("citations that are not yet labeled by anyone")
-        labels.extend([str(cit_id) for cit_id in unlabeled_citations])
+
+        # jj 2014-08-20: Request to include citation information even for those citations that have not
+        #                been labeled yet.
+        unlabeled_citation_ids = [cit for cit in citations_labeled_dict if not citations_labeled_dict[cit]]
+        unlabeled_citations = Session.query(model.Citation).filter(model.Citation.id.in_(unlabeled_citation_ids)).all()
+
+        for citation in unlabeled_citations:
+            cur_line = []
+            for field in fields_to_export:
+                if field == "(internal) id":
+                    cur_line.append("%s" % citation.id)
+                elif field == "(source) id":
+                    cur_line.append("%s" % citation.refman)
+                elif field == "pubmed id":
+                    cur_line.append("%s" % zero_to_none(citation.pmid))
+                elif field == "abstract":
+                    cur_line.append('"%s"' % none_to_str(citation.abstract).replace('"', "'"))
+                elif field == "title":
+                    cur_line.append('"%s"' % citation.title.replace('"', "'"))
+                elif field == "keywords":
+                    cur_line.append('"%s"' % citation.keywords.replace('"', "'"))
+                elif field == "journal":
+                    cur_line.append('"%s"' % none_to_str(citation.journal))
+                elif field == "authors":
+                    cur_line.append('"%s"' % "".join(citation.authors))
+
+            labels.append(",".join(cur_line))
 
         path_to_export = os.path.join(STATIC_FILES_PATH, "exports", "labels_%s.csv" % review.id)
         try:
