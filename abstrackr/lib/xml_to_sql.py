@@ -412,8 +412,8 @@ def xml_to_dict(fpath):
 
 
 class OrderedSet(collections.MutableSet):
-""" Stolen from http://code.activestate.com/recipes/576694/
-"""
+    """ Stolen from http://code.activestate.com/recipes/576694/
+    """
 
     def __init__(self, iterable=None):
         self.end = end = []
