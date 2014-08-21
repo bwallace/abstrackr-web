@@ -35,7 +35,7 @@
     <body>
 
         <p align="left">
-            <img src="http://sunfire34.eecs.tufts.edu/abstrackr.png"
+            <img src="../../abstrackr.png"
                     data-intro='Welcome to the Abstrackr! <br><br> 
                                 To navigate through the introduction, please click on the "Back" or "Next" buttons.
                                 Alternatively, you may use the left and right arrow keys on your keyboard.<br><br>
