@@ -44,7 +44,8 @@
   <ul>
     <li><a href="#creating_new">Starting a Review</a></li>
     <li><a href="#conflicts">Reviewing Conflicts</a></li>
-    <li><a href="#merging">Merging Projects</a></li>
+    <li><a href="#adding">Adding more Citations to an existing Review</a></li>
+    <li><a href="#merging">Merging Reviews</a></li>
     <li><a href="#export">Exporting your Screening Decisions</a></li>
   </ul>
 </li>
@@ -213,7 +214,36 @@ Enter whatever notes you'd like in the corresponding, then click the 'save notes
 <p>An analogous mode is available for screening abstracts with a designation of 'maybe'. This mode is accessible by clicking the 'review maybes' button adjacent to the 'review conflicts' button.</p>
 
 
-<h2><a name="merging">Merging Projects</a></h2>
+<h2><a name="adding">Adding more Citations to an existing Review</a></h2>
+
+<p>To add additional citations to an existing project, you must be a project lead. Open the "my projects" tab by clicking on the link pictured below.</p>
+
+<center>
+<img src="images/my_projects_tab.png" />
+</center>
+
+<p>Next click on the "admin" button that corresponds to the project you wish to add citations to.</p>
+
+<center>
+<img src="images/admin_button.png" />
+</center>
+
+<p>Click on the "Add Citations" button found on the top right.</p>
+
+<center>
+<img src="images/add_citations_button.png" />
+</center>
+
+<p>Click on the "Choose File" button and select the file to upload. The file you use should preferrably be of the same format as the file you used to create the Review. Finally, click on the "Add to Review" button.</p>
+
+<center>
+<img src="images/add_citations_submit.png" />
+</center>
+
+<p><strong>Note: </strong>The system will attempt to remove duplication as best as it can. If it detects citations that have the same Pubmed ID for example it will automatically deduplicate. If the system fails to find duplicate citations, it is up to the reviewer to remove these entries during their own post-processing steps.</p>
+
+
+<h2><a name="merging">Merging Reviews</a></h2>
 
 <p>It is possible to merge two projects into one and subsequently export the results in a single export file. You will need to know the names of the projects to merge. Then, as the project leader, open the "my projects" tab.</p>
 
