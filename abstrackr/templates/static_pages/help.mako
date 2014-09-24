@@ -44,6 +44,7 @@
   <ul>
     <li><a href="#creating_new">Starting a Review</a></li>
     <li><a href="#conflicts">Reviewing Conflicts</a></li>
+    <li><a href="#merging">Merging Projects</a></li>
     <li><a href="#export">Exporting your Screening Decisions</a></li>
   </ul>
 </li>
@@ -210,6 +211,29 @@ Enter whatever notes you'd like in the corresponding, then click the 'save notes
 <p>This will bring you to a screening mode in which only conflict abstracts are shown. The respective labels (screening decisions) assigned to each of the abstracts by reviewers will be shown. The label assigned in this mode is recorded as the 'consensus' label when screening decisions are exported (see below), but a record is kept of the pre-existing decisions, too. </p>
 
 <p>An analogous mode is available for screening abstracts with a designation of 'maybe'. This mode is accessible by clicking the 'review maybes' button adjacent to the 'review conflicts' button.</p>
+
+
+<h2><a name="merging">Merging Projects</a></h2>
+
+<p>It is possible to merge two projects into one and subsequently export the results in a single export file. You will need to know the names of the projects to merge. Then, as the project leader, open the "my projects" tab.</p>
+
+<center>
+<img src="images/my_projects_tab.png" />
+</center>
+
+<p>Click on the "merge reviews..." button.</p>
+
+<center>
+<img src="images/merge_reviews_button.png" />
+</center>
+
+<p>Select the checkboxes of the project names you wish to merge. Fill out the rest of the form and click the "merge reviews" button.</p>
+
+<center>
+<img src="images/merge_reviews_form.png" />
+</center>
+
+<p><strong>Note: </strong>The system will attempt to remove duplication as best as it can. If it detects citations that have the same Pubmed ID for example it will automatically deduplicate. If the system fails to find duplicate citations, it is up to the reviewer to remove these entries during their own post-processing steps.</p>
 
 
 <h2><a name="export">Exporting Screening Decisions (Labels)</a></h2>
