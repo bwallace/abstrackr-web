@@ -19,7 +19,7 @@ setup(
         "repoze.what-quickstart>=1.0.8,<=1.0.99",
         "repoze.what_pylons>=1.0,<=1.0.99",
         "MySQL-python>=1.2.3,<=1.2.99",
-        "elementtree>=1.2.7,<=1.2.99",
+        "elementtree>=1.2.6,<=1.2.99",
         "WebTest>=1.2.3,<=1.2.99",
         "WebOb>=1.0.7,<=1.0.99",
     ],

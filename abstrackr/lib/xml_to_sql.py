@@ -10,6 +10,7 @@ import csv
 import random
 import os
 import collections
+import re
 
 # third party
 import sqlite3
@@ -93,29 +94,29 @@ def pmid_list_to_sql(pmids_path, review):
 
 def ris_to_sql(ris_path, review):
     print "building a dictionary from %s..." % ris_path
-    d = ris_to_d(open(ris_path).readlines())
+    d = ris_to_d(open(ris_path).read())
     print "ok. now inserting into sql..."
     dict_to_sql(d, review)
     print "ok."
     return len(d)
-    
+
 def ris_to_d(ris_data):
+    ris_data = ris_data.decode('utf-8-sig')
+
     cur_id = 1
-    ris_d = {}
+    ris_d  = {}
 
-    # drop garbage/blank lines
-    ris_data = [line for line in ris_data if "-" in line]
+    # Define re pattern to capture ris style tags.
+    re_pattern = re.compile('([A-Z][A-Z0-9]\s\s[\-]\s)', re.DOTALL)
 
-    for line in ris_data:
-        # Prevent BOM unicode signature from messing up line parsing
-        line = line.decode('utf-8-sig')
+    # Use re.split() to split the ris_data.
+    lsof_lines = re.split(re_pattern, ris_data)
 
-        field, value = line.split("-")[0], "-".join(line.split("-")[1:])
-        field, value = field.strip(), value.strip()
+    # Get rid of empty strings.
+    lsof_lines = [var for var in lsof_lines if var]
 
-        # Marks start of new citation
-        if field == "TY":
-
+    for idx, line in enumerate(lsof_lines):
+        if line == "TY  - ":
             # Clear fields
             current_citation = {"title":"", "abstract":"", "journal":"",\
                                         "keywords":"", "pmid":"", "authors":""}
@@ -126,21 +127,21 @@ def ris_to_d(ris_data):
 
             ris_d[cur_id] = current_citation
 
-        elif field in ("AU", "A1"):
-            cur_authors.append(value)
-        elif field in ("T1", "TI"):
-            current_citation["title"] = value[:MAX_TITLE_LENGTH]
-        elif field.startswith("J"):
-            current_citation["journal"] = value
-        elif field == "KW":
-            cur_keywords.append(value)
-        elif field in ("N2", "AB"):
-            current_citation["abstract"] = value
-        elif field in ("ID"):
+        elif line in ("AU  - ", "A1  - "):
+            cur_authors.append(lsof_lines[idx + 1])
+        elif line in ("T1  - ", "TI  - "):
+            current_citation["title"] = lsof_lines[idx + 1][:MAX_TITLE_LENGTH]
+        elif line.startswith("J"):
+            current_citation["journal"] = lsof_lines[idx + 1]
+        elif line == "KW  - ":
+            cur_keywords.append(lsof_lines[idx + 1])
+        elif line in ("N2  - ", "AB  - "):
+            current_citation["abstract"] = lsof_lines[idx + 1]
+        elif line in ("ID  - "):
             # Sometimes ID's are given (internal id). If this is the case
             # let's try to override the cur_id counter and give preference to this id
             try:
-                internal_id = int(value)
+                internal_id = int(lsof_lines[idx + 1])
             except ValueError:
                 continue
 
@@ -154,12 +155,74 @@ def ris_to_d(ris_data):
                 ris_d[internal_id] = ris_d.pop(cur_id)
                 cur_id = internal_id
 
-        elif field in ("ER"):
+        elif line in ("ER  - "):
             current_citation["authors"] = list(OrderedSet(cur_authors))
             current_citation["keywords"] = list(cur_keywords)
             ris_d[cur_id] = current_citation
-    
+
     return ris_d
+
+# def ris_to_d(ris_data):
+#     cur_id = 1
+#     ris_d = {}
+
+#     # drop garbage/blank lines
+#     ris_data = [line for line in ris_data if "-" in line]
+
+#     for line in ris_data:
+#         # Prevent BOM unicode signature from messing up line parsing
+#         line = line.decode('utf-8-sig')
+
+#         field, value = line.split("-")[0], "-".join(line.split("-")[1:])
+#         field, value = field.strip(), value.strip()
+
+#         # Marks start of new citation
+#         if field == "TY":
+
+#             # Clear fields
+#             current_citation = {"title":"", "abstract":"", "journal":"",\
+#                                         "keywords":"", "pmid":"", "authors":""}
+#             cur_authors, cur_keywords = [], []
+
+#             while cur_id in ris_d.keys():
+#                 cur_id += 1
+
+#             ris_d[cur_id] = current_citation
+
+#         elif field in ("AU", "A1"):
+#             cur_authors.append(value)
+#         elif field in ("T1", "TI"):
+#             current_citation["title"] = value[:MAX_TITLE_LENGTH]
+#         elif field.startswith("J"):
+#             current_citation["journal"] = value
+#         elif field == "KW":
+#             cur_keywords.append(value)
+#         elif field in ("N2", "AB"):
+#             current_citation["abstract"] = value
+#         elif field in ("ID"):
+#             # Sometimes ID's are given (internal id). If this is the case
+#             # let's try to override the cur_id counter and give preference to this id
+#             try:
+#                 internal_id = int(value)
+#             except ValueError:
+#                 continue
+
+#             # Swap IDs if necessary
+#             if internal_id in ris_d.keys():
+#                 temp = ris_d[internal_id]
+#                 ris_d[internal_id] = ris_d[cur_id]
+#                 ris_d[cur_id] = temp
+#                 cur_id = internal_id
+#             else:
+#                 ris_d[internal_id] = ris_d.pop(cur_id)
+#                 cur_id = internal_id
+
+#         elif field in ("ER"):
+#             current_citation["authors"] = list(OrderedSet(cur_authors))
+#             current_citation["keywords"] = list(cur_keywords)
+#             ris_d[cur_id] = current_citation
+
+#     return ris_d
 
 
 def tsv_to_d(citations, field_index_d):
