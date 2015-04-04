@@ -2957,10 +2957,11 @@ class ReviewController(BaseController):
         return assignment_q.filter(model.Assignment.task_id == task_id).all()
 
     def _remove_citation_from_priority_queue(self, citation_id):
-            priority_q = Session.query(model.Priority)
-            priority_entry = priority_q.filter(model.Priority.citation_id == citation_id).one()
-            Session.delete(priority_entry)
-            Session.commit()
+        priority_q = Session.query(model.Priority)
+        priority_entries = priority_q.filter(model.Priority.citation_id == citation_id).all()
+        for pe in priority_entries:
+            Session.delete(pe)
+        Session.commit()
 
     def _create_initial_task_for_review(self, project_id, n):
         '''
