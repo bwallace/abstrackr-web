@@ -1607,7 +1607,7 @@ class ReviewController(BaseController):
         Session.commit()
 
         # If this was the last assignment referencing this task, then we need to delete the task also
-        assignment = Session.query(model.Assignment).filter_by(id=assignment_id).all()
+        assignment = Session.query(model.Assignment).filter_by(task_id=task_id).all()
         if len(assignment)==0:
             task = Session.query(model.Task).filter_by(id=task_id).first()
             Session.delete(task)
