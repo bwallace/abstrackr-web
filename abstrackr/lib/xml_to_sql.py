@@ -366,10 +366,11 @@ def dict_to_sql(xml_d, review):
 def insert_citation(review_id, ref_id, citation_d):
     citation = model.Citation()
     citation.project_id = review_id
-    try:
-        ref_id = int(ref_id)
-    except:
-        ref_id = None
+    # Ensure that ref_id is an integer, drop it otherwise.
+    # try:
+    #     ref_id = int(ref_id)
+    # except:
+    #     ref_id = None
 
     citation.refman = ref_id
     pmid = citation_d['pmid']
