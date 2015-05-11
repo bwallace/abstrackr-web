@@ -16,7 +16,7 @@
         });*/
 
         jQuery("#post").click(function(){
-        	$("#dialog" ).dialog( "open" );
+          $("#dialog" ).dialog( "open" );
             $("#okay_div").fadeIn(2000)
         });
 
@@ -68,29 +68,20 @@
 </div>
 
 <div id="upload-help" class="ui-dialog">
-    You can import a few different file types into <b>abstrackr</b>.<br/>
-
-    <p>The easiest (and suggested!) file format is a list of PubMed IDs, one-per line. Such a list can be exported directly from the PubMed search results page as follows. Click <b>Send to</b>, then select <b>PMID List</b> as the <b>Format</b>. <b>abstrackr</b> will fetch the corresponding titles and abstracts for each id.</p>
-
-    <p>Alternatively, <b>abstrackr</b> can import arbitrary tab-separated files. More specifically, this requires that you create a <b>header row</b> specifying which field each row contains. To this end, <b>abstrackr</b> recognizes special fields; it's important that you use the exact same spellings and capitalizations (all lower case) shown here.</p>
-
-    <p>The following fields are mandatory, i.e., must be present in the header row (\t denotes a tab character):</p>
-    <center><b>id</b> \t <b>title</b> \t <b>abstract</b></center>
-
-    <p>Though the abstract for any given citation may be empty. The <b>id</b> may be anything you'd like to use to identify your citations, though it must be unique for each (i.e., no two rows may have the same <b>id</b>. Additional fields that may be optionally uploaded are:</p>
-
-    <center><b>keywords</b> \t <b>authors</b> \t <b>journal</b></center>
-
-    <p>Finally, you may also import XML files exported from the <b>Reference Manager</b> (Versions 11 and 12 are supported) citation software.</p>
+    <div>You may import a tab delimited file here. Each line should consist of a term you wish to highlight as well as the rating the term is associated with.</div>
+    <br />
+    <div>A positive numbers indicate positive relevance, while negative numbers indicate negative relevance.</div>
+    <br />
+    <div>Please restrict the rating to 1's and 2's only, where a positive 1 implies 'relevant' and a positive 2 means 'very relevant', a negative 1 implies 'irrelevant' and a negative 2 means 'very irrelevant'.</div>
 </div>
 
 <div class="content">
 
     <center>
         <table class="form_table">
-            ${h.form(url(controller='review', action='add_citations', id=c.review.id), multipart=True, id="add_citations_form",  method='post')}
+            ${h.form(url(controller='review', action='upload_terms', id=c.review.id), multipart=True, id="add_terms_form",  method='post')}
                 
-                <tr><td><label>Upload Citation-File (<a href="#" id="help-link">what can I upload?</a>):</label></td> <td>${h.file('db')} </td></tr>
+                <tr><td><label>Upload Terms-File (<a href="#" id="help-link">what can I upload?</a>):</label></td> <td>${h.file('db')} </td></tr>
 
                 <div class="actions">
                     <tr><td></td><td></td><td class="actions"> 
@@ -100,10 +91,10 @@
         </table>
     </center>
 
-	% if 'msg' in dir(c):
-		<div id="okay_div"><font color='green'>${c.msg}</font>
-	 	</div>
-	% endif
+  % if 'msg' in dir(c):
+    <div id="okay_div"><font color='green'>${c.msg}</font>
+    </div>
+  % endif
 
     <div id="select-file" align='right'>You must select a citation-file to upload in order to 'Add to Review' .</div>
 

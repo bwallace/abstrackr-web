@@ -98,10 +98,11 @@ In a <b>pilot round</b>, everyone screens the same abstracts. Conflicts can then
 
 <h1>${c.review.name}: administrivia</h1>
 <div class="actions">
-<a href="${url(controller='review', action='admin', id=c.review.id)}">Manage Participants</a>
-<a href="${url(controller='review', action='assignments', id=c.review.id)}">Manage Assignments</a>
-<a href="${url(controller='review', action='edit_review', id=c.review.id)}">Edit Settings</a>
-<a href="${url(controller='review', action='render_add_citations', id=c.review.id)}">Add Citations</a>
+    <a href="${url(controller='review', action='admin', id=c.review.id)}">Manage Participants</a>
+    <a href="${url(controller='review', action='assignments', id=c.review.id)}">Manage Assignments</a>
+    <a href="${url(controller='review', action='edit_review', id=c.review.id)}">Edit Settings</a>
+    <a href="${url(controller='review', action='render_add_citations', id=c.review.id)}">Add Citations</a>
+    <a href="${url(controller='review', action='render_term_upload_page', id=c.review.id)}">Upload Terms</a>
 </div>
 
 <div class="content">

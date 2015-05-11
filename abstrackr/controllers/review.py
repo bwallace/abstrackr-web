@@ -16,6 +16,7 @@ import string
 import subprocess
 
 from abstrackr.lib import xml_to_sql
+from abstrackr.lib import upload_term_helper
 from abstrackr.lib.base import BaseController, render
 from abstrackr.lib.helpers import literal
 
@@ -353,6 +354,57 @@ class ReviewController(BaseController):
             c.msg = message
 
         return render("/reviews/add_citations.mako")
+
+    @ActionProtector(not_anonymous())
+    def render_term_upload_page(self, id, message=None):
+        if not self._current_user_leads_review(id):
+            return "yeah, I don't think so."
+        c.review = self._get_review_from_id(id)
+        if message is not None:
+            c.msg = message
+
+        return render("/reviews/upload_terms.mako")
+
+    @ActionProtector(not_anonymous())
+    def upload_terms(self, id):
+        # Obtain the review from the review id:
+        cur_review = self._get_review_from_id(id)
+        cur_user = self._get_user()
+
+        # Get the file from the user and upload it:
+        xml_file = request.POST['db']
+        try:
+            local_file_path = os.path.join(PERMANENT_STORE, xml_file.filename.lstrip(os.sep))
+        except Exception, e:
+            message = "You must specify a file to continue."
+            return self.render_term_upload_page(id, message=message)
+
+        try:
+            local_file = open(local_file_path, 'w')
+        except IOError:
+            os.makedirs(os.path.dirname(local_file_path))
+            local_file = open(local_file_path, 'w')
+        finally:
+            shutil.copyfileobj(xml_file.file, local_file)
+            xml_file.file.close()
+            local_file.close()
+
+        # Process the import of terms.
+        status, code = upload_term_helper.import_terms(local_file_path, cur_review, cur_user)
+
+        if status:
+            message = "The terms have been successfully uploaded."
+        else:
+            if code == 1:
+                message = "Failure: Tab separated file doesn't have a header row or first column is not 'term'."
+            elif code == 2:
+                message = "Failure: File may not be tab delimited."
+            elif code == 3:
+                message = "Failure: General error."
+            else:
+                message = "Failure: A problem was encountered while processesing your file."
+
+        return self.render_term_upload_page(id, message=message)
 
     @ActionProtector(not_anonymous())
     def add_citations(self, id):
