@@ -288,10 +288,10 @@ function setup_submit() {
 
     $("#save_notes_btn").unbind();
     $("#save_notes_btn").click(function() {
-        var general_notes = $("#general_notes").val();
-        var pop_notes =  $("#pop_notes").val();
-        var ic_notes = $("#ic_notes").val();
-        var outcome_notes = $("#outcome_notes").val();
+        var general_notes = $("#general_notes").val().replace(/\n\r?/g, '\\n');
+        var pop_notes =  $("#pop_notes").val().replace(/\n\r?/g, '\\n');
+        var ic_notes = $("#ic_notes").val().replace(/\n\r?/g, '\\n');
+        var outcome_notes = $("#outcome_notes").val().replace(/\n\r?/g, '\\n');
         var cur_citation_id = $('#citation.content span#cur_citation_id').text();
 
         ##$.post("${'/review/add_notes/%s' % c.cur_citation.id}", {"general_notes": general_notes, "population_notes":pop_notes, "ic_notes":ic_notes, "outcome_notes":outcome_notes}, function() {
