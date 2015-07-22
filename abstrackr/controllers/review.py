@@ -390,10 +390,13 @@ class ReviewController(BaseController):
             local_file.close()
 
         # Process the import of terms.
-        status, code = upload_term_helper.import_terms(local_file_path, cur_review, cur_user)
+        status, code, unprocessable = upload_term_helper.import_terms(local_file_path, cur_review, cur_user)
 
         if status:
-            message = "The terms have been successfully uploaded."
+            if len(unprocessable) > 0:
+                message = "The terms have been successfully uploaded. The following terms could not be added: %s" % unprocessable
+            else:
+                message = "The terms have been successfully uploaded."
         else:
             if code == 1:
                 message = "Failure: Tab separated file doesn't have a header row or first column is not 'term'."

@@ -7,12 +7,16 @@ def import_terms(file_path, review, user):
   open_f = open(file_path, 'rU')
   terms = csv.reader(open_f, delimiter="\t")
 
+  # Collect terms that we couldn't import.
+  unprocessable = []
+
   # Ensure the header looks correct.
   if (terms.next()[0] != 'term'):
     return False, 1
 
   # Iterate through each row and insert terms and their labels.
   for row in terms:
+    print(row)
     unique, code = _row_unique(row, review.id, user.id)
     if (unique):
       try:
@@ -24,14 +28,15 @@ def import_terms(file_path, review, user):
         labeledfeature.date_created = datetime.datetime.now()
         model.Session.add(labeledfeature)
       except IndexError, e:
-        return False, 2
-      else:
-        return False, 3
-      finally:
-        pass
+        return False, 2, unprocessable
+      except Exception, e:
+        print("-- WARNING -- : Unable to process: %s " % row)
+        print("Error stack %s" % e)
+        unprocessable.append(row)
+        continue
     else:
       if (code == 2):
-        return False, 2
+        return False, 2, unprocessable
       else:
         continue
 
@@ -40,7 +45,7 @@ def import_terms(file_path, review, user):
 
   # Close the file object.
   open_f.close()
-  return True, 0
+  return True, 0, unprocessable
 
 def _row_unique(row, project_id, user_id):
   try:
