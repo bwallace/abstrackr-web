@@ -16,15 +16,32 @@ def import_terms(file_path, review, user):
 
   # Iterate through each row and insert terms and their labels.
   for row in terms:
+    try:
+      term = row[0]
+      label = int(row[1])
+    except IndexError, e:
+      # Maybe label is missing in this row or more likely the row is blank.
+      continue
+    except ValueError, e:
+      # label might not be a number.
+      continue
+
+    # We should check that the row is conforming to things we need such as:
+    #   1. The label numerical and one of -2, -1, 1, 2
+    if not label in [-2, -1, 1, 2]:
+      # Skip over row with invalid labels
+      continue
+
     print(row)
     unique, code = _row_unique(row, review.id, user.id)
+
     if (unique):
       try:
         labeledfeature = model.LabeledFeature()
-        labeledfeature.term = row[0]
+        labeledfeature.term = term
         labeledfeature.project_id = review.id
         labeledfeature.user_id = user.id
-        labeledfeature.label = row[1]
+        labeledfeature.label = label
         labeledfeature.date_created = datetime.datetime.now()
         model.Session.add(labeledfeature)
       except IndexError, e:

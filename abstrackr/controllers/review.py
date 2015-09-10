@@ -53,10 +53,10 @@ PERMANENT_STORE = STATIC_FILES_PATH + "/uploads"
 log = logging.getLogger(__name__)
 
 ### for term highlighting
-NEG_C = "#7E2217"
+NEG_C = "#9900FF"
 STRONG_NEG_C = "#FF0000"
 POS_C = "#4CC417"
-STRONG_POS_C = "#347235"
+STRONG_POS_C = "#3366FF"
 COLOR_D = {1:POS_C, 2:STRONG_POS_C, -1:NEG_C, -2:STRONG_NEG_C}
 
 class ReviewController(BaseController):
@@ -3143,13 +3143,13 @@ class ReviewController(BaseController):
 
             # (case-insensitive) replace the term in the title text
             citation.marked_up_title = term_re.sub(\
-                        "<font color='%s'>%s</font>" % (COLOR_D[term.label], term.term),\
+                        "<font color='%s'><b>%s</b></font>" % (COLOR_D[term.label], term.term),\
                         citation.marked_up_title)
 
             if citation.marked_up_abstract is not None:
                 # ... and in the abstract text
                 citation.marked_up_abstract = term_re.sub(\
-                            "<font color='%s'>%s</font>" % (COLOR_D[term.label], term.term),\
+                            "<font color='%s'><b>%s</b></font>" % (COLOR_D[term.label], term.term),\
                             citation.marked_up_abstract)
 
             else:
