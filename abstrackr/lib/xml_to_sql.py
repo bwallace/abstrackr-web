@@ -86,7 +86,16 @@ def pubmed_ids_to_d(pmids):
                                 
 def pmid_list_to_sql(pmids_path, review):
     pmids, dict_misc = _parse_pmids(pmids_path)
-    d = pubmed_ids_to_d(pmids)
+    # Find all citations in the project
+    all_citations = model.Session.query(model.Citation).filter(model.Citation.project_id==review.id).all()
+    # Get list of PMID's already in the project
+    all_pmids = [c.pmid for c in all_citations]
+    # List of PMID's to import
+    pmid_import_list = []
+    for p in pmids:
+        if p not in all_pmids:
+            pmid_import_list.append(p)
+    d = pubmed_ids_to_d(pmid_import_list)
     print "ok. now inserting into sql..."
     dict_to_sql(d, review)
     print "ok."
