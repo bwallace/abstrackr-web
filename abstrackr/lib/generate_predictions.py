@@ -143,6 +143,9 @@ if __name__ == "__main__":
     reviews_to_update = [r for r in all_reviews if not _priority_q_is_empty(r)]
 
     for review_id in reviews_to_update:
+        # This review is too big -- ends up crashing. Skip it.
+        if review_id == 980:
+            continue
         predictions_last_updated = _predictions_last_updated(review_id)
         sort_by_str = select([reviews.c.sort_by], reviews.c.id == review_id).execute()
         # uh-oh

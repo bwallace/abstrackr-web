@@ -24,7 +24,7 @@ class MetaClf:
             preds_mh = self.clf_mh.predict(X_mh)
         # at least one is -1 here; not sure if you want that 
         # or 0
-        return preds_ti + preds_ab + preds_mh >= -1
+        return preds_ti + preds_ab + preds_mh >= 0
 
     def predict_probabilities(self, X_ti, X_ab, X_mh):
         probs_ti = self.clf_ti.predict_proba(X_ti)[:,1]

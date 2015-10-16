@@ -44,17 +44,29 @@ def make_predictions(review_id):
     #predictions, train_size, num_pos = pred_results 
     print "making predictions for review: %s" % review_id
     ids, titles, abstracts, mesh, lbls_dict = get_data_for_review(review_id)
-    review_dataset = abstrackr_dataset.Dataset(ids, titles, abstracts, mesh, 
+    try:
+        #import pdb; pdb.set_trace()
+        review_dataset = abstrackr_dataset.Dataset(ids, titles, abstracts, mesh, 
                                                 lbls_dict, name=str(review_id))
+         
+    except:
+        return False 
 
     if review_dataset.is_everything_labeled():
         return False
 
     learner = BaggedUSLearner(review_dataset)
     print "training..."
-    learner.train()
+    try:
+        learner.train()
+    except:
+        return False 
+
     print "ok! making predictions..."
-    pred_d, train_size, num_pos = learner.predict_remaining()
+    try:
+        pred_d, train_size, num_pos = learner.predict_remaining()
+    except:
+        return False
     print "-"*20 + " summary for review %s " % review_id + "-"*20
     print "training set size: %s\ntest set size: %s\n# predicted to be positive: %s" % (
             train_size, len(pred_d), num_pos)

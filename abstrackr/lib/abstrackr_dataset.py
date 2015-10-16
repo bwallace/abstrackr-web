@@ -24,6 +24,13 @@ class Dataset:
         
         self.titles = self._replace_None(titles)
         self.abstracts = self._replace_None(abstracts)
+        #pdb.set_trace()
+ 
+        # 9/3 -- fix for case in which abstracts are all empty
+        if not any([a != "" for a in abstracts]):
+          abstracts = ["dummy" for i in xrange(len(abstracts))]
+
+        # do we need to do the same for mesh?
         self.mesh = self._replace_None(mesh)
         
         assert(len(ids) == len(titles) == len(abstracts))
@@ -42,6 +49,7 @@ class Dataset:
         for i, x_i in enumerate(x):
             if x_i is None:
                 x[i] = ""
+        
         return x
 
     def __len__(self):
