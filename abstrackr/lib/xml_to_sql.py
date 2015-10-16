@@ -5,7 +5,7 @@ basically, this contains code to map data from a given format
 '''
 
 # std libs
-import string 
+import string
 import csv
 import random
 import os
@@ -19,13 +19,13 @@ from elementtree.ElementTree import ElementTree
 import Bio
 from Bio import Entrez
 
-# homegrown 
+# homegrown
 import pubmedpy
 import abstrackr.model as model # for access to sqlalchemy
 
 pubmedpy.set_email("byron.wallace@gmail.com")
 
-# for tsv importing 
+# for tsv importing
 OBLIGATORY_FIELDS = ["id", "title", "abstract"] # these have to be there
 OPTIONAL_FIELDS = ["authors", "keywords", "journal", "pmid"]
 
@@ -37,11 +37,11 @@ def looks_like_tsv(file_path):
     headers = [x.lower().strip().replace(START_FILE_MARKER, "") for x in header_line.split("\t")]
     if len(headers) == 0:
         return False
-    
+
     # title, etc.?
     if all([_field_in(field, headers) for field in OBLIGATORY_FIELDS]):
         return True
-    
+
     return False
 
 def _field_in(field, headers):
@@ -69,21 +69,21 @@ def pubmed_ids_to_d(pmids):
     print "ok."
 
     articles = [article for article in articles if len(article)>=3]
-    
+
     pmids_d = {}
     none_to_str = lambda x: x if x is not None else ""
-    
+
     for article in articles:
         title_text = article.get("TI")
-        ab_text = article.get("AB")    
+        ab_text = article.get("AB")
         authors = none_to_str(article.get("AU"))
         journal = none_to_str(article.get("JT"))
         keywords = none_to_str(article.get("MH"))
-        pmid = int(article["PMID"]) 
+        pmid = int(article["PMID"])
         pmids_d[pmid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
                                              "keywords":keywords, "pmid":pmid, "authors":authors}
     return pmids_d
-                                
+
 def pmid_list_to_sql(pmids_path, review):
     pmids, dict_misc = _parse_pmids(pmids_path)
     # Find all citations in the project
@@ -146,8 +146,10 @@ def ris_to_d(ris_data):
             cur_keywords.append(lsof_lines[idx + 1])
         elif line in ("N2  - ", "AB  - "):
             current_citation["abstract"] = lsof_lines[idx + 1]
+        elif line in ("AN  - "):
+            current_citation["pmid"] = lsof_lines[idx + 1]
         elif line in ("ID  - "):
-            # Sometimes ID's are given (internal id). If this is the case
+            # Sometimes ID's are given (source id). If this is the case
             # let's try to override the cur_id counter and give preference to this id
             try:
                 internal_id = int(lsof_lines[idx + 1])
@@ -262,7 +264,7 @@ def tsv_to_d(citations, field_index_d):
             if field in field_index_d:
                 tsv_d[cur_id][field] = \
                     citation[field_index_d[field]].decode('utf8', 'replace')
-    
+
                 # issue 2 -- if this is the authors field, we expect author names
                 # to be separated by commas. later in the pipeline, we'll expect
                 # a *list* here, so we create that now.
@@ -271,7 +273,7 @@ def tsv_to_d(citations, field_index_d):
             else:
                 # just insert a blank string
                 tsv_d[cur_id][field] = ""
-    
+
         # now add the obligatory fields
         for field in OBLIGATORY_FIELDS:
             tsv_d[cur_id][field] = citation[field_index_d[field]].decode('utf8', 'replace')
@@ -335,20 +337,20 @@ def tsv_to_sql(tsv_path, review):
 #            current_citation["abstract"] = value
 #    # add the last citation
 #    ris_d[cur_id] = current_citation
-#    
+#
 #    return ris_d
-    
+
 def _field_index_d(headers):
     field_index_d = {}
     for field in OBLIGATORY_FIELDS:
         # we know these exist
         field_index_d[field] = headers.index(field)
-    
+
     # now let's see if they've optional headers
     for field in OPTIONAL_FIELDS:
         if field in headers:
             field_index_d[field] = headers.index(field)
-    
+
     return field_index_d
 
 def xml_to_sql(xml_path, review):
@@ -360,8 +362,8 @@ def xml_to_sql(xml_path, review):
     return len(d), dict_misc
 
 
-    
-def dict_to_sql(xml_d, review): 
+
+def dict_to_sql(xml_d, review):
     cit_num = 0
     # issue #31: explicitly randomize ordering
     xml_d_items = xml_d.items()
@@ -392,12 +394,12 @@ def insert_citation(review_id, ref_id, citation_d):
     citation.authors = " and ".join(citation_d['authors'])
     citation.keywords = ','.join(citation_d['keywords'])
     citation.journal = citation_d['journal']
-    
+
     model.Session.add(citation)
     model.Session.commit()
 
     return citation.id
- 
+
 def insert_priority_entry(review_id, citation_id, \
                             init_priority_num, num_times_labeled=0):
     priority = model.Priority()
@@ -407,7 +409,7 @@ def insert_priority_entry(review_id, citation_id, \
     priority.num_times_labeled = num_times_labeled
     priority.is_out = False
     model.Session.add(priority)
-    
+
 
 def xml_to_dict(fpath):
     '''
@@ -419,9 +421,9 @@ def xml_to_dict(fpath):
     parsing_errors = []
     num_no_abs = 0
     tree = ElementTree(file=fpath)
-    
+
     num_failed = 0
-    
+
     for record in tree.findall('.//record'):
         pubmed_id, refmanid = None, None
 
@@ -459,13 +461,13 @@ def xml_to_dict(fpath):
                 #print "problem getting pmid ..."
                 #print ex
                 #print("\n")
-    
+
             ab_text = record.findtext('.//abstract/style')
             if ab_text is None:
                 num_no_abs += 1
-    
+
             title_text = record.findtext('.//titles/title/style')
-    
+
             # Also grab keywords
             keywords = [keyword.text.strip().lower() for keyword in record.findall(".//keywords/keyword/style")]
 
@@ -478,7 +480,7 @@ def xml_to_dict(fpath):
             ref_ids_to_abs[refmanid] = {"title":title_text, "abstract":ab_text, "journal":journal,\
                         "keywords":keywords, "pmid":pubmed_id, "authors":authors}
 
-    
+
     print "\nFinished. Returning %s title/abstract/keyword sets, %s of which have no abstracts.\n" \
                     % (len(ref_ids_to_abs.keys()), num_no_abs)
     return ref_ids_to_abs, {"import-errors": parsing_errors}
