@@ -97,8 +97,8 @@ class Citation(Base):
 
     # associates the citation with the project that owns it
     project_id = Column(types.Integer, ForeignKey('projects.id'))
-    pmid = Column(types.BigInteger)
-    refman = Column(types.BigInteger)
+    pmid = Column(types.Unicode(20))
+    refman = Column(types.Unicode(20))
 
     title = Column(types.Unicode(500))
     # length is based on back-of-envelope calculation
@@ -313,7 +313,7 @@ class Prediction(Base):
     num_yes_votes = Column(types.Float) # number of ensemble members that voted yes
     predicted_probability = Column(types.Float) # predicted probability
 
-    
+
 
 
 ####################################

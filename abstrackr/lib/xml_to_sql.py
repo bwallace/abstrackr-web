@@ -147,7 +147,7 @@ def ris_to_d(ris_data):
         elif line in ("N2  - ", "AB  - "):
             current_citation["abstract"] = lsof_lines[idx + 1]
         elif line in ("AN  - "):
-            current_citation["pmid"] = lsof_lines[idx + 1]
+            current_citation["pmid"] = lsof_lines[idx + 1].strip()
         elif line in ("ID  - "):
             # Sometimes ID's are given (source id). If this is the case
             # let's try to override the cur_id counter and give preference to this id
