@@ -12,7 +12,8 @@ def import_terms(file_path, review, user):
 
   # Ensure the header looks correct.
   if (terms.next()[0] != 'term'):
-    return False, 1
+    unprocessable.append("Missing header. You need 2 columns with headers: \"term\" and \"label\"")
+    return False, 1, unprocessable
 
   # Iterate through each row and insert terms and their labels.
   for row in terms:
