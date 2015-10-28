@@ -30,3 +30,9 @@ uploads/
 ##############################
 *.pid
 *.log
+
+.eggs/
+abstrackr.egg-info/
+build/
+dist/
+eutils/
