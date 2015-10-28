@@ -139,11 +139,11 @@ def ris_to_d(ris_data):
         elif line in ("AU  - ", "A1  - "):
             cur_authors.append(lsof_lines[idx + 1])
         elif line in ("T1  - ", "TI  - "):
-            current_citation["title"] = lsof_lines[idx + 1][:MAX_TITLE_LENGTH]
-        elif line.startswith("J"):
-            current_citation["journal"] = lsof_lines[idx + 1]
+            current_citation["title"] = lsof_lines[idx + 1].strip()[:MAX_TITLE_LENGTH]
+        elif re.match("^J[A-Z0-9]\s{2}-\s$|^T2\s{2}-\s$", line):
+            current_citation["journal"] = lsof_lines[idx + 1].strip()
         elif line == "KW  - ":
-            cur_keywords.append(lsof_lines[idx + 1])
+            cur_keywords.append(lsof_lines[idx + 1].strip())
         elif line in ("N2  - ", "AB  - "):
             current_citation["abstract"] = lsof_lines[idx + 1]
         elif line in ("AN  - "):
