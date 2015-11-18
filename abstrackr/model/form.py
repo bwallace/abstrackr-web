@@ -7,7 +7,7 @@ class UniqueUsername(formencode.FancyValidator):
     def _to_python(self, value, state):
         user_q = model.meta.Session.query(model.User)
         usernames = [user.username for user in user_q.all()]
-        if value in usernames:
+        if value.lower() in usernames:
             raise formencode.Invalid(
                     'Sorry, that username already exists. Try something else.',
                      value, state)
@@ -18,7 +18,7 @@ class UniqueEmail(formencode.FancyValidator):
     def _to_python(self, value, state):
         user_q = model.meta.Session.query(model.User)
         emails = [user.email for user in user_q.all()]
-        if value in emails:
+        if value.lower() in emails:
             raise formencode.Invalid(
                     'Sorry, that email is already used by someone else. Try another.',
                     value, state)
