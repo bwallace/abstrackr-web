@@ -1971,9 +1971,10 @@ class ReviewController(BaseController):
             redirect(url(controller="review", action="screen", \
                         review_id=review_id, assignment_id = assignment_id))
 
-        review = self._get_review_from_id(review_id)
         if assignment.done:
             redirect(url(controller="account", action="welcome"))
+
+        review = self._get_review_from_id(review_id)
 
         # clear our locks for this review
         self._clear_all_my_locks(review.id)
@@ -2170,7 +2171,7 @@ class ReviewController(BaseController):
                 # we use this special user.
                 reviewer_id = 0
             elif assignment_type=="initial":
-                reviewer_id = self._get_user().id
+                reviewer_id = user_id
 
             already_labeled = \
                     self._get_already_labeled_ids(review.id, reviewer_id=reviewer_id, assignment_id=assignment_id)
