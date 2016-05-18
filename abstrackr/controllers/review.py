@@ -1768,14 +1768,15 @@ class ReviewController(BaseController):
         assignment = self._get_assignment_from_id(assignment_id)
 
         label_q = Session.query(model.Label)
+
+        # Based on the assignment type we now look for any existing
+        # label. When assignment type is "conflict" we look for a label
+        # by CONSENSUS_USER (ID=0), else by current_user ID
         if assignment.assignment_type == "conflict":
             user_id = CONSENSUS_USER
         else:
             user_id = current_user.id
 
-        # Based on the assignment type we now look for any existing
-        # label. When assignment type is "conflict" we look for a label
-        # by CONSENSUS_USER (ID=0), else by current_user ID
         existing_label = label_q.filter(and_(model.Label.project_id==review_id,
                                              model.Label.study_id==study_id,
                                              model.Label.user_id==user_id,
