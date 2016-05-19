@@ -111,8 +111,8 @@ def _get_labels_dict_for_review(review_id):
 
 def _get_all_citations_for_review(review_id, return_query_obj=False):
     citation_query_obj = model.meta.Session.query(model.Citation, model.Label).\
-            filter(model.Citation.id==model.Label.study_id).\
-            filter(model.Label.project_id==review_id).order_by(model.Citation.id)
+            filter(model.Citation.id == model.Label.study_id).\
+            filter(model.Label.project_id == review_id).order_by(model.Citation.id)
     if return_query_obj:
         return citation_query_obj
     # this can be expensive!
@@ -156,13 +156,13 @@ def _check_assignment_done(a, offset=0):
     num_assigned = a.num_assigned
     assignment_type = a.assignment_type
 
-    if assignment_type=='perpetual':
+    if assignment_type == 'perpetual':
         return _check_assignment_done_perpetual_type(a)
-    elif assignment_type=='conflict':
+    elif assignment_type == 'conflict':
         return _check_assignment_done_conflict_type(a)
-    elif assignment_type=='initial':
+    elif assignment_type == 'initial':
         return _check_assignment_done_initial_type(a)
-    elif assignment_type=='assigned':
+    elif assignment_type == 'assigned':
         return _check_assignment_done_assigned_type(a)
 
 def _check_assignment_done_perpetual_type(a):
@@ -171,18 +171,17 @@ def _check_assignment_done_perpetual_type(a):
     cnt_citations_in_project = _get_cnt_citations_in_project_by_project_id(a.project_id)
     if screening_mode in ['single', 'advanced']:
         cnt_citations_labeled_by_anyone = _get_cnt_citations_labeled(a.project_id)
-        return cnt_citations_labeled_by_anyone>=cnt_citations_in_project
+        return cnt_citations_labeled_by_anyone >= cnt_citations_in_project
     elif screening_mode in ['double']:
-        # In double screening it may be the case that we are already done because 2 other members
-        # finished screening all. So we have to check two conditions. Either the current user already
-        # screened all the citations in the project, or the number of citations that have been labeled
-        # twice is equal to the number of citations in the project
+        # Find out how many citations in this project have more than 2 labels.
         cnt_citations_labeled_twice_by_anyone = _get_cnt_citations_labeled_twice_by_anyone(a.project_id)
-        cnt_citations_labeled_by_me = _get_cnt_citations_labeled(a.project_id, a.user_id)
-        if cnt_citations_labeled_by_me>=cnt_citations_in_project:
-            return True
-        else:
-            return cnt_citations_labeled_twice_by_anyone>=cnt_citations_in_project
+        #cnt_citations_labeled_by_me = _get_cnt_citations_labeled(a.project_id, a.user_id)
+        #if cnt_citations_labeled_by_me >= cnt_citations_in_project:
+        #    return True
+        #else:
+        #    return cnt_citations_labeled_twice_by_anyone >= cnt_citations_in_project
+        return cnt_citations_labeled_twice_by_anyone >= cnt_citations_in_project
+
 def _get_cnt_citations_labeled_twice_by_anyone(project_id):
     labels_q = Session.query(model.Label).\
                         filter_by(project_id=project_id).\
@@ -195,7 +194,7 @@ def _get_cnt_citations_in_project_by_project_id(project_id):
     return len(citations)
 
 def _get_cnt_citations_labeled(project_id, user_id=None):
-    if user_id==None:
+    if user_id == None:
         labels = Session.query(model.Label).filter_by(project_id=project_id).all()
     else:
         labels = Session.query(model.Label).filter_by(project_id=project_id).filter_by(user_id=user_id).all()
@@ -207,14 +206,14 @@ def _get_cnt_citations_labeled(project_id, user_id=None):
 def _check_assignment_done_conflict_type(a):
     cnt_labels_by_assignment = _get_cnt_labels_by_assignment(a)
     num_assigned = a.num_assigned
-    return cnt_labels_by_assignment==num_assigned
+    return cnt_labels_by_assignment == num_assigned
 
 # This is just like _check_assignment_done_assigned_type
 # Going to keep this for now in case the requirements change.
 def _check_assignment_done_initial_type(a):
     cnt_labels_by_assignment = _get_cnt_labels_by_assignment(a)
     num_assigned = a.num_assigned
-    return cnt_labels_by_assignment>=num_assigned
+    return cnt_labels_by_assignment >= num_assigned
 
 def _check_assignment_done_assigned_type(a):
     project = Session.query(model.Project).filter_by(id=a.project_id).one()
@@ -223,17 +222,17 @@ def _check_assignment_done_assigned_type(a):
     num_assigned = a.num_assigned
     cnt_citations_in_project = _get_cnt_citations_in_project_by_project_id(a.project_id)
 
-    if cnt_labels_by_assignment>=num_assigned:
+    if cnt_labels_by_assignment >= num_assigned:
         return True
-    elif screening_mode=="single":
+    elif screening_mode == "single":
         cnt_citations_labeled_by_anyone = _get_cnt_citations_labeled(a.project_id)
-        return cnt_citations_labeled_by_anyone>=cnt_citations_in_project
-    elif screening_mode=="double":
+        return cnt_citations_labeled_by_anyone >= cnt_citations_in_project
+    elif screening_mode == "double":
         cnt_citations_labeled_twice_by_anyone = _get_cnt_citations_labeled_twice_by_anyone(a.project_id)
-        return cnt_citations_labeled_twice_by_anyone>=cnt_citations_in_project
-    elif screening_mode=="advanced":
+        return cnt_citations_labeled_twice_by_anyone >= cnt_citations_in_project
+    elif screening_mode == "advanced":
         cnt_citations_labeled_by_anyone = _get_cnt_citations_labeled(a.project_id)
-        return cnt_citations_labeled_by_anyone>=cnt_citations_in_project
+        return cnt_citations_labeled_by_anyone >= cnt_citations_in_project
 
 def _get_cnt_labels_by_assignment(a):
     labels_q = Session.query(model.Label)

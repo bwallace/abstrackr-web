@@ -238,7 +238,6 @@ class AccountController(BaseController):
 
     @ActionProtector(not_anonymous())
     def my_work(self):
-
         person = request.environ.get('repoze.who.identity')['user']
         c.person = person
         user = controller_globals._get_user_from_email(c.person.email)
@@ -268,7 +267,11 @@ to see which OperationalError is being raised ''')
         # pull all assignments for this person
         assignment_q = Session.query(model.Assignment)
         all_assignments = assignment_q.filter(model.Assignment.user_id == person.id).all()
-        self._set_assignment_done_status(all_assignments)
+
+        # This process is incredibly slow. Take it out for now and find out
+        # why the .done and .done_so_far field on assignment is off sometimes.
+        #self._set_assignment_done_status(all_assignments)
+
         self._clear_this_user_locks(all_assignments)
 
         # Build assignment completion status dictionary

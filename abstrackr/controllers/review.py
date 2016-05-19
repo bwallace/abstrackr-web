@@ -1968,11 +1968,20 @@ class ReviewController(BaseController):
         user = self._get_user()
 
         assignment = self._get_assignment_from_id(assignment_id)
+
         if assignment is None:
+            # Redirect to the screen page again...essentially trigger a reload.
             redirect(url(controller="review", action="screen", \
                         review_id=review_id, assignment_id = assignment_id))
+        else:
+            # Update the done_so_far count. Sometimes this count is off.
+            self._update_done_so_far_count(assignment)
 
-        if assignment.done:
+        # Force a assignment done check.
+        if controller_globals._check_assignment_done(assignment):
+            assignment.done = True
+            Session.add(assignment)
+            Session.commit()
             redirect(url(controller="account", action="welcome"))
 
         review = self._get_review_from_id(review_id)
@@ -3237,7 +3246,13 @@ class ReviewController(BaseController):
                                     assignment_id=assignment_id).all()
         return labels
 
-
-
-
+    def _update_done_so_far_count(self, assignment):
+        user = self._get_user()
+        labels = self._get_users_labels_for_assignment(assignment.project_id,
+                                                       user.id,
+                                                       assignment.id)
+        assignment.done_so_far = len(labels)
+        Session.add(assignment)
+        Session.commit()
+        return False
 
