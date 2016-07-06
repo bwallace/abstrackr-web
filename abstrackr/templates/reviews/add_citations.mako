@@ -28,6 +28,24 @@
             show: "blind",
         });
 
+       if ($("#incompatible").attr("data-display") == "True") {
+           $( "#error" ).dialog({
+                height: 120,
+                width: 400,
+                modal: true,
+                autoOpen: true,
+                show: "blind",
+            });
+        } else {
+           $( "#error" ).dialog({
+                height: 120,
+                width: 400,
+                modal: true,
+                autoOpen: false,
+                show: "blind",
+            });
+        }
+
         $( "#upload-help" ).dialog({
             height: 300,
             width:500, 
@@ -43,6 +61,14 @@
     });
 
 </script>
+
+<div id="incompatible" class="hidden" data-display="${str(c.error)}">
+</div>
+
+<div id="error" >
+    <h2>Problem: Unsupported file format.</h2><br/>
+    Please refer to Help for supported file formats.
+</div>
 
 <div class="breadcrumbs">
     ./<a href="${url(controller='account', action='my_projects')}">my projects</a>/<a href="${url(controller='review', action='show_review', id=c.review.id)}">${c.review.name}</a>
