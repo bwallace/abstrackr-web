@@ -64,6 +64,7 @@ class ReviewController(BaseController):
     @ActionProtector(not_anonymous())
     def create_new_review(self):
         c.review_count = "%s" % Session.query(func.count(model.Project.id)).scalar()
+        c.error = False
         return render("/reviews/new.mako")
 
     @ActionProtector(not_anonymous())
@@ -213,14 +214,18 @@ class ReviewController(BaseController):
         if xml_file.filename.lower().endswith(".xml"):
             print "parsing uploaded xml..."
             num_articles, dict_misc = xml_to_sql.xml_to_sql(local_file_path, new_review)
-        elif xml_file.filename.lower().endswith(".ris"):
-            print "parsing RIS file..."
+        elif xml_to_sql.looks_like_ris(local_file_path):
             num_articles = xml_to_sql.ris_to_sql(local_file_path, new_review)
+        elif xml_to_sql.looks_like_cochrane(local_file_path):
+            num_articles = xml_to_sql.cochrane_to_sql(local_file_path, new_review)
+        elif xml_to_sql.looks_like_list(local_file_path):
+            num_articles, dict_misc = xml_to_sql.pmid_list_to_sql(local_file_path, new_review)
         elif xml_to_sql.looks_like_tsv(local_file_path):
             num_articles, dict_misc = xml_to_sql.tsv_to_sql(local_file_path, new_review)
         else:
-            print "assuming this is a list of pubmed ids"
-            num_articles, dict_misc = xml_to_sql.pmid_list_to_sql(local_file_path, new_review)
+            c.error = True
+            print "not a recognized format!!"
+            return render("/reviews/new.mako")
         print "done."
 
 
@@ -353,6 +358,7 @@ class ReviewController(BaseController):
         if message is not None:
             c.msg = message
 
+        c.error = False
         return render("/reviews/add_citations.mako")
 
     @ActionProtector(not_anonymous())
@@ -437,21 +443,22 @@ class ReviewController(BaseController):
 
         # Extract the citations and add them to the database:
         num_articles = None
-        if xml_file.filename.endswith(".xml"):
+        if xml_file.filename.lower().endswith(".xml"):
             print "parsing uploaded xml..."
-            num_articles = xml_to_sql.xml_to_sql(local_file_path, cur_review)
-            self.de_duplicate_citations(id, False)
-        elif xml_to_sql.looks_like_tsv(local_file_path):
-            num_articles = xml_to_sql.tsv_to_sql(local_file_path, cur_review)
-            self.de_duplicate_citations(id, False)
-        elif xml_file.filename.lower().endswith(".ris"):
-            print "parsing RIS file..."
+            num_articles, dict_misc = xml_to_sql.xml_to_sql(local_file_path, cur_review)
+        elif xml_to_sql.looks_like_ris(local_file_path):
             num_articles = xml_to_sql.ris_to_sql(local_file_path, cur_review)
-            self.de_duplicate_citations(id, False)
+        elif xml_to_sql.looks_like_cochrane(local_file_path):
+            num_articles = xml_to_sql.cochrane_to_sql(local_file_path, cur_review)
+        elif xml_to_sql.looks_like_list(local_file_path):
+            num_articles, dict_misc = xml_to_sql.pmid_list_to_sql(local_file_path, cur_review)
+        elif xml_to_sql.looks_like_tsv(local_file_path):
+            num_articles, dict_misc = xml_to_sql.tsv_to_sql(local_file_path, cur_review)
         else:
-            print "assuming this is a list of pubmed ids"
-            num_articles = xml_to_sql.pmid_list_to_sql(local_file_path, cur_review)
-            self.de_duplicate_citations(id, True)
+            c.error = True
+            print "not a recognized format!!"
+            c.review = cur_review
+            return render("/reviews/add_citations.mako")
         print "done."
 
         # Reset the encoded status of the review to 'false':
@@ -476,7 +483,7 @@ class ReviewController(BaseController):
         # Obtain all citations:
         citations = Session.query(model.Citation).filter(model.Citation.project_id==id).all()
 
-        # This is what we iterate through to collapse the duplicate citations:
+ # This is what we iterate through to collapse the duplicate citations:
         list_of_duplicates = []
 
         # This list contains the ids of all citations we have gone over.
@@ -735,20 +742,16 @@ class ReviewController(BaseController):
         this 'moves' the things associated with the review specified by
         the old_review_id to the review object specified by the new_reviwe_id,
         setting the identifier on all of the following:
-
                * reviewers
                * citations
                * labledfeatures
                * priority entries
                * labels
                * tagtypes
-
         there's a lot of boilerplate here that could probably be
         refactored to be made more concise.
-
         Tasks and assignments are removed -- i.e., not carried over
         to the merged target review.
-
         @TODO encodestatus and prediction entries will need also to be
                     changed, eventually
         '''
@@ -930,13 +933,10 @@ class ReviewController(BaseController):
         subject = "Invitation to join review on abstrackr"
         message = """
             Hi there!
-
             What luck! You've had the good fortune of being invited to join the project: %s
             on abstrackr.
-
             To do so, you're going to need to sign up for an account, if you don't already have one.
             Then you'll want to log in, and follow this link: %s.
-
             Happy screening.
         """ % (project.name, \
                "%sjoin/%s" % (url('/', qualified=True), project.code))

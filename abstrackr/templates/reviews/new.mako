@@ -3,7 +3,7 @@
 
 <script language="javascript">
 
-    $(document).ready(function() { 
+    $(document).ready(function() {
 
         // fix for issue #4
         $("input:submit").attr("disabled",true);
@@ -31,6 +31,8 @@
                 $("input:submit").attr("disabled","disabled");
                 $("#select-file").show();
             }
+
+
         });
 
         $( "#dialog" ).dialog({
@@ -40,6 +42,24 @@
             autoOpen: false,
             show: "blind",
         });
+
+       if ($("#incompatible").attr("data-display") == "True") {
+           $( "#error" ).dialog({
+                height: 120,
+                width: 400,
+                modal: true,
+                autoOpen: true,
+                show: "blind",
+            });
+        } else {
+           $( "#error" ).dialog({
+                height: 120,
+                width: 400,
+                modal: true,
+                autoOpen: false,
+                show: "blind",
+            });
+        }
 
         $( "#upload-help" ).dialog({
             height: 300,
@@ -98,6 +118,8 @@
 
 </script>
 
+<div id="incompatible" class="hidden" data-display="${str(c.error)}">
+</div>
 
 <div id="dialog" >
     <h2>processing your abstracts. </h2>
@@ -106,6 +128,12 @@
     <img src="/loading.gif"></img>
     </center>
 </div>
+
+<div id="error" >
+    <h2>Problem: Unsupported file format.</h2><br/>
+    Please refer to Help for supported file formats.
+</div>
+
 
 <div id="train-round-help" class="ui-dialog">
     In a <b>pilot round</b>, everyone screens the same abstracts. Conflicts can then be reviewed by the project lead. The number of abstracts to be screened can be specified here. If you set this, for example, to 100, then everyone will receive the same first 100 abstracts to screen. If you don't want a training round, just leave this be at 0.

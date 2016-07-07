@@ -37,12 +37,51 @@ def looks_like_tsv(file_path):
     headers = [x.lower().strip().replace(START_FILE_MARKER, "") for x in header_line.split("\t")]
     if len(headers) == 0:
         return False
-
+    print [_field_in(field, headers) for field in OBLIGATORY_FIELDS]
     # title, etc.?
     if all([_field_in(field, headers) for field in OBLIGATORY_FIELDS]):
         return True
 
     return False
+
+def looks_like_ris(file_path):
+    file_data = open(file_path, 'rU').read()
+
+    re_pattern = re.compile("([A-Z][A-Z0-9]\s{2}-\s)", re.MULTILINE)
+    if re.search(re_pattern, file_data) is not None:
+        lines = re.split(re_pattern, file_data)
+        o_c = 0 #open count
+        c_c = 0 #close count
+        for l in lines:
+            if l == "TY  - ":
+                o_c += 1
+            elif l == "ER  - ":
+                if o_c == c_c + 1:
+                    c_c += 1
+                else:
+                    return False
+        if o_c == c_c and o_c > 0:
+            print "Looks like ris"
+            return True
+    return False
+
+def looks_like_cochrane(file_path):
+    file_data = open(file_path, 'rU').read()
+
+    print file_data
+    re_pattern = re.compile('Record\s#[0-9]+\sof\s[0-9]+', re.MULTILINE)
+    tag_pattern = re.compile('[A-Z]{2}:\s', re.MULTILINE)
+    if len(re.findall(re_pattern, file_data)) > 0 and len(re.findall(tag_pattern, file_data)) > 0:
+        return True
+    return False
+
+def looks_like_list(file_path):
+    f = open(file_path, 'rU')
+    re_pattern = re.compile("^[0-9]+$", re.MULTILINE)
+    for line in f:
+        if re.match(re_pattern, line) is None:
+            return False
+    return True
 
 def _field_in(field, headers):
     # we'll only enforce that a string *start* with
@@ -116,7 +155,7 @@ def ris_to_d(ris_data):
     ris_d  = {}
 
     # Define re pattern to capture ris style tags.
-    re_pattern = re.compile('([A-Z][A-Z0-9]\s\s[\-]\s)', re.DOTALL)
+    re_pattern = re.compile('([A-Z][A-Z0-9]\s{2}-\s)', re.DOTALL)
 
     # Use re.split() to split the ris_data.
     lsof_lines = re.split(re_pattern, ris_data)
@@ -140,10 +179,11 @@ def ris_to_d(ris_data):
             cur_authors.append(lsof_lines[idx + 1])
         elif line in ("T1  - ", "TI  - "):
             current_citation["title"] = lsof_lines[idx + 1].strip()[:MAX_TITLE_LENGTH]
-        elif re.match("^J[A-Z0-9]\s{2}-\s$|^T2\s{2}-\s$", line):
+        elif re.match("^J[A-Z0-9]\s{2}-\s|^T2\s{2}-\s", line):
+        # Test this -Birol
             current_citation["journal"] = lsof_lines[idx + 1].strip()
         elif line == "KW  - ":
-            cur_keywords.append(lsof_lines[idx + 1].strip())
+            cur_keywords += [x.strip() for x in lsof_lines[idx + 1].splitlines()]
         elif line in ("N2  - ", "AB  - "):
             current_citation["abstract"] = lsof_lines[idx + 1]
         elif line in ("AN  - "):
@@ -172,6 +212,82 @@ def ris_to_d(ris_data):
             ris_d[cur_id] = current_citation
 
     return ris_d
+
+def cochrane_to_sql(c_path, review):
+    print "building a dictionary from %s..." % c_path
+    d = cochrane_to_d(open(c_path, 'rU').read())
+    print "ok. now inserting into sql..."
+    dict_to_sql(d, review)
+    print "ok."
+    return len(d)
+
+def cochrane_to_d(c_data):
+    c_data = c_data.decode('iso-8859-1')
+    cur_id = 1
+    c_d  = {}
+
+    # Define re pattern to capture cochrane style tags.
+    re_pattern = re.compile('^Record\s#[0-9]+\sof\s[0-9]+$', re.MULTILINE)
+    tag_re = re.compile('(^[A-Z][A-Z]:\s)', re.DOTALL | re.MULTILINE)
+
+    # Use re.split() to split the c_data.
+    lsof_lines = re.split(re_pattern, c_data)
+
+    # Get rid of empty strings.
+    lsof_lines = [var for var in lsof_lines if var]
+
+    for idx, line in enumerate(lsof_lines):
+        # Clear fields
+        current_citation = {"title":"", "abstract":"", "journal":"",\
+                                        "keywords":"", "pmid":"", "authors":""}
+        cur_authors, cur_keywords = [], []
+
+        while cur_id in c_d.keys():
+            cur_id += 1
+
+        c_d[cur_id] = current_citation
+
+        ls = re.split(tag_re, line)
+
+        for i, ll in enumerate(ls):
+            print ll
+            print ll == 'AU: '
+            if ll == 'AU: ':
+                cur_authors.append(ls[i + 1])
+            elif ll == 'TI: ':
+                current_citation["title"] = ls[i + 1].strip()[:MAX_TITLE_LENGTH]
+            elif ll == 'SO: ':
+                current_citation["journal"] = ls[i + 1].strip()
+            elif ll == 'KY: ':
+                cur_keywords = [ ss.strip() for ss in ls[i + 1].split(';')]
+            elif ll == 'AB: ':
+                current_citation["abstract"] = ls[i + 1]
+            elif ll == 'PM: ':
+                current_citation["pmid"] = ls[i + 1].strip()
+            elif ll == 'ID: ':
+                # Sometimes ID's are given (source id). If this is the case
+                # let's try to override the cur_id counter and give preference to this id
+                try:
+                    internal_id = int(ls[i + 1])
+                except ValueError:
+                    continue
+
+                # Swap IDs if necessary
+                if internal_id in c_d.keys():
+                    temp = c_d[internal_id]
+                    c_d[internal_id] = c_d[cur_id]
+                    c_d[cur_id] = temp
+                    cur_id = internal_id
+                else:
+                    c_d[internal_id] = c_d.pop(cur_id)
+                    cur_id = internal_id
+        print current_citation
+        current_citation["authors"] = list(OrderedSet(cur_authors))
+        current_citation["keywords"] = list(cur_keywords)
+        c_d[cur_id] = current_citation
+
+    return c_d
+
 
 # def ris_to_d(ris_data):
 #     cur_id = 1
