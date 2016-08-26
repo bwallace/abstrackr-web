@@ -453,7 +453,7 @@ def xml_to_dict(fpath):
                 pubmed = re.split('([A-Z][A-Z0-9]\s[\-]\s)', pubmed, re.DOTALL)
                 for i in range(len(pubmed)):
                     print pubmed[i]
-                    if "UI  - " in pubmed[i]:
+                    if "UI - " in pubmed[i]:
                         pubmed_str = pubmed[i+1].strip()
                         pubmed_id = int("".join([x for x in pubmed_str if x in string.digits]))
             except Exception, ex:
