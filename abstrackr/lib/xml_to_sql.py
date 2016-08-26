@@ -457,8 +457,6 @@ def xml_to_dict(fpath):
                         pubmed_str = pubmed[i+1].strip()
                         pubmed_id = int("".join([x for x in pubmed_str if x in string.digits]))
             except Exception, ex:
-                #print "LOYLOYLOY!!!"
-                #print record.findtext('.//notes/style')
                 error = "Problem getting pmid from '%s' in '%s'" % (record, os.path.basename(fpath))
                 parsing_errors.append(error)
                 #print "problem getting pmid ..."
