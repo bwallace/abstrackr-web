@@ -450,12 +450,15 @@ def xml_to_dict(fpath):
             pubmed_id = ""
             try:
                 pubmed = record.findtext('.//notes/style')
-                pubmed = pubmed.split("-")
+                pubmed = re.split('([A-Z][A-Z0-9]\s[\-]\s)', pubmed, re.DOTALL)
                 for i in range(len(pubmed)):
-                    if "UI" in pubmed[i]:
+                    print pubmed[i]
+                    if "UI  - " in pubmed[i]:
                         pubmed_str = pubmed[i+1].strip()
                         pubmed_id = int("".join([x for x in pubmed_str if x in string.digits]))
             except Exception, ex:
+                #print "LOYLOYLOY!!!"
+                #print record.findtext('.//notes/style')
                 error = "Problem getting pmid from '%s' in '%s'" % (record, os.path.basename(fpath))
                 parsing_errors.append(error)
                 #print "problem getting pmid ..."
