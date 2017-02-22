@@ -100,7 +100,7 @@ class ReviewController(BaseController):
             c.probably_included = len([x for x in prob_estimates if x>=.5])
             num_preds = len(prob_estimates)
             c.prob_plot_url = \
-                    '''http://chart.apis.google.com/chart
+                    '''https://chart.apis.google.com/chart
                        ?chxl=0:|0|%s|%s|1:|.1|.2|.3|.4|.5|.6|.7|.8|.9|1.0
                        &chxp=0,0,0.5,1|1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1
                        &chxr=0,0,1|1,0,1
@@ -1600,7 +1600,7 @@ class ReviewController(BaseController):
         # we construct a google charts string explicitly for the horizontal bar graph here.
         height = 30*len(names)+50
         width = 500
-        google_url = "http://chart.apis.google.com/chart?cht=bhg&chs=%sx%s" % (width, height)
+        google_url = "https://chart.apis.google.com/chart?cht=bhg&chs=%sx%s" % (width, height)
         chart = StackedHorizontalBarChart(500, 30*len(names)+50, x_range=(0, c.num_labels))
         data_str = "chd=t:%s" % ",".join([str(n) for n in num_screened])
         google_url = "&".join([google_url, data_str])
