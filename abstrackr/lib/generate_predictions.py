@@ -13,7 +13,7 @@ from sqlalchemy.sql import and_, or_
 
 import make_predictions_sklearn
 
-engine = create_engine("mysql://abstrackr-user:pignic@127.0.0.1:3306/abstrackr?unix_socket=/var/mysql/mysql.sock")
+engine = create_engine("mysql://root:@127.0.0.1:3306/abstrackr?unix_socket=/var/mysql/mysql.sock")
 #engine = create_engine("mysql://abstrackr-user:5xl.z=Uy6d@127.0.0.1:3306/abstrackrDBP01?unix_socket=/var/mysql/mysql.sock")
 metadata = MetaData(bind=engine)
 

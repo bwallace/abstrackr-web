@@ -10,7 +10,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 class Dataset:
 
     def __init__(self, ids, titles, abstracts, mesh, lbl_dict, name=None, 
-                    stop_word_fpath="/Users/bwallace/dev/abstrackr-web/abstrackr/lib/stop_list.txt"):
+                    stop_word_fpath="abstrackr/lib/stop_list.txt"):
         '''
         assumes the ordering of ids is the same as the ordering of titles 
         and abstracts! 
@@ -40,7 +40,7 @@ class Dataset:
         print "done. now reading labels in..."
         self._setup_lbl_vecs()
         #self.stop_word_list_path = stop_word_fpath
-        self.stop_word_list_path = "/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/stop_list.txt"
+        self.stop_word_list_path = "abstrackr/lib/stop_list.txt"
         self._load_stopwords()
         print "alright -- encoding!"
         self.encode()
