@@ -1569,6 +1569,24 @@ class ReviewController(BaseController):
         c.num_unique_labels = len(set([lbl.study_id for lbl in labels_for_review]))
         c.num_labels = len(labels_for_review)
 
+        # Query object: list of study_id from labels table for this review
+        # SELECT labels.study_id AS labels_study_id
+        # FROM labels
+        # WHERE labels.project_id = %s
+        # LIMIT %s
+        #subquery_aa = Session.query(model.Label.study_id).filter(model.Label.project_id==id)
+
+        # Find citations for which no labels exist:
+        # SELECT citations.id AS citations_id
+        # FROM citations
+        # WHERE citations.project_id = %s AND citations.id NOT IN (SELECT labels.study_id AS labels_study_id
+        # FROM labels
+        # WHERE labels.project_id = %s)
+        #c.num_unlabeled_citations = len( Session.query(model.Citation.id).
+        #                                         filter(model.Citation.project_id==id).
+        #                                         filter(~model.Citation.id.in_(subquery_aa)).all() )
+        c.num_unlabeled_citations = c.num_citations-c.num_unique_labels
+
         # generate a pretty plot via google charts
         chart = PieChart3D(500, 200)
         chart.add_data([c.num_citations-c.num_unique_labels, c.num_unique_labels])
@@ -1577,6 +1595,7 @@ class ReviewController(BaseController):
         # For some reason | is represented by %7c. We unquote here to set it back to |. Only happens
         # for chart.set_pie_labels.
         c.pi_url = urllib.unquote(chart.get_url())
+
         c.participating_reviewers = reviewers = self._get_participants_for_review(id)
         #user_q = Session.query(model.User)
         #c.project_lead = user_q.filter(model.User.id == c.review.leader_id).one()
