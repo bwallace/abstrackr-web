@@ -14,6 +14,7 @@ import shutil
 import smtplib
 import string
 import subprocess
+import urllib
 
 from abstrackr.lib import xml_to_sql
 from abstrackr.lib import upload_term_helper
@@ -1573,8 +1574,9 @@ class ReviewController(BaseController):
         chart.add_data([c.num_citations-c.num_unique_labels, c.num_unique_labels])
         chart.set_colours(['224499', '80C65A'])
         chart.set_pie_labels(['unscreened', 'screened'])
-        c.pi_url = chart.get_url()
-
+        # For some reason | is represented by %7c. We unquote here to set it back to |. Only happens
+        # for chart.set_pie_labels.
+        c.pi_url = urllib.unquote(chart.get_url())
         c.participating_reviewers = reviewers = self._get_participants_for_review(id)
         #user_q = Session.query(model.User)
         #c.project_lead = user_q.filter(model.User.id == c.review.leader_id).one()

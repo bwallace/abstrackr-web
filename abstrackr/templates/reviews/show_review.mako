@@ -21,7 +21,7 @@ ${c.review.description}
 	<center><img src = "${c.pi_url}"></img></center><br/>
 % endif
 
-There are ${c.num_citations} citations in this review, so far ${c.num_labels} have been labeled.
+There are ${c.num_citations} citations in this review. ${c.num_unique_labels} citations have at least 1 label so far. A total of ${c.num_labels} label(s) have been recorded (including conflict resolution labels).
 <br/><br/>
 
 <h2>Participants</h2>
