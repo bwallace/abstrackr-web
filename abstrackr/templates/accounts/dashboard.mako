@@ -19,28 +19,13 @@
             show: "blind",
         });
         
-        $("#migration-warning").dialog({
-            height: 120,
-            width:500, 
-            modal: true,
-            autoOpen: false,
-            show: "blind",
-        });
         
-        $("#migration-warning").dialog( "open" );
-
     });
-
-
 
 </script>
 
 
 <div id="export" class="dialog"></div>
-
-<div id="migration-warning" class="ui-dialog">
-    <b>Important Notice:</b> Scheduled system updates will take place on <i>Saturday, February 4th from 11pm to midnight (Eastern Standard Time)</i>. Users may experience interruptions during this window.
-</div>
 
 <button type="button" onclick="introJs().start()">Quick Tour!</button>
 	
