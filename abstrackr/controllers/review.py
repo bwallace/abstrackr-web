@@ -3146,26 +3146,16 @@ class ReviewController(BaseController):
 
         m_upper = markupper.MarkUpper(labeled_terms)
 
-        # term_d = dict([(t.term, COLOR_D[t.label]) for t in labeled_terms])
-
-        # pattern = re.compile("|".join(term_d.keys()))
-        # citation.marked_up_title = pattern.sub(lambda m: "<font color='%s'><b>%s</b></font>" % \
-        #             (term_d[re.escape(m.group(0))], m.group(0)), citation.marked_up_title)
         citation.marked_up_title = m_upper.markup(citation.marked_up_title)
-
 
         if citation.marked_up_abstract is not None:
             # ... and in the abstract text
-            # citation.marked_up_abstract = pattern.sub(lambda m: "<font color='%s'><b>%s</b></font>" % \
-            #         (term_d[re.escape(m.group(0))], m.group(0)), citation.marked_up_abstract)
             citation.marked_up_abstract = m_upper.markup(citation.marked_up_abstract)
         else:
             citation.marked_up_abstract = ""
 
         if citation.marked_up_keywords is not None:
-            # ... and in the abstract text
-            # citation.marked_up_keywords = pattern.sub(lambda m: "<font color='%s'><b>%s</b></font>" % \
-            #         (term_d[re.escape(m.group(0))], m.group(0)), citation.marked_up_keywords)
+            # ... and in the abstract keywords
             citation.marked_up_keywords = m_upper.markup(citation.marked_up_keywords)
 
         else:
