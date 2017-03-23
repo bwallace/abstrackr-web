@@ -112,7 +112,7 @@
             ${c.cur_citation.marked_up_abstract}<br><br>
 
             % if c.show_keywords==True:
-                <b>keywords:</b> ${c.cur_citation.keywords}<br><br>
+                <b>keywords:</b> ${c.cur_citation.marked_up_keywords}<br><br>
             % endif
 
             <b>ID:</b> <span id="cur_citation_id" data-cur_citation_id="${c.cur_citation.id}">${c.cur_citation.id}</span><br><br>
