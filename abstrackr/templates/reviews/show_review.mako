@@ -12,16 +12,18 @@
       href="${url(controller='review', action='review_terms', id=c.review.id)}">review terms</a>
 </div>
 <div class="content">
-<h2>Project description</h2> 
+<h2>Project description</h2>
 ${c.review.description}
 <br/><br/>
 <h2>Progress</h2>
 
 % if float(c.num_labels)/float(c.num_citations) >= .1:
-	<center><img src = "${c.pi_url}"></img></center><br/>
+    <center><img src="${c.pi_url}"></img></center><br/>
 % endif
 
-There are ${c.num_citations} citations in this review, so far ${c.num_labels} have been labeled.
+<b style="color:#4d89f9; font-size: 1.5em;">${c.num_unlabeled_citations}</b> out of <b style="color:#4d89f9; font-size: 1.5em;">${c.num_citations}</b> citations have no labels yet.
+<br><br>
+A total of ${c.num_labels} label(s) have been recorded (including conflict resolution labels).
 <br/><br/>
 
 <h2>Participants</h2>

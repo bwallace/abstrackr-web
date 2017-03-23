@@ -14,6 +14,7 @@ import shutil
 import smtplib
 import string
 import subprocess
+import urllib
 
 from abstrackr.lib import xml_to_sql
 from abstrackr.lib import upload_term_helper
@@ -101,7 +102,7 @@ class ReviewController(BaseController):
             c.probably_included = len([x for x in prob_estimates if x>=.5])
             num_preds = len(prob_estimates)
             c.prob_plot_url = \
-                    '''http://chart.apis.google.com/chart
+                    '''https://chart.apis.google.com/chart
                        ?chxl=0:|0|%s|%s|1:|.1|.2|.3|.4|.5|.6|.7|.8|.9|1.0
                        &chxp=0,0,0.5,1|1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1
                        &chxr=0,0,1|1,0,1
@@ -1569,12 +1570,32 @@ class ReviewController(BaseController):
         c.num_unique_labels = len(set([lbl.study_id for lbl in labels_for_review]))
         c.num_labels = len(labels_for_review)
 
+        # Query object: list of study_id from labels table for this review
+        # SELECT labels.study_id AS labels_study_id
+        # FROM labels
+        # WHERE labels.project_id = %s
+        # LIMIT %s
+        #subquery_aa = Session.query(model.Label.study_id).filter(model.Label.project_id==id)
+
+        # Find citations for which no labels exist:
+        # SELECT citations.id AS citations_id
+        # FROM citations
+        # WHERE citations.project_id = %s AND citations.id NOT IN (SELECT labels.study_id AS labels_study_id
+        # FROM labels
+        # WHERE labels.project_id = %s)
+        #c.num_unlabeled_citations = len( Session.query(model.Citation.id).
+        #                                         filter(model.Citation.project_id==id).
+        #                                         filter(~model.Citation.id.in_(subquery_aa)).all() )
+        c.num_unlabeled_citations = c.num_citations-c.num_unique_labels
+
         # generate a pretty plot via google charts
         chart = PieChart3D(500, 200)
         chart.add_data([c.num_citations-c.num_unique_labels, c.num_unique_labels])
         chart.set_colours(['224499', '80C65A'])
         chart.set_pie_labels(['unscreened', 'screened'])
-        c.pi_url = chart.get_url()
+        # For some reason | is represented by %7c. We unquote here to set it back to |. Only happens
+        # for chart.set_pie_labels.
+        c.pi_url = urllib.unquote(chart.get_url())
 
         c.participating_reviewers = reviewers = self._get_participants_for_review(id)
         #user_q = Session.query(model.User)
@@ -1601,7 +1622,7 @@ class ReviewController(BaseController):
         # we construct a google charts string explicitly for the horizontal bar graph here.
         height = 30*len(names)+50
         width = 500
-        google_url = "http://chart.apis.google.com/chart?cht=bhg&chs=%sx%s" % (width, height)
+        google_url = "https://chart.apis.google.com/chart?cht=bhg&chs=%sx%s" % (width, height)
         chart = StackedHorizontalBarChart(500, 30*len(names)+50, x_range=(0, c.num_labels))
         data_str = "chd=t:%s" % ",".join([str(n) for n in num_screened])
         google_url = "&".join([google_url, data_str])
