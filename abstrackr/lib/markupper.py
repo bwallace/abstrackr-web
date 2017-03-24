@@ -23,11 +23,22 @@ class MarkUpper:
     COLOR_D = {1: POS_C, 2: STRONG_POS_C, -1: NEG_C, -2: STRONG_NEG_C}
 
     def __init__(self, labeled_terms):
-        self.term_d = dict([(t.term.lower(), self.COLOR_D[t.label]) for t in labeled_terms])
+        """note that we need to escape regex characters before adding terms to 
+        the dict
+        """
+        self.term_d = dict([(re.escape(t.term.lower()), self.COLOR_D[t.label]) \
+            for t in labeled_terms])
 
     def markup(self, text_to_mark_up):
         """Call re.sub function to replace occurances of the term in the input 
         text with the corresponding color tags."""
+        
+        if len(self.term_d.keys()) == 0:
+            """trying to match an empty regex causes problems, so return if dict 
+            is empty
+            """
+            return text_to_mark_up
+
         pattern = self._pattern()
         return pattern.sub(self._add_color_tag, text_to_mark_up)
 
