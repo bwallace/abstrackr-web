@@ -2,7 +2,6 @@
 
 import re
 import logging
-import pdb
 
 logging.basicConfig(level=logging.INFO)
 
