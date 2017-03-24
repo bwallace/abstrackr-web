@@ -14,8 +14,7 @@ import re
 
 # third party
 import sqlite3
-import elementtree
-from elementtree.ElementTree import ElementTree
+from xml.etree.ElementTree import ElementTree
 import Bio
 from Bio import Entrez
 

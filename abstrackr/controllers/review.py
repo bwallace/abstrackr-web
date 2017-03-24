@@ -20,6 +20,7 @@ from abstrackr.lib import xml_to_sql
 from abstrackr.lib import upload_term_helper
 from abstrackr.lib.base import BaseController, render
 from abstrackr.lib.helpers import literal
+import abstrackr.lib.markupper as markupper
 
 import abstrackr.model as model
 from abstrackr.model.meta import Session
@@ -3145,6 +3146,7 @@ class ReviewController(BaseController):
         Session.commit()
 
     def _mark_up_citation(self, review_id, citation):
+        global COLOR_D
         # pull the labeled terms for this review
         labeled_term_q = Session.query(model.LabeledFeature)
         reviewer_id = request.environ.get('repoze.who.identity')['user'].id
@@ -3153,6 +3155,7 @@ class ReviewController(BaseController):
                             model.LabeledFeature.user_id == reviewer_id)).all()
         citation.marked_up_title = citation.title
         citation.marked_up_abstract = citation.abstract
+        citation.marked_up_keywords = citation.keywords
 
         # sort the labeled terms by length (inverse)
         labeled_terms.sort(cmp=lambda x,y: len(y.term) - len(x.term))
@@ -3161,33 +3164,28 @@ class ReviewController(BaseController):
         # note that this means users cannot provide REs
         # themselves.
         meta_chars = ". ^ $ * + ? { } [ ] \ | ( )".split(" ")
-        for term in labeled_terms:
-            # 'sanitize' the string, i.e., escape special chars
-            term_text = []
-            for x in term.term:
-                if x in meta_chars:
-                    term_text.append("\%s"%x)
-                else:
-                    term_text.append(x)
 
-            term_text = "".join(term_text)
-            term_re = re.compile(term_text, re.IGNORECASE)
+        m_upper = markupper.MarkUpper(labeled_terms)
 
-            # (case-insensitive) replace the term in the title text
-            citation.marked_up_title = term_re.sub(\
-                        "<font color='%s'><b>%s</b></font>" % (COLOR_D[term.label], term.term),\
-                        citation.marked_up_title)
+        citation.marked_up_title = m_upper.markup(citation.marked_up_title)
 
-            if citation.marked_up_abstract is not None:
-                # ... and in the abstract text
-                citation.marked_up_abstract = term_re.sub(\
-                            "<font color='%s'><b>%s</b></font>" % (COLOR_D[term.label], term.term),\
-                            citation.marked_up_abstract)
+        if citation.marked_up_abstract is not None:
+            # ... and in the abstract text
+            citation.marked_up_abstract = m_upper.markup(citation.marked_up_abstract)
+        else:
+            citation.marked_up_abstract = ""
 
-            else:
-                citation.marked_up_abstract = ""
+        if citation.marked_up_keywords is not None:
+            # ... and in the abstract keywords
+            citation.marked_up_keywords = m_upper.markup(citation.marked_up_keywords)
+
+        else:
+            citation.marked_up_keywords = ""
+
         citation.marked_up_title = literal(citation.marked_up_title)
         citation.marked_up_abstract = literal(citation.marked_up_abstract)
+        citation.marked_up_keywords = literal(citation.marked_up_keywords)
+
         return citation
 
     def _get_user(self):
