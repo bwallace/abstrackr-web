@@ -6,6 +6,12 @@ import os, pdb, pickle, random
 from operator import itemgetter
 import datetime
 
+####
+# external dependencies
+####
+
+from paste.deploy import appconfig
+
 import sqlalchemy
 from sqlalchemy import *
 from sqlalchemy.sql import select
@@ -13,7 +19,9 @@ from sqlalchemy.sql import and_, or_
 
 import make_predictions_sklearn
 
-engine = create_engine("mysql://abstrackr-user:pignic@127.0.0.1:3306/abstrackr?unix_socket=/var/mysql/mysql.sock")
+conf = appconfig('config:development.ini', relative_to=os.path.join(os.path.dirname(__file__), '../../'))
+
+engine = create_engine(conf.get("mysql_address"))
 #engine = create_engine("mysql://abstrackr-user:5xl.z=Uy6d@127.0.0.1:3306/abstrackrDBP01?unix_socket=/var/mysql/mysql.sock")
 metadata = MetaData(bind=engine)
 
@@ -158,7 +166,6 @@ if __name__ == "__main__":
             if labels_for_review.rowcount >= MIN_TRAINING_EXAMPLES:
                 print "checking review %s..." % review_id
                 most_recent_label = labels_for_review.fetchone().label_last_updated
-                #pdb.set_trace()
                 print "the most recent label for review %s is dated: %s" % (review_id, most_recent_label)
                 if not _do_predictions_exist_for_review(review_id) or most_recent_label > predictions_last_updated:
                     # now make predictions for updated reviews.

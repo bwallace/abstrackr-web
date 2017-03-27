@@ -1,6 +1,7 @@
-import pdb 
-
+import pdb, os 
+from paste.deploy import appconfig
 import numpy as np
+
 
 ###
 # feature extraction & encoding
@@ -9,8 +10,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 class Dataset:
 
-    def __init__(self, ids, titles, abstracts, mesh, lbl_dict, name=None, 
-                    stop_word_fpath="/Users/bwallace/dev/abstrackr-web/abstrackr/lib/stop_list.txt"):
+    def __init__(self, ids, titles, abstracts, mesh, lbl_dict, name=None):
         '''
         assumes the ordering of ids is the same as the ordering of titles 
         and abstracts! 
@@ -22,9 +22,8 @@ class Dataset:
         for i, id_ in enumerate(self.all_ids):
             self.ids_to_indices[id_] = i 
         
-        self.titles = self._replace_None(titles)
-        self.abstracts = self._replace_None(abstracts)
-        #pdb.set_trace()
+        self.titles = [t.decode(errors='ignore').encode('utf-8') for t in self._replace_None(titles)]
+        self.abstracts = [a.decode(errors='ignore').encode('utf-8') for a in self._replace_None(abstracts)]
  
         # 9/3 -- fix for case in which abstracts are all empty
         if not any([a != "" for a in abstracts]):
@@ -40,7 +39,9 @@ class Dataset:
         print "done. now reading labels in..."
         self._setup_lbl_vecs()
         #self.stop_word_list_path = stop_word_fpath
-        self.stop_word_list_path = "/Users/abstrackr-user/Hive/abstrackr/abstrackr/lib/stop_list.txt"
+
+        conf = appconfig('config:development.ini', relative_to=os.path.join(os.path.dirname(__file__), '../../'))
+        self.stop_word_list_path = conf.get('stoplist_path')
         self._load_stopwords()
         print "alright -- encoding!"
         self.encode()
