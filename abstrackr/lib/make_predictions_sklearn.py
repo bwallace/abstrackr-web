@@ -11,6 +11,8 @@ import sys
 # external dependencies
 ####
 
+from paste.deploy import appconfig
+
 import sklearn_predictor
 from sklearn_predictor import BaggedUSLearner
 
@@ -22,7 +24,9 @@ from sqlalchemy.sql import and_, or_
 # home-grown
 import abstrackr_dataset
 
-engine = create_engine("mysql://abstrackr-user:pignic@127.0.0.1:3306/abstrackr?unix_socket=/var/mysql/mysql.sock")
+conf = appconfig('config:development.ini', relative_to=os.path.join(os.path.dirname(__file__), '../../'))
+
+engine = create_engine(conf.get("mysql_address"))
 conn = engine.connect()
 metadata = MetaData(bind=engine)
 
@@ -45,7 +49,6 @@ def make_predictions(review_id):
     print "making predictions for review: %s" % review_id
     ids, titles, abstracts, mesh, lbls_dict = get_data_for_review(review_id)
     try:
-        #import pdb; pdb.set_trace()
         review_dataset = abstrackr_dataset.Dataset(ids, titles, abstracts, mesh, 
                                                 lbls_dict, name=str(review_id))
          
