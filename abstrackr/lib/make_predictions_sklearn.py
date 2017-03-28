@@ -48,7 +48,6 @@ def make_predictions(review_id):
     #predictions, train_size, num_pos = pred_results 
     print "making predictions for review: %s" % review_id
     ids, titles, abstracts, mesh, lbls_dict = get_data_for_review(review_id)
-    pdb.set_trace()
     try:
         review_dataset = abstrackr_dataset.Dataset(ids, titles, abstracts, mesh, 
                                                 lbls_dict, name=str(review_id))
