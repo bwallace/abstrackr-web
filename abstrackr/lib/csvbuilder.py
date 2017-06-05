@@ -248,3 +248,56 @@ class CsvBuilder:
         if len(notes) > 0:
             return notes[0]
         return None
+
+    def _get_tags_for_citation(self, citation_id, texts_only=True, only_for_user_id=None):
+
+        tag_q = Session.query(model.Tag)
+        tags = None
+        if only_for_user_id:
+            # then filter on the study and the user
+            tags = tag_q.filter(and_(\
+                    model.Tag.citation_id == citation_id,\
+                    model.Tag.creator_id == only_for_user_id)).all()
+        else:
+            # all tags for this citation, regardless of user
+            tags = tag_q.filter(model.Tag.citation_id == citation_id).all()
+
+        if texts_only:
+            return self._tag_ids_to_texts([tag.tag_id for tag in tags])
+        return tags
+
+    def _tag_ids_to_texts(self, tag_ids):
+        return [self._text_for_tag(tag_id) for tag_id in tag_ids]
+
+    def _text_for_tag(self, tag_id):
+        tag_type_q = Session.query(model.TagType)
+        tag_obj = tag_type_q.filter(model.TagType.id == tag_id).one()
+        return tag_obj.text
+
+    def _get_tag_types_for_citation(self, citation_id, objects=False):
+        tags = self._get_tags_for_citation(citation_id)
+        # now map those types to names
+        tag_type_q = Session.query(model.TagType)
+        tags = []
+
+        for tag in tags:
+            tag_obj = tag_type_q.filter(model.TagType.id == tag.tag_id).one()
+
+            if objects:
+                tags.append(tag_obj)
+            else:
+                tags.append(tag_obj.text)
+
+        return tags
+
+    def _get_tag_types_for_review(self, review_id, only_for_user_id=None):
+        tag_q = Session.query(model.TagType)
+
+        if only_for_user_id:
+            tag_types = tag_q.filter(and_(\
+                        model.TagType.project_id == review_id,\
+                        model.TagType.creator_id == only_for_user_id
+                )).all()
+        else:
+            tag_types = tag_q.filter(model.TagType.project_id == review_id).all()
+        return [tag_type.text for tag_type in tag_types]
