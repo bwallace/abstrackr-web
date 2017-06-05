@@ -8,18 +8,18 @@
 
 <script language="javascript">
 
-    $(document).ready(function() { 
-  
+    $(document).ready(function() {
+
 
         $("#export").dialog({
-            height: 500,
-            width:500, 
+            height: 550,
+            width:500,
             modal: true,
             autoOpen: false,
             show: "blind",
         });
-        
-        
+
+
     });
 
 </script>
@@ -28,7 +28,7 @@
 <div id="export" class="dialog"></div>
 
 <button type="button" onclick="introJs().start()">Quick Tour!</button>
-	
+
 %if c.my_work:
     <a class="active_tab" href="${url(controller='account', action='my_work')}"
             data-intro='You will find all of your projects summarized on this tab'
@@ -46,7 +46,7 @@
 %endif
 <div class="content">
 
-<br/> 
+<br/>
 %if c.my_projects:
 
     %if len(c.leading_projects) > 0:
@@ -55,15 +55,15 @@
 
         <br/>
         <table class="list_table">
-        
+
         % for i,review in enumerate(c.leading_projects):
         <tr class="${'odd' if i%2 else 'even'}">
-            <td><a href="${url(controller='review', action='show_review', id=review.id)}">${review.name}</td>           
-            <td class="inline-actions"><a href="${url(controller='review', action='admin', id=review.id)}">admin 
-                         <img src = "../../admin_sm.png"></a></td> 
+            <td><a href="${url(controller='review', action='show_review', id=review.id)}">${review.name}</td>
+            <td class="inline-actions"><a href="${url(controller='review', action='admin', id=review.id)}">admin
+                         <img src = "../../admin_sm.png"></a></td>
             <td class="inline-actions">
-            <a href="#" onclick="javascript:    
-                      $('#export').load('${url(controller="review", action="get_fields", review_id=review.id)}', 
+            <a href="#" onclick="javascript:
+                      $('#export').load('${url(controller="review", action="get_fields", review_id=review.id)}',
                         function() {
                             $('#export').dialog('open');
                             $('#selectable').selectable();
@@ -76,49 +76,49 @@
                             <img src = "../../unlock-icon.png"></a></td>
             % else:
                 <td class="inline-actions"><i>no citations locked</i></td>
-            % endif               
-                    
+            % endif
+
             % if c.statuses[review.id]:
                 <td class="inline-actions"><a href="${url(controller='review', action='predictions_about_remaining_citations', id=review.id)}">predictions
                             <img src = "../../Robot-icon.png"></a></td>
             % else:
                 <td class="inline-actions"><i>no predictions yet</i></td>
             % endif
-            
+
             <td id="conflict_button_${review.id}">loading...</td>
             <script language="javascript">
                 $("#conflict_button_${review.id}").load("/review/get_conflict_button_fragment/${review.id}");
             </script>
-            
+
             % if c.do_we_have_a_maybe:
                 <td class="inline-actions"><a href="${url(controller='review', action='review_maybes', id=review.id)}">
                     maybes<img src = "../../maybe_sm.png"></a></td>
             % else:
                 <td class="inline-actions"><i>no maybes yet</i></td>
             % endif
-            
+
             <td class="inline-actions">
-                <a href="#" onclick="javascript:jConfirm('are you sure you want to delete this review? all labels will be lost!', 
+                <a href="#" onclick="javascript:jConfirm('are you sure you want to delete this review? all labels will be lost!',
                      'delete review?', function(r) {
-                        if(r) window.location = '${url(controller='review', action='delete_review', id=review.id)}'; 
-                   });">delete<img src = "../../delete.png"></a></td> 
+                        if(r) window.location = '${url(controller='review', action='delete_review', id=review.id)}';
+                   });">delete<img src = "../../delete.png"></a></td>
         </tr>
         % endfor
         </table>
         <br/><br/><br/>
         </center>
-    % endif 
- 
+    % endif
+
     %if len(c.participating_projects) > 0:
         <h1>projects in which you're participating</h1>
         <table class="list_table">
         % for i,review in enumerate(c.participating_projects):
         <tr class="${'odd' if i%2 else 'even'}">
-            <td><a href="${url(controller='review', action='show_review', id=review.id)}">${review.name}</td>    
-            <td class="inline-actions"><a href="${url(controller='review', action='review_labels', review_id=review.id)}">review my labels</td>  
-            <td class="inline-actions"><a href="${url(controller='review', action='leave_review', id=review.id)}" 
+            <td><a href="${url(controller='review', action='show_review', id=review.id)}">${review.name}</td>
+            <td class="inline-actions"><a href="${url(controller='review', action='review_labels', review_id=review.id)}">review my labels</td>
+            <td class="inline-actions"><a href="${url(controller='review', action='leave_review', id=review.id)}"
                            onclick="javascript:return confirm('are you sure you want to leave this review?')">
-            leave review</a></td>      
+            leave review</a></td>
         </tr>
         % endfor
         </table>
@@ -130,7 +130,7 @@
         % endif
     % endif
     <br/>
-    
+
     <br/><br/>
 
     <center>
@@ -140,10 +140,10 @@
         <a href="${url(controller='account', action='show_merge_review_screen')}"><img src ="../../merge_sm.png">merge reviews ...</a>
      % endif
     <a href="${url(controller='review', action='create_new_review')}"><img src ="../../add.png">start a new project/review</a>
-    </center>    
+    </center>
     </div>
 
-    
+
 %elif c.my_work:
 
     %if len(c.outstanding_assignments) > 0:
@@ -156,13 +156,13 @@
                 % for i, assignment in enumerate(c.outstanding_assignments):
                     <tr>
                     <td><a href="${url(controller='review', action='show_review', id=assignment.project_id)}">
-                            ${c.review_ids_to_names_d[assignment.project_id]}</td>          
+                            ${c.review_ids_to_names_d[assignment.project_id]}</td>
                     %if not assignment.assignment_type == "perpetual":
                         <td>${assignment.num_assigned}</td>
                     %else:
                         <td>--</td>
                     %endif
-                    
+
                     <td>${c.d_completion_status[assignment.id]}</td>
                     <td>${assignment.date_assigned.month}/${assignment.date_assigned.day}/${assignment.date_assigned.year}</td>
                     %if not assignment.assignment_type == "perpetual" and assignment.date_due is not None:
@@ -183,7 +183,7 @@
     %else:
         <h2>hurray, you've no outstanding assignments!</h2><br/><br/>
     %endif
-    
+
     % if len(c.finished_assignments) > 0:
         <h1>assignments you've completed</h1>
         <center>
@@ -194,7 +194,7 @@
                 % for i,assignment in enumerate(c.finished_assignments):
                     <tr>
                     <td><a href="${url(controller='review', action='show_review', id=assignment.project_id)}">
-                            ${c.review_ids_to_names_d[assignment.project_id]}</td>          
+                            ${c.review_ids_to_names_d[assignment.project_id]}</td>
                     %if not assignment.assignment_type == "perpetual":
                         <td>${assignment.num_assigned}</td>
                     %else:

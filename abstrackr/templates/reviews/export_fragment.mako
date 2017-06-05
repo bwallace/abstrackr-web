@@ -9,8 +9,7 @@
 	       var fields = $.map($('.ui-selected, this'), function(element, i) {
 	         return $(element).text();
 	       });
-
-				 var export_type = $('input[name=export_type]:checked').val();
+				 var export_type = $('#export_type').val()
 		   	 $("#export").load('/exporting.html', function(){
 	       		$("#export").load("${'/review/export_labels/%s' % c.review_id}", {fields: fields, export_type: export_type});
 				 });
@@ -23,12 +22,14 @@
 <h1>export labels</h1>
 
 <span> select the export type: </span>
-<div id="export_type_radio_group">
-	<input type="radio" name="export_type" value="xml" checked> XML<br>
-  <input type="radio" name="export_type" value="ris-citations"> RIS (citations)<br>
-	<input type="radio" name="export_type" value="ris-labels"> RIS (labels)<br>
-  <input type="radio" name="export_type" value="csv"> CSV
-</div>
+<select id="export_type">
+	<option value="xml" checked> XML</option>
+  <option value="ris-citations"> RIS (citations)</option>
+	<option value="ris-labels"> RIS (labels)</option>
+  <option value="csv"> CSV </option>
+</select>
+<br/>
+<br/>
 
 
 select the fields you'd like to export:<br/>
