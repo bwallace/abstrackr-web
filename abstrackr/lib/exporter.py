@@ -40,13 +40,13 @@ class Exporter:
     def set_id(self,id):
         self.id = id
 
-    def set_type(self,file_type):
+    def set_type(self, file_type):
         self.file_type = file_type
 
-    def set_fields(new_fields):
+    def set_fields(self, new_fields):
         self.fields = new_fields
 
-    def set_filter(new_filter):
+    def set_filter(self, new_filter):
         self.filter = new_filter
 
 #exporter = Exporter(8181, 'ris')

@@ -1,7 +1,6 @@
 # Imports..
 import abstrackr.lib.helpers as h
 
-import controller_globals
 import copy
 import csv
 import datetime
@@ -16,17 +15,19 @@ import string
 import subprocess
 import urllib
 
+from abstrackr.lib.exporter_globals import *
 from abstrackr.lib import xml_to_sql
 from abstrackr.lib import upload_term_helper
 from abstrackr.lib.base import BaseController, render
 from abstrackr.lib.helpers import literal
-import abstrackr.lib.markupper as markupper
+from abstrackr.lib.markupper import MarkUpper
+from abstrackr.lib.exporter import Exporter
 
 import abstrackr.model as model
 from abstrackr.model.meta import Session
 
+import controller_globals
 from controller_globals import *  # shared variables/functions
-from controller_globals import _prob_histogram
 
 from operator import itemgetter
 
@@ -44,13 +45,6 @@ from sqlalchemy import or_, and_, desc, func, asc
 from sqlalchemy.sql import select
 
 from random import shuffle
-
-## GLOBALS
-ROOT_PATH = config['pylons.paths']['root']
-STATIC_FILES_PATH = config['pylons.paths']['static_files']
-
-# this is the path where uploaded databases will be written to
-PERMANENT_STORE = STATIC_FILES_PATH + "/uploads"
 
 log = logging.getLogger(__name__)
 
@@ -1020,6 +1014,7 @@ class ReviewController(BaseController):
                 export_type = str(val)
 
         exporter = Exporter(id, export_type)
+        exporter.set_fields(fields_to_export)
         c.download_url = exporter.create_export()
         print c.download_url
         return render("/reviews/download_labels.mako")

@@ -112,7 +112,7 @@ class RisBuilder:
 
     def _get_member_dict(self):
         member_list = self.root.find('member_list')
-        member_dict = {}
+        member_dict = {'0': 'consensus'}
         for member in member_list.findall('member'):
             member_dict[member.find('id').text] = member.find('email').text
         return member_dict
