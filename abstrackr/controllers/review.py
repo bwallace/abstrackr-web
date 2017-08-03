@@ -1136,7 +1136,10 @@ class ReviewController(BaseController):
                             else:
                                 # then only one person has labeled it --
                                 # consensus is kind of silly
-                                cur_lbl = "o"
+
+                                # jj 2017-08-03: Ethan is requesting to put the one label here.
+                                # cur_lbl = "o"
+                                cur_lbl = str(cit_lbl_d.values()[0])
                         else:
                             # no consensus!
                             cur_lbl = "x"

@@ -51,8 +51,8 @@ def make_predictions(review_id):
     try:
         review_dataset = abstrackr_dataset.Dataset(ids, titles, abstracts, mesh, 
                                                 lbls_dict, name=str(review_id))
-         
-    except:
+    except Exception as e:
+        print e
         return False 
 
     if review_dataset.is_everything_labeled():
@@ -62,20 +62,20 @@ def make_predictions(review_id):
     print "training..."
     try:
         learner.train()
-    except:
+    except Exception as e:
         return False 
 
     print "ok! making predictions..."
     try:
         pred_d, train_size, num_pos = learner.predict_remaining()
-    except:
+    except Exception as e:
         return False
     print "-"*20 + " summary for review %s " % review_id + "-"*20
     print "training set size: %s\ntest set size: %s\n# predicted to be positive: %s" % (
             train_size, len(pred_d), num_pos)
     print "-"*62
     print "done. updating tables..."
-   
+
     _update_predictions(review_id, pred_d, train_size, num_pos)
     print "okey dokey.\n"
 
