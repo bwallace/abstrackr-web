@@ -46,15 +46,15 @@ def looks_like_tsv(file_path):
 def looks_like_ris(file_path):
     file_data = open(file_path, 'rU').read()
 
-    re_pattern = re.compile("([A-Z][A-Z0-9]\s{2}-\s)", re.MULTILINE)
+    re_pattern = re.compile("([A-Z][A-Z0-9]\s{2}-)", re.MULTILINE)
     if re.search(re_pattern, file_data) is not None:
         lines = re.split(re_pattern, file_data)
         o_c = 0 #open count
         c_c = 0 #close count
         for l in lines:
-            if l == "TY  - ":
+            if l == "TY  -":
                 o_c += 1
-            elif l == "ER  - ":
+            elif l == "ER  -":
                 if o_c == c_c + 1:
                     c_c += 1
                 else:
