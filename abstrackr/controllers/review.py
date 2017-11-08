@@ -103,7 +103,7 @@ class ReviewController(BaseController):
             num_preds = len(prob_estimates)
             c.prob_plot_url = \
                     '''https://chart.apis.google.com/chart
-                       ?chxl=0:|0|%s|%s|1:|.1|.2|.3|.4|.5|.6|.7|.8|.9|1.0
+                       ?chxl=0:|0|%s|%s|1:|0.1|0.2|0.3|0.4|0.5|0.6|0.7|0.8|0.9|1.0
                        &chxp=0,0,0.5,1|1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1
                        &chxr=0,0,1|1,0,1
                        &chxt=y,x
@@ -114,7 +114,7 @@ class ReviewController(BaseController):
                        &chco=C2BDDD
                        &chds=0,1
                        &chd=t:%s
-                       &chtt=Probabilities+of+remaining+studies+being+relevant''' % \
+                       &chtt=Relevance+scores+of+remaining+studies''' % \
                             (int(float(num_preds)/2.0), num_preds, prob_counts_str)
             c.prob_plot_url = c.prob_plot_url.replace(" ", "").replace("\n", "")
 
