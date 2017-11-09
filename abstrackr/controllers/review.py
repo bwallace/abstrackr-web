@@ -1,7 +1,6 @@
 # Imports..
 import abstrackr.lib.helpers as h
 
-import controller_globals
 import copy
 import csv
 import datetime
@@ -16,17 +15,19 @@ import string
 import subprocess
 import urllib
 
+from abstrackr.lib.exporter_globals import *
 from abstrackr.lib import xml_to_sql
 from abstrackr.lib import upload_term_helper
 from abstrackr.lib.base import BaseController, render
 from abstrackr.lib.helpers import literal
-import abstrackr.lib.markupper as markupper
+from abstrackr.lib.markupper import MarkUpper
+from abstrackr.lib.exporter import Exporter
 
 import abstrackr.model as model
 from abstrackr.model.meta import Session
 
+import controller_globals
 from controller_globals import *  # shared variables/functions
-from controller_globals import _prob_histogram
 
 from operator import itemgetter
 
@@ -44,13 +45,6 @@ from sqlalchemy import or_, and_, desc, func, asc
 from sqlalchemy.sql import select
 
 from random import shuffle
-
-## GLOBALS
-ROOT_PATH = config['pylons.paths']['root']
-STATIC_FILES_PATH = config['pylons.paths']['static_files']
-
-# this is the path where uploaded databases will be written to
-PERMANENT_STORE = STATIC_FILES_PATH + "/uploads"
 
 log = logging.getLogger(__name__)
 
@@ -1010,217 +1004,19 @@ class ReviewController(BaseController):
 
     @ActionProtector(not_anonymous())
     def export_labels(self, id, lbl_filter_f=None):
-        # get fields
-        review_q = Session.query(model.Project)
-        review = review_q.filter(model.Project.id == id).one()
-
-        all_labelers = self._get_participants_for_review(review.id)
-
-        # default to exporting everything
-        if lbl_filter_f is None:
-            lbl_filter_f = lambda label: True
-
-        ## some helpers
-        none_to_str = lambda x: "" if x is None else x
-        zero_to_none = lambda x: "none" if x==0 else x
-
         fields_to_export = []
+        export_type = "ris"
+
         for key,val in request.params.items():
             if key == "fields[]" and not val in ("", " ", "(enter new tag)"):
                 fields_to_export.append(str(val))
+            elif key == "export_type" and not val in ("", " "):
+                export_type = str(val)
 
-
-        # map citation ids to dictionaries that, in turn, map
-        # usernames to labels
-        citation_to_lbls_dict = {}
-
-        all_citations = [cit.id for cit in self._get_citations_for_review(review.id)]
-
-        citations_labeled_dict = {}
-        for cit in all_citations:
-          citations_labeled_dict[cit]=False
-
-        # likewise, for notes
-        citation_to_notes_dict = {}
-
-        # we filter the citations list  (potentially)
-        citations_to_export = []
-
-        # for efficiency reasons, we keep track of whether we need
-        # create a new empty dictionary for the current citation
-        last_citation_id = None
-
-        labeler_names = ["consensus"] # always export the consensus
-        # first collect labels for all citations that pass our
-        # filtering criteria
-        for citation, label in Session.query(\
-            model.Citation, model.Label).filter(model.Citation.id==model.Label.study_id).\
-              filter(model.Label.project_id==id).order_by(model.Citation.id).all():
-                # the above gives you all labeled citations for this review
-                # i.e., citations that have at least one label
-                citations_labeled_dict[citation.id]=True
-
-                if lbl_filter_f(label):
-                    cur_citation_id = citation.id
-                    if last_citation_id != cur_citation_id:
-                        citation_to_lbls_dict[citation.id] = {}
-                        citation_to_notes_dict[cur_citation_id] = {}
-                        citations_to_export.append(citation)
-
-                    # NOTE that we are assuming unique user names per-review
-                    labeler = self._get_username_from_id(label.user_id)
-                    if not labeler in labeler_names:
-                        labeler_names.append(labeler)
-
-                    citation_to_lbls_dict[cur_citation_id][labeler] = label.label
-                    last_citation_id = cur_citation_id
-
-                    # note that this will only contain entries for reviews that have
-                    # been labeled! i.e., notes made on unlabeled citations are not
-                    # reflected here.
-                    citation_to_notes_dict[cur_citation_id][labeler] = \
-                            self._get_notes_for_citation(cur_citation_id, label.user_id)
-
-
-        # we automatically export all labeler's labels
-        for labeler in labeler_names:
-            fields_to_export.append(labeler)
-
-        # finally, export notes (if asked)
-        notes_fields = ["general", "population", "intervention/comparator", "outcome"]
-        if "notes" in  fields_to_export:
-            fields_to_export.remove("notes")
-            # we append all labelers notes
-            for labeler in labeler_names:
-                if labeler != "consensus":
-                    for notes_field in notes_fields:
-                        fields_to_export.append("%s notes (%s)" % (notes_field, labeler))
-
-        labels = [",".join(fields_to_export)]
-        for citation in citations_to_export:
-            cur_line = []
-            for field in fields_to_export:
-                if field == "(internal) id":
-                    cur_line.append("%s" % citation.id)
-                elif field == "(source) id":
-                    cur_line.append("%s" % citation.refman)
-                elif field == "pubmed id":
-                    cur_line.append("%s" % zero_to_none(citation.pmid))
-                elif field == "abstract":
-                    cur_line.append('"%s"' % none_to_str(citation.abstract).replace('"', "'"))
-                elif field == "title":
-                    cur_line.append('"%s"' % citation.title.replace('"', "'"))
-                elif field == "keywords":
-                    cur_line.append('"%s"' % citation.keywords.replace('"', "'"))
-                elif field == "journal":
-                    cur_line.append('"%s"' % none_to_str(citation.journal))
-                elif field == "authors":
-                    cur_line.append('"%s"' % "".join(citation.authors))
-                elif field == "tags":
-                    cur_tags = self._get_tags_for_citation(citation.id)
-                    cur_line.append('"%s"' % ",".join(cur_tags))
-                elif field in labeler_names:
-                    cur_labeler = field
-                    cur_lbl = "o"
-                    cit_lbl_d = citation_to_lbls_dict[citation.id]
-                    if cur_labeler in cit_lbl_d:
-                        cur_lbl = str(cit_lbl_d[cur_labeler])
-                    # create a consensus label automagically in cases where
-                    # there is unanimous agreement
-                    elif cur_labeler == "consensus":
-                        if len(set(cit_lbl_d.values()))==1:
-                            if len(cit_lbl_d) > 1:
-                                # if at least two people agree (and none disagree), set the
-                                # consensus label to reflect this
-                                cur_lbl = str(cit_lbl_d.values()[0])
-                            else:
-                                # then only one person has labeled it --
-                                # consensus is kind of silly
-
-                                # jj 2017-08-03: Ethan is requesting to put the one label here.
-                                # cur_lbl = "o"
-                                cur_lbl = str(cit_lbl_d.values()[0])
-                        else:
-                            # no consensus!
-                            cur_lbl = "x"
-
-                    cur_line.append(cur_lbl)
-                elif "notes" in field:
-                    # notes field
-                    # this is kind of hacky -- we first parse out the labeler
-                    # name from the column header string assembled above and
-                    # then get a user id from this.
-                    get_labeler_name_from_str = lambda x: x.split("(")[1].split(")")[0]
-                    cur_labeler = get_labeler_name_from_str(field)
-                    # @TODO not sure what we should do in consensus case...
-                    if cur_labeler == "consensus":
-                        cur_line.append("")
-                    else:
-                        cur_note = None
-                        cur_notes_d = citation_to_notes_dict[citation.id]
-
-                        if cur_labeler in cur_notes_d:
-                            cur_note = cur_notes_d[cur_labeler]
-
-                        if cur_note is None:
-                            cur_line.append("")
-                        else:
-                            notes_field = field
-                            if "general" in notes_field:
-                                cur_line.append("\"%s\"" % cur_note.general.replace('"', "'"))
-                            elif "population" in notes_field:
-                                cur_line.append("\"%s\"" % cur_note.population.replace('"', "'"))
-                            elif "outcome" in notes_field:
-                                cur_line.append("\"%s\"" % cur_note.outcome.replace('"', "'"))
-                            else:
-                                # intervention/comparator
-                                cur_line.append("\"%s\"" % cur_note.ic.replace('"', "'"))
-
-            labels.append(",".join(cur_line))
-
-        # exporting *all* (including unlabeled!) citations, per Ethan's request
-        #-- may want to make this optional
-
-        labels.append("citations that are not yet labeled by anyone")
-
-        # jj 2014-08-20: Request to include citation information even for those citations that have not
-        #                been labeled yet.
-        unlabeled_citation_ids = [cit for cit in citations_labeled_dict if not citations_labeled_dict[cit]]
-        unlabeled_citations = Session.query(model.Citation).filter(model.Citation.id.in_(unlabeled_citation_ids)).all()
-
-        for citation in unlabeled_citations:
-            cur_line = []
-            for field in fields_to_export:
-                if field == "(internal) id":
-                    cur_line.append("%s" % citation.id)
-                elif field == "(source) id":
-                    cur_line.append("%s" % citation.refman)
-                elif field == "pubmed id":
-                    cur_line.append("%s" % zero_to_none(citation.pmid))
-                elif field == "abstract":
-                    cur_line.append('"%s"' % none_to_str(citation.abstract).replace('"', "'"))
-                elif field == "title":
-                    cur_line.append('"%s"' % citation.title.replace('"', "'"))
-                elif field == "keywords":
-                    cur_line.append('"%s"' % citation.keywords.replace('"', "'"))
-                elif field == "journal":
-                    cur_line.append('"%s"' % none_to_str(citation.journal))
-                elif field == "authors":
-                    cur_line.append('"%s"' % "".join(citation.authors))
-
-            labels.append(",".join(cur_line))
-
-        path_to_export = os.path.join(STATIC_FILES_PATH, "exports", "labels_%s.csv" % review.id)
-        try:
-            fout = open(path_to_export, 'w')
-        except IOError:
-            os.makedirs(os.path.dirname(path_to_export))
-            fout = open(path_to_export, 'w')
-        lbls_str = "\n".join(labels)
-        lbls_str = lbls_str.encode("utf-8", "ignore")
-        fout.write(lbls_str)
-        fout.close()
-        c.download_url = "%sexports/labels_%s.csv" % (url('/', qualified=True), review.id)
+        exporter = Exporter(id, export_type)
+        exporter.set_fields(fields_to_export)
+        c.download_url = exporter.create_export()
+        print c.download_url
         return render("/reviews/download_labels.mako")
 
     @ActionProtector(not_anonymous())
@@ -3168,7 +2964,7 @@ class ReviewController(BaseController):
         # themselves.
         meta_chars = ". ^ $ * + ? { } [ ] \ | ( )".split(" ")
 
-        m_upper = markupper.MarkUpper(labeled_terms)
+        m_upper = MarkUpper(labeled_terms)
 
         citation.marked_up_title = m_upper.markup(citation.marked_up_title)
 
@@ -3277,4 +3073,3 @@ class ReviewController(BaseController):
         Session.add(assignment)
         Session.commit()
         return False
-
