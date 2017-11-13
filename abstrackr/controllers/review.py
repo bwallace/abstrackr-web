@@ -28,6 +28,7 @@ from abstrackr.model.meta import Session
 
 import controller_globals
 from controller_globals import *  # shared variables/functions
+from controller_globals import _prob_histogram
 
 from operator import itemgetter
 
