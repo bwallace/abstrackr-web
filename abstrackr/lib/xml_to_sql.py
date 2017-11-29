@@ -48,19 +48,13 @@ def looks_like_ris(file_path):
 
     re_pattern = re.compile("([A-Z][A-Z0-9]\s{2}-)", re.MULTILINE)
     if re.search(re_pattern, file_data) is not None:
+        #we want to make sure that the last tag in the file is an end tag 'ER  -'
         lines = re.split(re_pattern, file_data)
-        o_c = 0 #open count
-        c_c = 0 #close count
-        for l in lines:
-            if l == "TY  -":
-                o_c += 1
-            elif l == "ER  -":
-                if o_c == c_c + 1:
-                    c_c += 1
-                else:
-                    return False
-        if o_c == c_c and o_c > 0:
-            print "Looks like ris"
+        lines.reverse()
+        last_er = lines.index('ER  -')
+        if filter(re_pattern.match, lines[:last_er]) != []:
+            return False
+        else:
             return True
     return False
 
