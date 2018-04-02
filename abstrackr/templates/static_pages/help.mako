@@ -44,6 +44,7 @@
   <ul>
     <li><a href="#creating_new">Starting a Review</a></li>
     <li><a href="#conflicts">Reviewing Conflicts</a></li>
+    <li><a href="#manage_review">More things to do as a project lead</a></li>
     <li><a href="#adding">Adding more Citations to an existing Review</a></li>
     <li><a href="#merging">Merging Reviews</a></li>
     <li><a href="#export">Exporting your Screening Decisions</a></li>
@@ -54,7 +55,8 @@
 
 <br/>
 <h1><a name="big_pic">The Big Picture</a></h1>
-<p><b>abstrackr</b> is a web-application that makes citation-screening process of systematic reviews easier (or, we hope it does, anyway). It is a collaborative tool that facilitates screening of citations by multiple reviewers in tandem. Citations are imported and then screened by participants. The screening decisions (or, 'labels') can subsequently be exported. We'll now define some abstractions that are used within <b>abstrackr</b>, to help you understand how best to work with the system.</p>
+<iframe width="853" height="480" style="margin: 0 auto; display: block;" src="https://www.youtube.com/embed/xNwR2ME6zGA" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<p><b>abstrackR</b> is a web-application that makes citation-screening process of systematic reviews easier (or, we hope it does, anyway). It is a collaborative tool that facilitates screening of citations by multiple reviewers in tandem. Citations are imported and then screened by participants. The screening decisions (or, 'labels') can subsequently be exported. We'll now define some abstractions that are used within <b>abstrackr</b>, to help you understand how best to work with the system.</p>
 
 <p>There are two main types of things in <b>abstrackr</b>: <i>reviewers</i> and <i>reviews</i>. The former are people like yourself, and the latter (sometimes referred to as projects), are collections of citations to be screened by reviewers. Each reviews is lead by a special reviewer; the associated <i>project lead</i>. All other reviewers associated with a given projects are participants. </p>
 
@@ -76,6 +78,7 @@ Where the last part of the URL will depend on the review. Simply follow this lin
  <p>To get screening, you'll want to click the  <img height=25 src="images/screen.png" /> button in the actions column of the assignments table. You can also review the labels (screening decisions) you have given thus far to the abstracts comprising the corresponding assignment, via the <img height=25 src="images/review_labels.png" />.
 
 <h1><a name="screening">Screening</a></h1>
+<iframe width="853" height="480" style="margin: 0 auto; display: block;" src="https://www.youtube.com/embed/VAisYLXZN5U" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 <p>We now explain how to screen abstracts in <b>abstrackr</b>. You will likely spend the majority of your time in the system screening, so we will go over the functionality available here in detail. The screening view is shown below.</p>
 
 <center>
@@ -151,7 +154,7 @@ Enter whatever notes you'd like in the corresponding, then click the 'save notes
 
 <br/><br/>
 <h1><a name="leading">Leading a Review/Project</a></h1>
-
+<iframe width="853" height="480" style="margin: 0 auto; display: block;" src="https://www.youtube.com/embed/BzIFKS7Zb2A" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 <p>This section of the help discusses how to <i>lead</i> a review in <b>abstrackr</b>; this includes importing your data, dealing with assignments, reviewing conflicts and exporting labels. At present, each review (inter-changeably referred to as projects) has exactly one project lead. By default, this is the person that started the review (i.e., uploaded the abstracts). The project lead role can be transferred after the review begins, however.</p>
 
 <h2><a name="creating_new">Starting a new Review</a></h2>
@@ -197,6 +200,8 @@ Enter whatever notes you'd like in the corresponding, then click the 'save notes
 <img src="images/invite.png" />
 </center>
 
+<h2><a name="manage_review">More things to do as a project lead</a></h2>
+<iframe width="853" height="480" style="margin: 0 auto; display: block;" src="https://www.youtube.com/embed/gBl5bFVYE3A" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
 <h2><a name="conflicts">Reviewing Conflicting (and Borderline) Decisions</a></h2>
 
