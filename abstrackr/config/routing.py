@@ -21,6 +21,7 @@ def make_map(config):
     # CUSTOM ROUTES HERE
     map.connect('/help/', controller='static_pages', action='help')
     map.connect('/citing/', controller='static_pages', action='citing')
+    map.connect('/privacy/', controller='static_pages', action='privacy')
 
     map.connect('/{controller}/{action}')
     map.connect('/review/add_notes/{study_id}', controller='review', action='add_notes')
