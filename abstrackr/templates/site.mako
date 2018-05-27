@@ -57,7 +57,8 @@
      <a href="/account/my_account" data-intro='This link will take you to your settings page. You may change your password here and set account preferences' data-step='6'>my account</a> ||
      <a href="/account/logout" data-intro='To securely sign out, please use this link' data-step='9'>sign out</a> ||
      <a href="/help/" data-intro='For more detailed help, please follow this link. Here you will find instructions and explanation to page specific items and concepts.' data-step='7'>help</a> ||
-     <a href="/citing/" data-intro='If you wish to credit us, please visit this link for citation information' data-step='8'>citing abstrackr</a>
+     <a href="/privacy/" data-intro='Follow this link to learn more about how we protect user data.' data-step='8'>privacy policy</a> ||
+     <a href="/citing/" data-intro='If you wish to credit us, please visit this link for citation information' data-step='9'>citing abstrackr</a>
 	</div>
 	
 <!-- *** BEGIN page content *** -->

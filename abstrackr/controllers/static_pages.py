@@ -17,3 +17,8 @@ class StaticPagesController(BaseController):
     def citing(self):
         c.root_path = url('/', qualified=True)
         return render("/static_pages/citing.mako")
+
+    @ActionProtector(not_anonymous())
+    def privacy(self):
+        c.root_path = url('/', qualified=True)
+        return render("/static_pages/privacy.mako")
