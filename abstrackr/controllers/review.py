@@ -884,7 +884,8 @@ class ReviewController(BaseController):
         Session.commit()
 
         # ok -- that's it. now we're going to *delete* the old review!
-        Session.delete(old_project)
+        # jj 2018-6-2 Request by Ethan: We do not want to delete the old project.
+        #Session.delete(old_project)
         Session.commit()
 
     def _make_new_review(self):
