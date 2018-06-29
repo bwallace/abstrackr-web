@@ -62,6 +62,8 @@
 
 <p>The work-flow in <b>abstrackr</b> is centered around <i>assignments</i>, which are created by project leads. In the simplest case, the same assignment is tasked to all participants in a review (including the lead): this assignment is, essentially, to screen until all abstracts have been labeled. More advanced types of assignments exist, but we'll cover these later. Please note that the advance option is still in testing so please use at your own risk.</p>
 
+To learn more about <b>abstrackr</b> workflow you can read below or follow <a href="https://evsynthacademy.org/index.php/lesson/introduction-6/" style="color: rgb(54,102,228)">this link</a> to watch a video tutorial.
+
 <h1><a name="joining">Joining a Review</a></h1>
 <p>To join a review in <b>abstrackr</b>, you'll need a join link (URL). This URL should have been sent to your e-mail, either by the <b>abstrackr</b> system or by your project lead. The URL will look like this: 
 
