@@ -63,20 +63,20 @@ class XmlBuilder:
             """ create ET subelement for each citation, then add the relevant fields
                 -Birol
             """
-            et_citation = ET.SubElement(et_citation_list, "citation")
-
-            et_citation_internal = ET.SubElement(et_citation, "internal_id")
-            et_citation_internal.text = str(citation.id)
-
-            et_citation_source = ET.SubElement(et_citation, "source_id")
-            et_citation_source.text = str(citation.refman)
-
             ## some helpers
             none_to_str = lambda x: "" if x is None else x
             zero_to_none = lambda x: "none" if x==0 else x
 
+            et_citation = ET.SubElement(et_citation_list, "citation")
+
+            et_citation_internal = ET.SubElement(et_citation, "internal_id")
+            et_citation_internal.text = none_to_str(citation.id)
+
+            et_citation_source = ET.SubElement(et_citation, "source_id")
+            et_citation_source.text = none_to_str(citation.refman)
+
             et_citation_pubmed = ET.SubElement(et_citation, "pubmed_id")
-            et_citation_pubmed.text = str(zero_to_none(citation.pmid))
+            et_citation_pubmed.text = none_to_str(zero_to_none(citation.pmid))
 
             """ We replace double quotes with single quotes here, so we do not
                 have to do it later.
