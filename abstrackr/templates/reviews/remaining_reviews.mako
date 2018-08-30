@@ -45,7 +45,8 @@
 
     <h2>${c.review_being_predicted}</h2>
     ${len(c.predictions_for_review)} citations have not been screened yet.<br />
-    ${c.probably_included} citations are probably relevant.<br /><br /><br/>
+    ${c.probably_included} citations are probably relevant.<br />
+    ${c.max_probability} is the maximum prediction score of the remaining citations.<br /><br />
     <br/><br/>
     <center><div id="chart_div" style="width: 1000px; height: 550px;">
     % if 'prob_plot_url' in dir(c):

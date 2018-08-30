@@ -79,7 +79,18 @@
             % endif
 
             % if c.statuses[review.id]:
-                <td class="inline-actions"><a href="${url(controller='review', action='predictions_about_remaining_citations', id=review.id)}">predictions
+                <td class="inline-actions"><a 
+                % if c.labels_since_prediction[review.id] == 0 or c.screened_all[review.id]:
+                class="green-background" 
+                % else:
+                class="red-background" 
+                % endif
+
+                title=
+'Created on ${ c.prediction_dates[review.id].strftime("%B %d, %Y") }
+${ c.labels_since_prediction[review.id] } labels since last prediction'
+
+                href="${url(controller='review', action='predictions_about_remaining_citations', id=review.id)}">predictions 
                             <img src = "../../Robot-icon.png"></a></td>
             % else:
                 <td class="inline-actions"><i>no predictions yet</i></td>

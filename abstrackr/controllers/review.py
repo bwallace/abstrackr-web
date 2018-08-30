@@ -145,6 +145,8 @@ class ReviewController(BaseController):
 
         c.review_being_predicted = self._get_review_from_id(id).name
 
+        c.max_probability = max([pred.predicted_probability for pred in c.predictions_for_review]) 
+
         return render("/reviews/remaining_reviews.mako")
 
     @ActionProtector(not_anonymous())

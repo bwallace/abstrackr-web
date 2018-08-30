@@ -23,10 +23,10 @@
 
 <span> select the export type: </span>
 <select id="export_type">
-	<option value="xml" checked> XML</option>
+  <option value="csv" checked> CSV </option>
+  <option value="xml"> XML</option>
   <option value="ris-citations"> RIS (citations)</option>
-	<option value="ris-labels"> RIS (labels)</option>
-  <option value="csv"> CSV </option>
+  <option value="ris-labels"> RIS (labels)</option>
 </select>
 <br/>
 <br/>
