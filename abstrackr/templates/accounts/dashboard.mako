@@ -81,7 +81,7 @@
             % if c.statuses[review.id]:
                 <td class="inline-actions"><a 
                 % if c.labels_since_prediction[review.id] == 0 or c.screened_all[review.id]:
-                class="green-background" 
+                  pass
                 % else:
                 class="red-background" 
                 % endif
