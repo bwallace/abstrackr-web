@@ -40,6 +40,7 @@
     Review Name: ${c.review_being_predicted}<br />
     ${len(c.predictions_for_review)} citations have not been screened yet.<br />
     ${c.probably_included} citations are probably relevant.<br /><br />
+    ${c.max_probability} is the maximum prediction score of the remaining citations.<br /><br />
 
     <center><div id="chart_div" style="width: 1000px; height: 700px;"></div></center>
 

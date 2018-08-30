@@ -173,7 +173,13 @@ a:hover{
     border:1px dotted gray;
 }
 
+.green-background {
+    background-color: #D8FADC !important;
+}
 
+.red-background {
+    background-color: #FADBD8 !important;
+}
 
 .disabled-actions a:hover, .disabled-actions input:hover{
    color: red;
