@@ -50,8 +50,8 @@ from optparse import OptionParser
 import Bio
 from Bio import Entrez
 from Bio import Medline
-import EUtils
-from EUtils import ThinClient
+import eutils
+from eutils import ThinClient
 
 # home-grown
 #import tfidf2 
@@ -92,12 +92,12 @@ def fetch_articles(article_ids):
     print article_ids
     #handle = Entrez.efetch(db="pubmed",id=article_ids,rettype="medline",retmode="text")
     
-    dbids = EUtils.DBIds("pubmed", [str(xid) for xid in article_ids])
+    dbids = eutils.DBIds("pubmed", [str(xid) for xid in article_ids])
     client = ThinClient.ThinClient()
 
     # fix for new NCBI API
     handle = client.efetch_using_dbids(dbids=dbids, rettype='medline', retmode='text')
-    #handle = EUtils.efetch(db="pubmed",id=article_ids,rettype="medline",retmode="text")
+    #handle = eutils.efetch(db="pubmed",id=article_ids,rettype="medline",retmode="text")
     records = Medline.parse(handle)
     print "Done." 
     return records   
