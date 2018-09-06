@@ -39,7 +39,7 @@ priorities = Table("priorities", metadata, autoload=True)
 def ensure_db_connection(func):
     def test_for_stale_connection(*args, **kwargs):
         try:
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         except:
             conf = appconfig('config:development.ini', relative_to=os.path.join(os.path.dirname(__file__), '../../'))
 
@@ -59,7 +59,7 @@ def ensure_db_connection(func):
             priorities = Table("priorities", metadata, autoload=True)
 
             # Actually execute.
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
 
     return test_for_stale_connection
 
