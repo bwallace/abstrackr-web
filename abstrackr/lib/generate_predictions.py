@@ -37,44 +37,76 @@ prediction_status = Table("predictionstatuses", metadata, autoload=True)
 predictions = Table("predictions", metadata, autoload=True)
 priorities = Table("priorities", metadata, autoload=True)
 
+def ensure_db_connection(func):
+    def test_for_stale_connection(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except:
+            conf = appconfig('config:development.ini', relative_to=os.path.join(os.path.dirname(__file__), '../../'))
+
+            engine = create_engine(conf.get("mysql_address"))
+            metadata = MetaData(bind=engine)
+
+            # bind the tables
+            citations = Table("Citations", metadata, autoload=True)
+            labels = Table("Labels", metadata, autoload=True)
+            reviews = Table("Projects", metadata, autoload=True)
+            users = Table("user", metadata, autoload=True)
+            labeled_features = Table("labeledfeatures", metadata, autoload=True)
+            encoded_status = Table("encodedstatuses", metadata, autoload=True)
+            prediction_status = Table("predictionstatuses", metadata, autoload=True)
+            predictions = Table("predictions", metadata, autoload=True)
+            priorities = Table("priorities", metadata, autoload=True)
+
+            # Actually execute.
+            func(*args, **kwargs)
+
+    return test_for_stale_connection
+
+@ensure_db_connection
 def get_ids_from_names(review_names):
     s = reviews.select(reviews.c.name.in_(review_names))
     return [review.id for review in s.execute()]
 
+@ensure_db_connection
 def _all_review_ids():
     return [review.id for review in reviews.select().execute()]
 
+@ensure_db_connection
 def _get_citations_for_review(review_id):
-    citation_ids = list(select([citations.c.id], 
+    citation_ids = list(select([citations.c.id],
                                     citations.c.project_id == review_id).execute())
     return citation_ids
 
+@ensure_db_connection
 def _predictions_last_updated(review_id):
     if not _do_predictions_exist_for_review(review_id):
         return False
 
     pred_last = list(select(
-                    [prediction_status.c.predictions_last_made], 
+                    [prediction_status.c.predictions_last_made],
                         prediction_status.c.project_id == review_id).execute().fetchone())[0]
     return pred_last
-                    
+
+@ensure_db_connection
 def _do_predictions_exist_for_review(review_id):
     pred_status = select(
                     [prediction_status.c.project_id, prediction_status.c.predictions_exist],
                      prediction_status.c.project_id == review_id).execute().fetchone()
-              
+
     if pred_status is None or not pred_status.predictions_exist:
         return False
     return True
 
+@ensure_db_connection
 def _get_predictions_for_review(review_id):
     '''
-    map citation ids to predictions 
+    map citation ids to predictions
     '''
     preds = list(select([predictions.c.study_id, predictions.c.predicted_probability],
                     predictions.c.project_id == review_id).execute())
 
-    preds_d = {}              
+    preds_d = {}
     for study_id, prob in preds:
         preds_d[study_id] = prob
     return preds_d
@@ -84,6 +116,7 @@ def _get_predictions_for_review(review_id):
 # @TODO this is redundant with the corresponding method in review.py, but
 #       we need to be able to invoke this statically, hence its re-implementation
 ###
+@ensure_db_connection
 def _re_prioritize(review_id, sort_by_str):
     citation_ids = [cit.id for cit in _get_citations_for_review(review_id)]
     predictions_for_review = None
@@ -108,8 +141,8 @@ def _re_prioritize(review_id, sort_by_str):
         cits_to_preds = {}
         # first insert entries for *all* citations, set this to 11
         # to prioritize newly added citations (don't want to accidently
-        # de-prioritize highly relevant citations). this will take care 
-        # of any citations without predictions -- 
+        # de-prioritize highly relevant citations). this will take care
+        # of any citations without predictions --
         # e.g., a review may have been merged (?) -- citations for which
         # we have predictions will simply be overwritten, below
         for citation_id in citation_ids:
@@ -118,7 +151,7 @@ def _re_prioritize(review_id, sort_by_str):
 
         for study_id, prob in predictions_for_review.items():
             cits_to_preds[study_id] = prob
-        
+
         # now we will sort by *descending* order; those with the most yes-votes first
         sorted_cit_ids = sorted(cits_to_preds.iteritems(), key=itemgetter(1), reverse=True)
 
@@ -134,13 +167,14 @@ def _re_prioritize(review_id, sort_by_str):
     # now update the priority table for the entries
     # corresponding to this review to reflect
     # the new priorities (above)
-    priority_ids_for_review = list(select([priorities.c.id, priorities.c.citation_id], 
+    priority_ids_for_review = list(select([priorities.c.id, priorities.c.citation_id],
                                     priorities.c.project_id == review_id).execute())
     for priority_id, citation_id in priority_ids_for_review:
         if citation_id in cit_id_to_new_priority:
             priority_update = priorities.update(priorities.c.id == priority_id)
             priority_update.execute(priority = cit_id_to_new_priority[citation_id])
-        
+
+@ensure_db_connection
 def _priority_q_is_empty(review_id):
     return len(select([priorities.c.id], priorities.c.project_id == review_id).execute().fetchall()) == 0
 
@@ -161,7 +195,7 @@ if __name__ == "__main__":
             print "I can't do anything for review %s -- it doesn't appear to have an entry" % review_id
         else:
             sort_by_str = sort_by_str.fetchone().sort_by
-            labels_for_review = select([labels.c.label_last_updated], 
+            labels_for_review = select([labels.c.label_last_updated],
 			         labels.c.project_id==review_id).order_by(labels.c.label_last_updated.desc()).execute()
             if labels_for_review.rowcount >= MIN_TRAINING_EXAMPLES:
                 print "checking review %s..." % review_id
