@@ -26,9 +26,9 @@ metadata = MetaData(bind=engine)
 
 ####
 # bind the tables
-citations = Table("Citations", metadata, autoload=True)
-labels = Table("Labels", metadata, autoload=True)
-reviews = Table("Projects", metadata, autoload=True)
+citations = Table("citations", metadata, autoload=True)
+labels = Table("labels", metadata, autoload=True)
+reviews = Table("projects", metadata, autoload=True)
 users = Table("user", metadata, autoload=True)
 labeled_features = Table("labeledfeatures", metadata, autoload=True)
 encoded_status = Table("encodedstatuses", metadata, autoload=True)
@@ -48,9 +48,9 @@ def ensure_db_connection(func):
             metadata = MetaData(bind=engine)
 
             # bind the tables
-            citations = Table("Citations", metadata, autoload=True)
-            labels = Table("Labels", metadata, autoload=True)
-            reviews = Table("Projects", metadata, autoload=True)
+            citations = Table("citations", metadata, autoload=True)
+            labels = Table("labels", metadata, autoload=True)
+            reviews = Table("projects", metadata, autoload=True)
             users = Table("user", metadata, autoload=True)
             labeled_features = Table("labeledfeatures", metadata, autoload=True)
             encoded_status = Table("encodedstatuses", metadata, autoload=True)
