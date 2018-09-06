@@ -43,6 +43,32 @@ users = Table("user", metadata, autoload=True)
 labeled_features = Table("labeledfeatures", metadata, autoload=True)
 #encoded_status = Table("encodedstatuses", metadata, autoload=True)
 
+def ensure_db_connection(func):
+    def test_for_stale_connection(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except:
+            conf = appconfig('config:development.ini', relative_to=os.path.join(os.path.dirname(__file__), '../../'))
+
+            engine = create_engine(conf.get("mysql_address"))
+            conn = engine.connect()
+            metadata = MetaData(bind=engine)
+
+            # bind the tables
+            citations = Table("Citations", metadata, autoload=True)
+            labels = Table("Labels", metadata, autoload=True)
+            reviews = Table("Projects", metadata, autoload=True)
+            users = Table("user", metadata, autoload=True)
+            labeled_features = Table("labeledfeatures", metadata, autoload=True)
+            encoded_status = Table("encodedstatuses", metadata, autoload=True)
+            prediction_status = Table("predictionstatuses", metadata, autoload=True)
+            predictions = Table("predictions", metadata, autoload=True)
+            priorities = Table("priorities", metadata, autoload=True)
+
+            # Actually execute.
+            func(*args, **kwargs)
+
+    return test_for_stale_connection
 
 def make_predictions(review_id):
     #predictions, train_size, num_pos = pred_results 
@@ -79,6 +105,7 @@ def make_predictions(review_id):
     _update_predictions(review_id, pred_d, train_size, num_pos)
     print "okey dokey.\n"
 
+@ensure_db_connection
 def _update_predictions(review_id, predictions, train_size, num_pos):
     ####
     # update the database
@@ -146,7 +173,7 @@ def get_data_for_review(review_id):
         mesh.append(citation_d["keywords"])
     return ids, titles, abstracts, mesh, lbls_dict
 
-
+@ensure_db_connection
 def _get_ti_ab_mh(review_id):
     fields = ["title", "abstract", "keywords"]
     none_to_text= lambda x: "none" if x is None else x
@@ -161,6 +188,7 @@ def _get_ti_ab_mh(review_id):
             cit_d[citation_id][field] = citation[field]
     return cit_d
 
+@ensure_db_connection
 def _get_lbl_d_for_review(review_id):
     lbl_d = {}
     s = labels.select(labels.c.project_id==review_id)

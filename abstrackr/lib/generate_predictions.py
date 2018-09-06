@@ -44,6 +44,7 @@ def ensure_db_connection(func):
             conf = appconfig('config:development.ini', relative_to=os.path.join(os.path.dirname(__file__), '../../'))
 
             engine = create_engine(conf.get("mysql_address"))
+            conn = engine.connect()
             metadata = MetaData(bind=engine)
 
             # bind the tables
