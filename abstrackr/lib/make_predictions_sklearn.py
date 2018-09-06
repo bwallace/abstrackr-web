@@ -113,29 +113,8 @@ def _update_predictions(review_id, predictions, train_size, num_pos):
 
     # first, delete all prediction entries associated with this
     # review (these are presumably 'stale' now)
-    try:
-        conn.execute(
-            predictions_table.delete().where(predictions_table.c.project_id == review_id))
-    except OperationalError as e:
-        conf = appconfig('config:development.ini', relative_to=os.path.join(os.path.dirname(__file__), '../../'))
-
-        engine = create_engine(conf.get("mysql_address"))
-        conn = engine.connect()
-        metadata = MetaData(bind=engine)
-
-        # table binding.
-        #encoded_status = Table("EncodedStatuses", metadata, autoload=True) # we no longer need this.
-        prediction_status = Table("predictionstatuses", metadata, autoload=True)
-        predictions_table = Table("predictions", metadata, autoload=True)
-        citations = Table("citations", metadata, autoload=True)
-        priorities = Table("priorities", metadata, autoload=True)
-        labels = Table("labels", metadata, autoload=True)
-        reviews = Table("projects", metadata, autoload=True)
-        users = Table("user", metadata, autoload=True)
-        labeled_features = Table("labeledfeatures", metadata, autoload=True)
-
-        conn.execute(
-            predictions_table.delete().where(predictions_table.c.project_id == review_id))
+    conn.execute(
+        predictions_table.delete().where(predictions_table.c.project_id == review_id))
 
     # map -1's to 0's; this is because the ORM (sql-alchemy)
     # expects boolean fields to be either 0 or 1, which is apparently
