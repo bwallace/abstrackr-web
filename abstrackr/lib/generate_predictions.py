@@ -22,7 +22,6 @@ import make_predictions_sklearn
 conf = appconfig('config:development.ini', relative_to=os.path.join(os.path.dirname(__file__), '../../'))
 
 engine = create_engine(conf.get("mysql_address"))
-#engine = create_engine("mysql://abstrackr-user:5xl.z=Uy6d@127.0.0.1:3306/abstrackrDBP01?unix_socket=/var/mysql/mysql.sock")
 metadata = MetaData(bind=engine)
 
 ####
