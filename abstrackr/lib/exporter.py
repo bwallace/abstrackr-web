@@ -21,18 +21,20 @@ class Exporter:
         if self.file_type not in ['ris-citations', 'ris-labels', 'xml', 'csv', 'excel', 'endnote']:
             raise ValueError('unknown export file_type')
 
-        xml_tree = XmlBuilder(self.id, self.filter)
 
         if self.file_type == "xml":
+            xml_tree = XmlBuilder(self.id, self.filter)
             return xml_tree.write_labels()
         elif self.file_type == "ris-citations":
+            xml_tree = XmlBuilder(self.id, self.filter)
             ris_builder = RisBuilder(xml_tree.root)
             return ris_builder.write_citations()
         elif self.file_type == "ris-labels":
+            xml_tree = XmlBuilder(self.id, self.filter)
             ris_builder = RisBuilder(xml_tree.root)
             return ris_builder.write_labels()
         elif self.file_type == "csv":
-            csv_builder = CsvBuilder(xml_tree.root)
+            csv_builder = CsvBuilder(self.id, False)
             csv_builder.set_fields(self.fields)
             csv_builder.set_filter(self.filter)
             return csv_builder.write_labels()
