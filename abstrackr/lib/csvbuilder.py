@@ -10,11 +10,16 @@ from exporter_globals import *
 from sqlalchemy import and_
 
 class CsvBuilder:
-    def __init__(self, root):
+    def __init__(self, p_id, labeled_only):
         self.fields = ["(internal) id", "(source) id", "pubmed id", "keywords",
                         "abstract", "title", "journal", "authors", "tags", "notes"]
-        self.project_id = root.find('id').text
+        self.project_id = p_id
         self.lbl_filter_f = lambda label: True
+        self.user_dict = {}
+        self.citation_to_notes_dict = {}
+        self.citation_to_tags_dict = {}
+        self.all_citations = []
+        self.all_labelers = []
         return
 
     def write_labels(self):
@@ -22,7 +27,7 @@ class CsvBuilder:
         review_q = Session.query(model.Project)
         review = review_q.filter(model.Project.id == self.project_id).one()
 
-        all_labelers = self._get_participants_for_review(self.project_id)
+        self.all_labelers = self._get_participants_for_review(self.project_id)
 
         ## some helpers
         none_to_str = lambda x: "" if x is None else x
@@ -34,14 +39,19 @@ class CsvBuilder:
         # usernames to labels
         citation_to_lbls_dict = {}
 
-        all_citations = [cit.id for cit in self._get_citations_for_review(self.project_id)]
+        self.all_citations = [cit.id for cit in self._get_citations_for_review(self.project_id)]
 
         citations_labeled_dict = {}
-        for cit in all_citations:
+        for cit in self.all_citations:
           citations_labeled_dict[cit]=False
 
         # likewise, for notes
-        citation_to_notes_dict = {}
+        # citation_to_notes_dict = {}
+        if "notes" in fields_to_export:
+            self._build_notes_dict()
+
+        if "tags" in fields_to_export:
+            self._build_tags_dict()
 
         # we filter the citations list  (potentially)
         citations_to_export = []
@@ -64,7 +74,7 @@ class CsvBuilder:
                     cur_citation_id = citation.id
                     if last_citation_id != cur_citation_id:
                         citation_to_lbls_dict[citation.id] = {}
-                        citation_to_notes_dict[cur_citation_id] = {}
+                        # citation_to_notes_dict[cur_citation_id] = {}
                         citations_to_export.append(citation)
 
                     # NOTE that we are assuming unique user names per-review
@@ -78,8 +88,9 @@ class CsvBuilder:
                     # note that this will only contain entries for reviews that have
                     # been labeled! i.e., notes made on unlabeled citations are not
                     # reflected here.
-                    citation_to_notes_dict[cur_citation_id][labeler] = \
-                            self._get_notes_for_citation(cur_citation_id, label.user_id)
+                    # if "notes" in fields_to_export
+                    # citation_to_notes_dict[cur_citation_id][labeler] = \
+                    #         self._get_notes_for_citation(cur_citation_id, label.user_id)
 
 
         # we automatically export all labeler's labels
@@ -117,7 +128,8 @@ class CsvBuilder:
                 elif field == "authors":
                     cur_line.append('"%s"' % "".join(citation.authors))
                 elif field == "tags":
-                    cur_tags = self._get_tags_for_citation(citation.id)
+                    #cur_tags = self._get_tags_for_citation(citation.id)
+                    cur_tags = self.citation_to_tags_dict[citation.id]
                     cur_line.append('"%s"' % ",".join(cur_tags))
                 elif field in labeler_names:
                     cur_labeler = field
@@ -154,7 +166,7 @@ class CsvBuilder:
                         cur_line.append("")
                     else:
                         cur_note = None
-                        cur_notes_d = citation_to_notes_dict[citation.id]
+                        cur_notes_d = self.citation_to_notes_dict[citation.id]
 
                         if cur_labeler in cur_notes_d:
                             cur_note = cur_notes_d[cur_labeler]
@@ -237,8 +249,29 @@ class CsvBuilder:
     def _get_username_from_id(self, id):
         if id == CONSENSUS_USER:
             return "consensus"
-        user_q = Session.query(model.User)
-        return user_q.filter(model.User.id == id).one().username
+        if id not in self.user_dict:
+            user_q = Session.query(model.User)
+            self.user_dict[id] = user_q.filter(model.User.id == id).one().username
+        return self.user_dict[id]
+
+    def _build_notes_dict(self):
+        notes = Session.query(model.Note).filter(model.Note.citation_id.in_(self.all_citations)).all()
+        for citation_id in self.all_citations:
+            if citation_id not in self.citation_to_notes_dict:
+                self.citation_to_notes_dict[citation_id] = {}
+                for labeler_id in self.all_labelers:
+                    self.citation_to_notes_dict[citation_id][labeler_id] = None
+
+        for note in notes:
+            self.citation_to_notes_dict[note.citation_id][note.creator_id] = note
+
+    def _build_tags_dict(self):
+        tags = Session.query(model.Tag, model.TagType).filter(model.Tag.citation_id.in_(self.all_citations)).join(model.TagType, model.Tag.tag_id == model.TagType.id).all()
+        for citation_id in self.all_citations:
+            if citation_id not in self.citation_to_tags_dict:
+                self.citation_to_tags_dict[citation_id] = []
+        for tag in tags:
+            self.citation_to_tags_dict[tag[0].citation_id].append(tag[1].text)
 
     def _get_notes_for_citation(self, citation_id, user_id):
         notes_q = Session.query(model.Note)
