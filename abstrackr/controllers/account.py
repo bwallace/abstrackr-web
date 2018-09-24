@@ -124,8 +124,10 @@ class AccountController(BaseController):
     def send_email_to_user(self, user, subject, message):
         host = config['smtp_host']
         port = config['smtp_port']
+        username = config['smtp_username']
+        password = config['smtp_password']
         sender = config['smtp_sender']
-        server = smtplib.SMTP(host=host, port=port)
+
         to = user.email
         body = string.join((
             "From: %s" % sender,
@@ -135,8 +137,14 @@ class AccountController(BaseController):
             message
             ), "\r\n")
 
-        server.sendmail(sender, [to], body)
-
+        try:
+            server = smtplib.SMTP_SSL(host, port)
+            server.ehlo()
+            server.login(username, password)
+            server.sendmail(sender, [to], body)
+            server.close()
+        except:
+            print 'Unable to send email.'
 
     def my_account(self):
         c.current_user = request.environ.get('repoze.who.identity')['user']
