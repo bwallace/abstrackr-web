@@ -127,7 +127,6 @@ class AccountController(BaseController):
         username = config['smtp_username']
         password = config['smtp_password']
         sender = config['smtp_sender']
-
         to = user.email
         body = string.join((
             "From: %s" % sender,
@@ -143,8 +142,8 @@ class AccountController(BaseController):
             server.login(username, password)
             server.sendmail(sender, [to], body)
             server.close()
-        except:
-            print 'Unable to send email.'
+        except Exception, err:
+            print 'Unable to send email. Reason: ' + err
 
     def my_account(self):
         c.current_user = request.environ.get('repoze.who.identity')['user']
