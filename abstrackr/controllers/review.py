@@ -944,7 +944,7 @@ class ReviewController(BaseController):
 
         host = config['smtp_host']
         port = config['smtp_port']
-        sender = config['sender']
+        sender = config['smtp_sender']
         server = smtplib.SMTP(host=host, port=port)
         to = email
         body = string.join((
