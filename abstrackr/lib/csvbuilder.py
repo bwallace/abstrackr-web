@@ -259,11 +259,11 @@ class CsvBuilder:
         for citation_id in self.all_citations:
             if citation_id not in self.citation_to_notes_dict:
                 self.citation_to_notes_dict[citation_id] = {}
-                for labeler_id in self.all_labelers:
-                    self.citation_to_notes_dict[citation_id][labeler_id] = None
+                for labeler in self.all_labelers:
+                    self.citation_to_notes_dict[citation_id][labeler.username] = None
 
         for note in notes:
-            self.citation_to_notes_dict[note.citation_id][note.creator_id] = note
+            self.citation_to_notes_dict[note.citation_id][self._get_username_from_id(note.creator_id)] = note
 
     def _build_tags_dict(self):
         tags = Session.query(model.Tag, model.TagType).filter(model.Tag.citation_id.in_(self.all_citations)).join(model.TagType, model.Tag.tag_id == model.TagType.id).all()
