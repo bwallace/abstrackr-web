@@ -404,7 +404,7 @@ to see which OperationalError is being raised ''')
         for project_id in leading_project_ids:
             predictions_for_review = statuses_q.filter(model.PredictionsStatus.project_id==project_id).all()
             labels_since_prediction = Session.query(model.Label).filter(model.Label.project_id==project_id)
-            if predictions_for_review[0].predictions_last_made:
+            if len(predictions_for_review) > 0 and predictions_for_review[0].predictions_last_made:
                 labels_since_prediction = labels_since_prediction.filter(model.Label.label_last_updated > predictions_for_review[0].predictions_last_made)
             labels_since_prediction = labels_since_prediction.order_by(model.Label.label_last_updated.desc())
             if len(predictions_for_review) > 0 and predictions_for_review[0].predictions_exist:
