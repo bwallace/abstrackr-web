@@ -78,7 +78,7 @@ def looks_like_list(file_path):
     f = open(file_path, 'rU')
     re_pattern = re.compile("^[0-9]+$", re.MULTILINE)
     for line in f:
-        if re.match(re_pattern, line) is None:
+        if re.match(re_pattern, line.strip()) is None:
             return False
     return True
 
