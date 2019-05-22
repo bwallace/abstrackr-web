@@ -167,8 +167,40 @@ Enter whatever notes you'd like in the corresponding, then click the 'save notes
 <img src="images/export_from_pubmed.png" />
 </center><br/>
 
+<div>
+  <p>
+    Abstrackr also accepts citations exported from EndNote. To prepare EndNote citations for import into Abstrackr, follow the following steps:
+  </p>
+  <ol>
+    <li>Export citations from EndNote (either complete list of citations or de-duplicated citations from secondary search)<br><strong>Select</strong> all citations to export</li>
+    <li>
+      Make RefMan (RIS) Export a favorite output style
+      <ol type='I'>
+        <li>Click on <strong>Edit</strong></li>
+        <li>Select <strong>Output Styles</strong></li>
+        <li>Choose "<strong>Open Style Manager...</strong>"</li>
+        <li>Use the '<strong>Find Name</strong>' field to find 'ris'</li>
+        <li>Tick the checkbox under the '<strong>Favorites</strong>' column</li>
+        <li>Close the window</li>
+      </ol>
+    </li>
+    <li>
+      Export the library
+      <ol type='I'>
+        <li>Click on <strong>File</strong></li>
+        <li>Select '<strong>Export...</strong>'</li>
+        <li>Navigate to a suitable location to save the file to</li>
+        <li>Choose a name</li>
+        <li>Use the <strong>Output Style</strong> drop down to select '<strong>RefMan (RIS) Export</strong>'</li>
+        <li>(optional) uncheck the '<strong>Export Selected References</strong>'</li>
+        <li>Make sure the saved file has a .ris extension. (It will come through as a .txt and that will not work.)</li>
+        <li>Import to Abstrackr as usual</li>
+      </ol>
+    </li>
+  </ol>
+</div>
 
-<p>Alternatively, <b>abstrackr</b> can import arbitrary tab-separated files. More specifically, this requires that you create a <b>header row</b> specifying which field each row contains. To this end, <b>abstrackr</b> recognizes special fields; it's important that you use the exact same spellings and capitalizations (all lower case) shown here.</p>
+<p>Finally, <b>abstrackr</b> can import arbitrary tab-separated files. More specifically, this requires that you create a <b>header row</b> specifying which field each row contains. To this end, <b>abstrackr</b> recognizes special fields; it's important that you use the exact same spellings and capitalizations (all lower case) shown here.</p>
 
 <p>The following fields are mandatory, i.e., must be present in the header row (\t denotes a tab character):</p>
 <center><b>id</b> \t <b>title</b> \t <b>abstract</b></center>
