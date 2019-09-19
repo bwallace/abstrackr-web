@@ -21,7 +21,7 @@ ${c.review.description}
     <center><img src="${c.pi_url}"></img></center><br/>
 % endif
 
-<b style="color:#4d89f9; font-size: 1.5em;">${c.num_unlabeled_citations}</b> out of <b style="color:#4d89f9; font-size: 1.5em;">${c.num_citations}</b> citations have no labels yet.
+<b style="color:#4d89f9; font-size: 1.5em;">${c.num_citations - c.num_unlabeled_citations}</b> out of <b style="color:#4d89f9; font-size: 1.5em;">${c.num_citations}</b> citations have been labeled.
 <br><br>
 A total of ${c.num_labels} label(s) have been recorded (including conflict resolution labels).
 <br/><br/>
