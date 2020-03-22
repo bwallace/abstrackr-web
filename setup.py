@@ -21,6 +21,7 @@ setup(
         "mysqlclient==1.3.12",
         "WebTest>=1.2.3,<=1.2.99",
         "WebOb>=1.0.7,<=1.0.99",
+        "Pygments==2.2.0",
     ],
     setup_requires=["PasteScript>=1.6.3"],
     packages=find_packages(exclude=['ez_setup']),
