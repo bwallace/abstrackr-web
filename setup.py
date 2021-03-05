@@ -22,6 +22,7 @@ setup(
         "WebTest>=1.2.3,<=1.2.99",
         "WebOb>=1.0.7,<=1.0.99",
         "Pygments==2.2.0",
+        "MarkupSafe==0.11",
     ],
     setup_requires=["PasteScript>=1.6.3"],
     packages=find_packages(exclude=['ez_setup']),
