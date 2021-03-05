@@ -44,6 +44,7 @@ from repoze.what.predicates import not_anonymous, has_permission
 
 from sqlalchemy import or_, and_, desc, func, asc
 from sqlalchemy.sql import select
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from random import shuffle
 
@@ -145,7 +146,7 @@ class ReviewController(BaseController):
 
         c.review_being_predicted = self._get_review_from_id(id).name
 
-        c.max_probability = max([pred.predicted_probability for pred in c.predictions_for_review]) 
+        c.max_probability = max([pred.predicted_probability for pred in c.predictions_for_review])
 
         return render("/reviews/remaining_reviews.mako")
 
@@ -2254,24 +2255,21 @@ class ReviewController(BaseController):
         assignment = self._get_assignment_from_id(assignment_id)
         c.assignment_type = assignment.assignment_type
         c.consensus_review = False
-        label_q = Session.query(model.Label)
+
         if c.assignment_type == "conflict":
             # then the assumption is that we're reviewing the labels provided
             # by the 'consensus_user'
             c.consensus_review = True
+
             # we return the single result in a list to make life easier on the client
             # side; this way, the code doesn't care if it's reviewing a consensus
             # label or showing a label with conflicts (multiple labels) -- it
             # behaves the same.
-            c.cur_lbl = [label_q.filter(and_(
-                                     model.Label.study_id == citation_id,
-                                     model.Label.user_id == CONSENSUS_USER)).one()]
+            c.cur_lbl = [self._get_one_label(CONSENSUS_USER, citation_id)]
 
         else:
             # then get the label that the current user gave
-            c.cur_lbl = label_q.filter(and_(
-                                     model.Label.study_id == citation_id,
-                                     model.Label.user_id == current_user.id)).one()
+            c.cur_lbl = self._get_one_label(current_user.id, citation_id)
 
         # pass the assignment id back to the client
         c.assignment_id = assignment_id
@@ -3086,3 +3084,11 @@ class ReviewController(BaseController):
         Session.add(assignment)
         Session.commit()
         return False
+
+    def _get_one_label(self, user_id, citation_id):
+        label_q = Session.query(model.Label)
+        try:
+            label_q_result = label_q.filter(and_(model.Label.study_id == citation_id, model.Label.user_id == user_id)).one()
+        except MultipleResultsFound, e:
+            label_q_result = label_q.filter(and_(model.Label.study_id == citation_id, model.Label.user_id == user_id)).order_by(model.Label.id.desc()).first()
+        return label_q_result
