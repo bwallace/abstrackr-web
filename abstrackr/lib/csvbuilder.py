@@ -83,6 +83,7 @@ class CsvBuilder:
                         labeler_names.append(labeler)
 
                     citation_to_lbls_dict[cur_citation_id][labeler] = label.label
+                    citation_to_lbls_dict[cur_citation_id][labeler + "-labeled_at"] = label.label_last_updated
                     last_citation_id = cur_citation_id
 
                     # note that this will only contain entries for reviews that have
@@ -96,6 +97,7 @@ class CsvBuilder:
         # we automatically export all labeler's labels
         for labeler in labeler_names:
             fields_to_export.append(labeler)
+            fields_to_export.append('labeled_at')
 
         # finally, export notes (if asked)
         notes_fields = ["general", "population", "intervention/comparator", "outcome"]
@@ -134,9 +136,11 @@ class CsvBuilder:
                 elif field in labeler_names:
                     cur_labeler = field
                     cur_lbl = "o"
+                    cur_lbl_labeled_at = ""
                     cit_lbl_d = citation_to_lbls_dict[citation.id]
                     if cur_labeler in cit_lbl_d:
                         cur_lbl = str(cit_lbl_d[cur_labeler])
+                        cur_lbl_labeled_at = str(cit_lbl_d[cur_labeler + "-labeled_at"])
                     # create a consensus label automagically in cases where
                     # there is unanimous agreement
                     elif cur_labeler == "consensus":
@@ -154,6 +158,7 @@ class CsvBuilder:
                             cur_lbl = "x"
 
                     cur_line.append(cur_lbl)
+                    cur_line.append(cur_lbl_labeled_at)
                 elif "notes" in field:
                     # notes field
                     # this is kind of hacky -- we first parse out the labeler
