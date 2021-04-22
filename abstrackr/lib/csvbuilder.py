@@ -74,7 +74,9 @@ class CsvBuilder:
                     cur_citation_id = citation.id
                     if last_citation_id != cur_citation_id:
                         citation_to_lbls_dict[citation.id] = {}
-                        # citation_to_notes_dict[cur_citation_id] = {}
+                        # In order to keep existing checks in place (for calculation of conflict resolution etc.) we just extend this
+                        # dictionary and add our own data.
+                        citation_to_lbls_dict[str(citation.id) + "-misc_info_hash"] = {}
                         citations_to_export.append(citation)
 
                     # NOTE that we are assuming unique user names per-review
@@ -83,7 +85,9 @@ class CsvBuilder:
                         labeler_names.append(labeler)
 
                     citation_to_lbls_dict[cur_citation_id][labeler] = label.label
-                    citation_to_lbls_dict[cur_citation_id][labeler + "-labeled_at"] = label.label_last_updated
+                    # Track labeled_at information...we could add more key-value pairs in the future.
+                    citation_to_lbls_dict[str(cur_citation_id) + "-misc_info_hash"][labeler] = {}
+                    citation_to_lbls_dict[str(cur_citation_id) + "-misc_info_hash"][labeler]["labeled_at"] = label.label_last_updated
                     last_citation_id = cur_citation_id
 
                     # note that this will only contain entries for reviews that have
@@ -138,9 +142,10 @@ class CsvBuilder:
                     cur_lbl = "o"
                     cur_lbl_labeled_at = ""
                     cit_lbl_d = citation_to_lbls_dict[citation.id]
+                    cit_lbl_misc_info_d = citation_to_lbls_dict[str(citation.id) + "-misc_info_hash"]
                     if cur_labeler in cit_lbl_d:
                         cur_lbl = str(cit_lbl_d[cur_labeler])
-                        cur_lbl_labeled_at = str(cit_lbl_d[cur_labeler + "-labeled_at"])
+                        cur_lbl_labeled_at = str(cit_lbl_misc_info_d[cur_labeler]["labeled_at"])
                     # create a consensus label automagically in cases where
                     # there is unanimous agreement
                     elif cur_labeler == "consensus":
